@@ -1,0 +1,647 @@
+import React, { useEffect, useState } from 'react';
+import { apiClient } from '../api/client';
+import ConfirmModal from '../components/common/ConfirmModal';
+import LoadingOverlay from '../components/common/LoadingOverlay';
+import EmptyDocumentState from '../components/common/EmptyDocumentState';
+import { formatDateDMY } from '../utils/formatDate';
+import Badge from '../components/common/Badge';
+import { FaTimes, FaTrash, FaMoneyCheckAlt } from 'react-icons/fa';
+import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
+import { formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
+
+interface Expense {
+  _id: string;
+  supplier: string;
+  category: string;
+  amount: number;
+  amountPaid: number;
+  remainingAmount: number;
+  currency: string;
+  dueDate: string;
+  createdAt: string;
+  description?: string;
+  paymentMethod: string;
+  paymentStatus: 'pending' | 'paid' | 'failed';
+}
+
+interface Client {
+  _id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
+const Expenses: React.FC = () =>{
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; expenseId: string | null }> ({
+    show: false,
+    expenseId: null,
+  });
+  const [showPDFConfirm, setShowPDFConfirm] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
+  const [formData, setFormData] = useState({
+    clientId: '',
+    supplier: '',
+    category: 'Other',
+    amount: '',
+    amountPaid: '',
+    dueDate: new Date().toISOString().split('T')[0],
+    referenceNumber: '',
+    description: '',
+    paymentMethod: 'Bank',
+  });
+
+  useEffect(() =>{
+    fetchExpenses();
+    fetchClients();
+  }, []);
+
+  const fetchExpenses = async () =>{
+    try {
+      const response = await apiClient.get('/expenses');
+      if (response.data.success) {
+        setExpenses(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch expenses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClients = async () =>{
+    try {
+      const response = await apiClient.get('/clients');
+      if (response.data.success) {
+        setClients(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch clients:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) =>{
+    e.preventDefault();
+    setFormError('');
+
+    const parsedAmount = Number(formData.amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setFormError('Please enter a valid total amount greater than 0.');
+      return;
+    }
+
+    const parsedAmountPaid = Number(formData.amountPaid) || 0;
+    if (parsedAmountPaid < 0) {
+      setFormError('Amount paid cannot be negative.');
+      return;
+    }
+    if (parsedAmountPaid > parsedAmount) {
+      setFormError('Amount paid cannot exceed the total amount.');
+      return;
+    }
+
+    const detailLines: string[] = [];
+    if (formData.referenceNumber.trim()) {
+      detailLines.push(`Reference: ${formData.referenceNumber.trim()}`);
+    }
+    if (formData.description.trim()) {
+      detailLines.push(formData.description.trim());
+    }
+
+    const resolvedCategory = formData.category === 'Other' && customCategory.trim()
+      ? customCategory.trim()
+      : formData.category;
+
+    const payload = {
+      clientId: formData.clientId || undefined,
+      supplier: formData.supplier.trim(),
+      category: resolvedCategory,
+      amount: parsedAmount,
+      amountPaid: parsedAmountPaid,
+      dueDate: formData.dueDate,
+      description: detailLines.join('\n'),
+      paymentMethod: formData.paymentMethod,
+    };
+
+    try {
+      await apiClient.post('/expenses', payload);
+      fetchExpenses();
+      closeModal();
+      notifySuccess('Expense created successfully');
+    } catch (error) {
+      console.error('Failed to create expense:', error);
+      setFormError('Failed to create expense. Please check the details and try again.');
+      notifyError(getErrorMessage(error, 'Failed to create expense. Please check the details and try again.'));
+    }
+  };
+
+  const handleDelete = async () =>{
+    if (!deleteConfirm.expenseId) return;
+    try {
+      await apiClient.delete(`/expenses/${deleteConfirm.expenseId}`);
+      fetchExpenses();
+      setDeleteConfirm({ show: false, expenseId: null });
+      notifySuccess('Expense deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete expense:', error);
+      notifyError(getErrorMessage(error, 'Failed to delete expense'));
+    } 
+  };
+
+  const handlePay = async (expenseId: string) => {
+    setIsPaying(true);
+    try {
+      const response = await apiClient.post('/kpay/pay', { expenseId });
+      if (response.data.success) {
+        window.open(response.data.data.url, '_blank');
+        notifySuccess('Payment link opened in a new tab');
+      }
+    } catch (error) {
+      console.error('Failed to initiate payment:', error);
+      notifyError(getErrorMessage(error, 'Failed to initiate payment'));
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
+  const resetForm = () =>{
+    setFormData({
+      clientId: '',
+      supplier: '',
+      category: 'Other',
+      amount: '',
+      amountPaid: '',
+      dueDate: new Date().toISOString().split('T')[0],
+      referenceNumber: '',
+      description: '',
+      paymentMethod: 'Bank',
+    });
+    setCustomCategory('');
+    setFormError('');
+  };
+
+  const closeModal = () =>{
+    setShowModal(false);
+    resetForm();
+  };
+
+  const handleDownloadExpensesPDF = async () =>{
+
+    try {
+      const response = await apiClient.get('/reports/expenses/pdf', {
+        responseType: 'blob',
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toISOString().split('T')[0];
+      link.setAttribute('download', `expenses-report-${today}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setShowPDFConfirm(false);
+      notifySuccess('Expenses PDF downloaded');
+    } catch (error: any) {
+      notifyError(getErrorMessage(error, 'Failed to download expenses PDF'));
+      setShowPDFConfirm(false);
+    }
+  };
+
+  const getStatusVariant = (status: string): any =>{
+    const statusMap: any = {
+      pending: 'pending',
+      paid: 'paid',
+      failed: 'failed',
+    };
+    return statusMap[status] || 'default';
+  };
+
+  if (loading || isPaying) return <LoadingOverlay message={isPaying ? 'Initiating payment...' : 'Loading expenses...'} />;
+
+  return (
+  <div>
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
+      {expenses.length > 0 && (
+        <div className="flex gap-3 w-full md:w-auto">
+          <button onClick={() =>setShowPDFConfirm(true)} className="btn btn-secondary w-full text-xs px-3 py-2">
+               Export to PDF
+          </button>
+          <button onClick={() =>{ resetForm(); setShowModal(true); }} className="btn btn-primary w-full text-xs px-3 py-2">
+              + Add Expense
+          </button>
+        </div>
+      )}
+    </div>
+
+    {expenses.length === 0 ? (
+      <EmptyDocumentState
+        title="No expenses yet"
+        subtitle="Add your first expense to start tracking your spending"
+        buttonLabel="+ Add Expense"
+        onAction={() => { resetForm(); setShowModal(true); }}
+      />
+    ) : (
+      <>
+        {/* Expenses Cards for mobile */}
+        <div className="md:hidden space-y-4">
+          {[...expenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) => (
+            <div key={expense._id} className="bg-white rounded-lg shadow p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-bold text-lg">{expense.supplier}</p>
+                  <p className="text-gray-600">{expense.category}</p>
+                </div>
+                <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-gray-500">Total</p>
+                  <p className="font-bold">{formatCompanyMoney(expense.amount, expense.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Paid</p>
+                  <p className="font-bold text-green-700">{formatCompanyMoney(expense.amountPaid, expense.currency)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Remaining</p>
+                  <p className={`font-bold ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatCompanyMoney(expense.remainingAmount, expense.currency)}
+                  </p>
+                </div>
+                {expense.remainingAmount > 0 && (
+                  <div>
+                    <p className="text-gray-500">Due Date</p>
+                    <p className="font-bold">{formatDateDMY(expense.dueDate)}</p>
+                  </div>
+                )}
+              </div>
+              {expense.description && (
+                <p className="mt-3 text-xs text-gray-500 border-t pt-2 leading-relaxed">{expense.description}</p>
+              )}
+              <div className="mt-4 flex justify-end gap-x-4">
+                {expense.paymentStatus === 'pending' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePay(expense._id);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
+                    title="Pay"
+                    aria-label="Pay expense"
+                  >
+                    <FaMoneyCheckAlt className="text-sm" />
+                  </button>
+                )}
+                <button
+                  onClick={(e) =>{
+                    e.stopPropagation();
+                    setDeleteConfirm({ show: true, expenseId: expense._id });
+                  }}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                  title="Delete"
+                  aria-label="Delete expense"
+                >
+                  <FaTrash className="text-sm" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Expenses Table for desktop */}
+        <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Paid</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remaining</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {[...expenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) =>(
+                <tr
+                  key={expense._id}
+                  className="hover:bg-gray-50"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 relative group">
+                    {expense.supplier}
+                    {expense.description && (
+                      <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block bg-white text-gray-800 border border-gray-200 text-xs rounded-lg px-3 py-2 w-64 shadow-lg pointer-events-none whitespace-normal leading-relaxed">
+                        {expense.description}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{expense.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCompanyMoney(expense.amount, expense.currency)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700 font-medium">
+                      {formatCompanyMoney(expense.amountPaid, expense.currency)}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCompanyMoney(expense.remainingAmount, expense.currency)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {expense.remainingAmount > 0 ? formatDateDMY(expense.dueDate) : '—'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                    {expense.paymentStatus === 'pending' && (
+                      <button
+                        onClick={(e) =>{
+                          e.stopPropagation();
+                          handlePay(expense._id);
+                        }}
+                        className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
+                        title="Pay"
+                        aria-label="Pay expense"
+                      >
+                        <FaMoneyCheckAlt className="text-sm" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) =>{
+                        e.stopPropagation();
+                        setDeleteConfirm({ show: true, expenseId: expense._id });
+                      }}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                      title="Delete"
+                      aria-label="Delete expense"
+                    >
+                      <FaTrash className="text-sm" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
+    )}
+
+      {showModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="bg-white rounded-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl">
+          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between z-10 rounded-t-xl">
+            <h2 className="text-xl font-bold text-gray-900">Create Expense</h2>
+            <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+              <FaTimes />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="p-4 sm:p-6 space-y-6">
+              {formError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {formError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier *</label>
+                      <input
+                        type="text"
+                        value={formData.supplier}
+                        onChange={(e) =>setFormData({ ...formData, supplier: e.target.value })}
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="Supplier or vendor name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => {
+                          setFormData({ ...formData, category: e.target.value });
+                          if (e.target.value !== 'Other') setCustomCategory('');
+                        }}
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                      >
+                        <option value="Transport">Transport</option>
+                        <option value="Office">Office</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Salaries">Salaries</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Equipment">Equipment</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      {formData.category === 'Other' && (
+                        <input
+                          type="text"
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          required
+                          className="mt-2 w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          placeholder="Enter custom category..."
+                        />
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Linked Client (Optional)</label>
+                      <select
+                        value={formData.clientId}
+                        onChange={(e) =>setFormData({ ...formData, clientId: e.target.value })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                      >
+                        <option value="">No linked client</option>
+                        {clients.map((client) => (
+                          <option key={client._id} value={client._id}>
+                            {client.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Amount *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.amount}
+                        onChange={(e) =>setFormData({ ...formData, amount: e.target.value })}
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount Paid</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.amountPaid}
+                        onChange={(e) =>setFormData({ ...formData, amountPaid: e.target.value })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Remaining Amount</label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)).toLocaleString()}`}
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-600 cursor-not-allowed font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date *</label>
+                      <input
+                        type="date"
+                        value={formData.dueDate}
+                        onChange={(e) =>setFormData({ ...formData, dueDate: e.target.value })}
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method *</label>
+                      <select
+                        value={formData.paymentMethod}
+                        onChange={(e) =>setFormData({ ...formData, paymentMethod: e.target.value })}
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                      >
+                        <option value="Bank">Bank</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference Number</label>
+                      <input
+                        type="text"
+                        value={formData.referenceNumber}
+                        onChange={(e) =>setFormData({ ...formData, referenceNumber: e.target.value })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="Transaction / receipt ref"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Description / Notes</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) =>setFormData({ ...formData, description: e.target.value })}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                      rows={4}
+                      placeholder="Add details about this expense..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Expense Summary</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Total</span>
+                      <span className="font-bold text-gray-900">{(Number(formData.amount) || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Paid</span>
+                      <span className="font-bold text-green-700">{(Number(formData.amountPaid) || 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-t pt-2">
+                      <span className="text-gray-500">Remaining</span>
+                      <span className={`font-bold ${Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-blue-900 mb-2">Tips</p>
+                    <ul className="text-xs text-blue-800 space-y-1 list-disc pl-4">
+                      <li>Use clear supplier names for easier reporting.</li>
+                      <li>Add a reference number for reconciliation.</li>
+                      <li>Link a client when expense is project-related.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-2 flex flex-col sm:flex-row gap-2 justify-end rounded-b-xl">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="px-4 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors order-1 sm:order-2"
+              >
+                Create Expense
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+    <ConfirmModal
+        isOpen={deleteConfirm.show}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() =>setDeleteConfirm({ show: false, expenseId: null })}
+      />
+
+      {/* PDF Export Confirm Modal */}
+    <ConfirmModal
+        isOpen={showPDFConfirm}
+        title="Export Expenses to PDF"
+        message="This will generate and download a PDF report of all expenses. This may take a few seconds."
+        confirmText="Download PDF"
+        cancelText="Cancel"
+        variant="primary"
+        onConfirm={handleDownloadExpensesPDF}
+        onCancel={() =>setShowPDFConfirm(false)}
+      />
+  </div>
+  );
+};
+
+export default Expenses;

@@ -1,0 +1,154 @@
+// Prisma schema for FinFlow - MongoDB with Mongoose
+// Note: This schema is for documentation and type generation purposes only
+// The actual database operations are handled by Mongoose models
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+// Company model
+model Company {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String   @unique
+  address         String
+  phone           String
+  industry        String?
+  logoUrl         String?
+  defaultCurrency String   @default("RWF")
+  exchangeRateUSD Float    @default(1300)
+  taxRate         Float    @default(18)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users         User[]
+  clients       Client[]
+  invoices      Invoice[]
+  expenses      Expense[]
+  files         File[]
+  notifications Notification[]
+
+  @@map("companies")
+}
+
+// User model
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String   @db.ObjectId
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      String   @default("staff") // admin, finance_manager, staff
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("users")
+}
+
+// Client model
+model Client {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String   @db.ObjectId
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  tin       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id])
+  invoices Invoice[]
+  expenses Expense[]
+
+  @@map("clients")
+}
+
+// Invoice model
+model Invoice {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  companyId     String    @db.ObjectId
+  clientId      String    @db.ObjectId
+  invoiceNumber String    @unique
+  issueDate     DateTime
+  dueDate       DateTime
+  status        String    @default("draft") // draft, sent, paid, overdue, cancelled
+  currency      String    @default("RWF")
+  subtotal      Float
+  taxAmount     Float
+  total         Float
+  pdfUrl        String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id])
+  client        Client         @relation(fields: [clientId], references: [id])
+  notifications Notification[]
+
+  @@map("invoices")
+}
+
+// Expense model
+model Expense {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId   String   @db.ObjectId
+  clientId    String?  @db.ObjectId
+  category    String
+  amount      Float
+  currency    String   @default("RWF")
+  date        DateTime
+  description String?
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  client  Client? @relation(fields: [clientId], references: [id])
+
+  @@map("expenses")
+}
+
+// File model
+model File {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String   @db.ObjectId
+  fileName     String
+  fileUrl      String
+  fileType     String
+  fileSize     Int
+  uploadedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@map("files")
+}
+
+// Notification model
+model Notification {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId        String   @db.ObjectId
+  type             String   // user_signup, invoice_overdue, invoice_paid, invoice_sent, budget_exceeded
+  title            String
+  message          String
+  isRead           Boolean  @default(false)
+  relatedInvoiceId String?  @db.ObjectId
+  relatedUserId    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company        Company  @relation(fields: [companyId], references: [id])
+  relatedInvoice Invoice? @relation(fields: [relatedInvoiceId], references: [id])
+
+  @@map("notifications")
+}

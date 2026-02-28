@@ -1,0 +1,239 @@
+import { Response } from 'express';
+import { Client, Invoice, Expense } from '../models';
+import { AuthRequest } from '../middleware/auth';
+import { ProfitService } from '../services/profitService';
+
+/**
+ * Create a new client
+ */
+export const createClient = async (req: AuthRequest, res: Response) =>{
+  try {
+    const { name, contactPerson, phone, email, address } = req.body;
+
+    if (!name || !contactPerson || !phone || !email || !address) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide all required fields',
+      });
+    }
+
+    // Check for duplicate client by name, email, or phone
+    const existingClient = await Client.findOne({
+      companyId: req.companyId,
+      $or: [
+        { name: { $regex: new RegExp(`^${name}$`, 'i') } },
+        { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+        { phone: phone },
+      ],
+    });
+
+    if (existingClient) {
+      let duplicateField = '';
+      if (existingClient.name.toLowerCase() === name.toLowerCase()) {
+        duplicateField = 'name';
+      } else if (existingClient.email.toLowerCase() === email.toLowerCase()) {
+        duplicateField = 'email';
+      } else if (existingClient.phone === phone) {
+        duplicateField = 'phone';
+      }
+
+      return res.status(409).json({
+        success: false,
+        error: `A client with this ${duplicateField} already exists`,
+      });
+    }
+
+    const client = await Client.create({
+      companyId: req.companyId,
+      name,
+      contactPerson,
+      phone,
+      email,
+      address,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Client created successfully',
+      data: client,
+    });
+  } catch (error: any) {
+    console.error('Create client error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create client',
+    });
+  }
+};
+
+/**
+ * Get all clients
+ */
+export const getClients = async (req: AuthRequest, res: Response) =>{
+  try {
+    const clients = await Client.find({ companyId: req.companyId }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: clients,
+    });
+  } catch (error: any) {
+    console.error('Get clients error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch clients',
+    });
+  }
+};
+
+/**
+ * Get single client with summary
+ */
+export const getClient = async (req: AuthRequest, res: Response) =>{
+  try {
+    const client = await Client.findOne({
+      _id: req.params.id,
+      companyId: req.companyId,
+    });
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        error: 'Client not found',
+      });
+    }
+
+    // Get invoices summary
+    const invoices = await Invoice.find({
+      companyId: req.companyId,
+      clientId: client._id,
+    });
+
+    const totalInvoices = invoices.length;
+    const paidInvoices = invoices.filter((inv) =>inv.status === 'paid').length;
+    const unpaidInvoices = totalInvoices - paidInvoices;
+
+    // Get expenses
+    const expenses = await Expense.find({
+      companyId: req.companyId,
+      clientId: client._id,
+    });
+
+    // Get profit data
+    const profitData = await ProfitService.calculateClientProfit(req.companyId!, client._id);
+
+    res.json({
+      success: true,
+      data: {
+        client,
+        summary: {
+          totalInvoices,
+          paidInvoices,
+          unpaidInvoices,
+          expenseCount: expenses.length,
+          ...profitData,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Get client error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch client',
+    });
+  }
+};
+
+/**
+ * Update client
+ */
+export const updateClient = async (req: AuthRequest, res: Response) =>{
+  try {
+    const { name, contactPerson, phone, email, address } = req.body;
+
+    // Check for duplicate client by name, email, or phone (excluding current client)
+    const existingClient = await Client.findOne({
+      companyId: req.companyId,
+      _id: { $ne: req.params.id },
+      $or: [
+        { name: { $regex: new RegExp(`^${name}$`, 'i') } },
+        { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+        { phone: phone },
+      ],
+    });
+
+    if (existingClient) {
+      let duplicateField = '';
+      if (existingClient.name.toLowerCase() === name.toLowerCase()) {
+        duplicateField = 'name';
+      } else if (existingClient.email.toLowerCase() === email.toLowerCase()) {
+        duplicateField = 'email';
+      } else if (existingClient.phone === phone) {
+        duplicateField = 'phone';
+      }
+
+      return res.status(409).json({
+        success: false,
+        error: `A client with this ${duplicateField} already exists`,
+      });
+    }
+
+    const client = await Client.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        companyId: req.companyId,
+      },
+      { name, contactPerson, phone, email, address },
+      { new: true, runValidators: true }
+    );
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        error: 'Client not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Client updated successfully',
+      data: client,
+    });
+  } catch (error: any) {
+    console.error('Update client error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update client',
+    });
+  }
+};
+
+/**
+ * Delete client
+ */
+export const deleteClient = async (req: AuthRequest, res: Response) =>{
+  try {
+    const client = await Client.findOneAndDelete({
+      _id: req.params.id,
+      companyId: req.companyId,
+    });
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        error: 'Client not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Client deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('Delete client error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to delete client',
+    });
+  }
+};

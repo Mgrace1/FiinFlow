@@ -1,0 +1,5 @@
+Flask
+pandas
+prophet
+pymongo
+python-dotenv

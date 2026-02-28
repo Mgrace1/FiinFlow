@@ -1,0 +1,24 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="380" fill="url(#bg)"/>
+  <circle cx="1120" cy="-30" r="220" fill="rgba(255,255,255,.08)"/>
+  <rect x="70" y="52" width="1060" height="276" rx="26" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.18)"/>
+  <rect x="110" y="92" width="430" height="196" rx="18" fill="#0b1220" stroke="#334155"/>
+  <rect x="140" y="124" width="240" height="18" rx="9" fill="#e2e8f0"/>
+  <rect x="140" y="158" width="360" height="12" rx="6" fill="#64748b"/>
+  <rect x="140" y="184" width="312" height="12" rx="6" fill="#475569"/>
+  <rect x="140" y="222" width="220" height="34" rx="17" fill="url(#glow)"/>
+  <path d="M650 255 C725 155, 845 155, 920 255" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="685" cy="233" r="18" fill="#bae6fd"/>
+  <circle cx="885" cy="233" r="18" fill="#93c5fd"/>
+  <circle cx="785" cy="215" r="18" fill="#67e8f9"/>
+</svg>
