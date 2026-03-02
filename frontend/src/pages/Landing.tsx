@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { landingFeatures } from '../data/landingFeatures';
 
 const kpis = [
   { label: 'Active businesses', value: '50+' },
@@ -20,39 +21,6 @@ const pillars = [
   {
     title: 'Ready to grow with your business',
     body: 'Start lean and scale to multiple branches without changing how you work.',
-  },
-];
-
-const featureGrid = [
-  {
-    title: 'Professional invoicing',
-    desc: 'Create clean invoices with line items, tax calculation, and payment tracking. Send directly to clients.',
-    image: '/landing/invoice.png',
-  },
-  {
-    title: 'Expense tracking',
-    desc: 'Record business expenses, upload receipt photos, and know exactly where your money goes.',
-    image: '/landing/expense.png',
-  },
-  {
-    title: 'Client management',
-    desc: 'Keep client contacts, transaction history, and payment records organized in one place.',
-    image: '/landing/client.png',
-  },
-  {
-    title: 'Cash flow forecasting',
-    desc: 'See your expected cash position for the next 90 days based on your actual data.',
-    image: '/landing/cashflow.png',
-  },
-  {
-    title: 'Payment receipts',
-    desc: 'Upload proof of payment, view receipts inline, and download in original format.',
-    image: '/landing/aplliance.png',
-  },
-  {
-    title: 'Financial reports',
-    desc: 'Understand revenue, expenses, and profit with clear dashboards and exportable PDFs.',
-    image: '/landing/finreport.png',
   },
 ];
 
@@ -124,7 +92,7 @@ const Landing = () => {
 
   return (
     <div className="landing-pro-bg min-h-screen text-slate-900">
-      <header className="mx-auto flex w-full max-w-[92rem] items-center justify-between px-6 py-6 lg:px-8 2xl:px-12">
+      <header className="mx-auto flex w-full max-w-[108rem] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:flex-nowrap lg:px-8 xl:px-10 2xl:px-12">
         <div className="flex items-center gap-2">
           <span />
           <span className="text-xl font-bold tracking-tight" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
@@ -139,13 +107,13 @@ const Landing = () => {
           <a href="#faq" className="hover:text-slate-900">FAQ</a>
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Link to="/login" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400">
+        <div className="flex w-full items-center justify-end gap-2 sm:gap-3 lg:w-auto">
+          <Link to="/login" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 sm:px-4">
             Log in
           </Link>
           <Link 
             to="/setup/company" 
-            className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" 
+            className="rounded-lg px-3 py-2 text-sm font-semibold text-white transition-colors sm:px-4" 
             style={{ backgroundColor: armyGreen }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = armyGreenHover}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = armyGreen}
@@ -156,18 +124,18 @@ const Landing = () => {
       </header>
 
       <main>
-        <section className="mx-auto grid w-full max-w-[92rem] gap-12 px-6 pb-14 pt-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 2xl:gap-16 2xl:px-12 2xl:pb-20 2xl:pt-12">
+        <section className="mx-auto grid w-full max-w-[108rem] gap-8 px-4 pb-12 pt-6 sm:gap-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:px-8 xl:px-10 2xl:gap-16 2xl:px-12 2xl:pb-20 2xl:pt-10">
           <div className="animate-fade-up">
       
-            <h1 className="mt-6 max-w-2xl text-4xl font-bold leading-tight text-slate-950 sm:text-5xl 2xl:max-w-3xl 2xl:text-6xl" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
+            <h1 className="mt-4 max-w-2xl text-[clamp(2rem,5vw,4.25rem)] font-bold leading-tight text-slate-950 2xl:max-w-4xl" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
               Run your business smarter with FiinFlow
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg 2xl:max-w-2xl 2xl:text-xl">
+            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600 sm:text-base lg:text-lg 2xl:max-w-2xl 2xl:text-xl">
               Stop juggling notebooks and spreadsheets. FiinFlow brings invoicing, expense tracking, 
               and financial insights into one simple workspace.
             </p>
           
-            <div className="mt-8 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {kpis.map((item) => (
                 <div key={item.label} className="rounded-lg border border-slate-200 bg-white px-3 py-3">
                   <p className="text-lg font-bold text-slate-900">{item.value}</p>
@@ -178,7 +146,7 @@ const Landing = () => {
           </div>
 
           <div>
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 2xl:rounded-2xl">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm 2xl:rounded-2xl">
               <img
                 src="/landing/finflow-dashboard.png"
                 alt="FinFlow dashboard preview"
@@ -192,8 +160,8 @@ const Landing = () => {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-[92rem] px-6 pb-16 lg:px-8 2xl:px-12 2xl:pb-20">
-          <div className="grid gap-4 md:grid-cols-3">
+        <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {pillars.map((item) => (
               <article key={item.title} className="rounded-xl border border-slate-200 bg-white p-6">
                 <h3 className="text-lg font-semibold text-slate-900">{item.title}</h3>
@@ -203,18 +171,22 @@ const Landing = () => {
           </div>
         </section>
 
-        <section id="features" ref={featuresRef} className="mx-auto w-full max-w-[92rem] px-6 pb-16 lg:px-8 2xl:px-12 2xl:pb-20">
+        <section id="features" ref={featuresRef} className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
           <div className="max-w-3xl">
             <h2 className="mt-3 text-3xl font-bold text-slate-950" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
               Everything you need to run your finances
             </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
+              Click any feature to open a detailed page with full workflow context, use cases, and implementation highlights.
+            </p>
           </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
-            {featureGrid.map((item, index) => (
-              <article
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
+            {landingFeatures.map((item, index) => (
+              <Link
                 key={item.title}
+                to={`/features/${item.slug}`}
                 style={{ transitionDelay: `${index * 80}ms` }}
-                className={`relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-700 ease-out hover:z-20 hover:scale-[1.14] hover:shadow-2xl ${
+                className={`group relative block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-700 ease-out hover:-translate-y-1 hover:shadow-xl ${
                   featuresVisible
                     ? 'translate-x-0 opacity-100'
                     : `${index % 2 === 0 ? '-translate-x-10' : 'translate-x-10'} opacity-0`
@@ -227,19 +199,22 @@ const Landing = () => {
                   <img
                     src={item.image}
                     alt={`${item.title} visual`}
-                    className="h-48 w-full object-cover md:h-56 2xl:h-60"
+                    className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-[1.04] md:h-56 2xl:h-60"
                     loading="lazy"
                     onError={(e) => {
                       e.currentTarget.src = 'https://placehold.co/600x400/f3f4f6/9ca3af?text=' + item.title;
                     }}
                   />
                 </div>
-              </article>
+                <div className="mt-4 inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em] text-[#4B5320]">
+                  Explore feature
+                </div>
+              </Link>
             ))}
           </div>
         </section>
 
-        <section id="workflow" className="mx-auto w-full max-w-[92rem] px-6 pb-16 lg:px-8 2xl:px-12 2xl:pb-20">
+        <section id="workflow" className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">How it works</p>
             <h2 className="mt-2 text-3xl font-bold text-slate-950" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
@@ -286,7 +261,7 @@ const Landing = () => {
           </div>
         </section>
 
-        <section id="industries" className="mx-auto w-full max-w-[92rem] px-6 pb-16 lg:px-8 2xl:px-12 2xl:pb-20">
+        <section id="industries" className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Industries</p>
           <h2 className="mt-2 text-3xl font-bold text-slate-950" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
             Built for service businesses
@@ -313,9 +288,9 @@ const Landing = () => {
           </div>
         </section>
 
-        <section id="faq" className="mx-auto w-full max-w-[92rem] px-6 pb-16 lg:px-8 2xl:px-12 2xl:pb-20">
+        <section id="faq" className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">FAQ</p>
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {faqs.map((item) => (
               <article key={item.q} className="rounded-xl border border-slate-200 bg-white p-5">
                 <h3 className="text-sm font-semibold text-slate-900">{item.q}</h3>
@@ -324,29 +299,71 @@ const Landing = () => {
             ))}
           </div>
         </section>
+
+        <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 md:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Get Started</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-950" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
+              Ready to simplify your financial operations?
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+              Create your workspace, invite your team, and start managing invoices, expenses, and reports in one place.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to="/setup/company"
+                className="rounded-lg bg-[#4B5320] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#3A401F]"
+              >
+                Create account
+              </Link>
+              <Link
+                to="/login"
+                className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400"
+              >
+                Log in
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-[92rem] flex-col items-start justify-between gap-4 px-6 py-8 md:flex-row md:items-center lg:px-8 2xl:px-12">
+        <div className="mx-auto grid w-full max-w-[108rem] gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8 xl:px-10 2xl:px-12">
           <div>
-            <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
-              Ready to get clear on your finances?
-            </h3>
-            <p className="mt-1 text-sm text-slate-600">Create your workspace and start managing your business with confidence.</p>
+            <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>FiinFlow</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Financial operations workspace for growing businesses.
+            </p>
           </div>
-          <div className="flex gap-3">
-            <Link 
-              to="/setup/company" 
-              className="rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors" 
-              style={{ backgroundColor: armyGreen }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = armyGreenHover}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = armyGreen}
-            >
-              Create account
-            </Link>
-            <Link to="/login" className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">
-              Log in
-            </Link>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Product</p>
+            <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <a href="#features" className="block hover:text-slate-900">Features</a>
+              <a href="#workflow" className="block hover:text-slate-900">How it works</a>
+              <a href="#faq" className="block hover:text-slate-900">FAQ</a>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">Start</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link 
+                to="/setup/company" 
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" 
+                style={{ backgroundColor: armyGreen }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = armyGreenHover}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = armyGreen}
+              >
+                Create account
+              </Link>
+              <Link to="/login" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+                Log in
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-slate-200">
+          <div className="mx-auto w-full max-w-[108rem] px-4 py-4 text-xs text-slate-500 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+            (c) {new Date().getFullYear()} FiinFlow. All rights reserved.
           </div>
         </div>
       </footer>

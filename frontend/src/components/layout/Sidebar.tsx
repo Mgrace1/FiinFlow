@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
       />
       <div
         className={`fixed top-0 left-0 h-full ${
-          isExpanded ? 'w-64' : 'w-20'
+          isExpanded ? 'w-30' : 'w-16'
         } bg-sidebar-dark text-white flex flex-col z-40 transform transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative md:translate-x-0`}

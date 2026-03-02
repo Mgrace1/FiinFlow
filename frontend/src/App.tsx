@@ -20,6 +20,8 @@ import TeamMembers from './pages/TeamMembers';
 import SearchPage from './pages/Search';
 import Starfield from './components/common/Starfield';
 import Landing from './pages/Landing';
+import FeatureDetail from './pages/FeatureDetail';
+import NotFound from './pages/NotFound';
 import { ToastContainer } from 'react-toastify';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,6 +46,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/setup/company" element={<CompanySetup />} />
       <Route path="/setup/user" element={<UserSetup />} />
+      <Route path="/features/:slug" element={<FeatureDetail />} />
 
       {/* Publicly accessible invoice detail */}
       <Route path="/invoices/:invoiceId" element={<InvoiceDetail />} />
@@ -70,8 +73,8 @@ function AppRoutes() {
         <Route path="team" element={<TeamMembers />} />
       </Route>
 
-      {/* Default Redirect for any other path */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
