@@ -223,7 +223,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
 
                   {canDelete && (
                     <button
-                      onClick={() => onDelete(receipt.fileId._id || receipt.fileId)}
+                      onClick={() => {
+                        const fileId = getFileId(receipt);
+                        if (fileId) onDelete(fileId);
+                      }}
                       className="text-red-600 hover:text-red-800 text-sm font-medium ml-4"
                     >
                       Delete

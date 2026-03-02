@@ -18,13 +18,6 @@ interface Company {
   exchangeRateUSD: number;
 }
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
 interface Workspace {
   userId: string;
   userName: string;

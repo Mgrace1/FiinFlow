@@ -11,6 +11,7 @@ interface ClientPerformance {
   clientId: string;
   rank?: number;
   clientName: string;
+  totalInvoices?: number;
   totalCollected: number;
   paidRate: number;
   collectionRate?: number;
@@ -406,7 +407,7 @@ const Reports: React.FC = () =>{
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis dataKey="month" stroke="#6b7280" tickLine={false} axisLine={false} />
                     <YAxis stroke="#6b7280" tickLine={false} axisLine={false} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Tooltip formatter={(value: number | string | undefined) => formatCurrency(Number(value || 0))} />
                     <Area type="monotone" dataKey="net" stroke="#4f8b80" strokeWidth={2.5} fill="url(#reportNetFill)" name="Net cashflow" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -428,7 +429,7 @@ const Reports: React.FC = () =>{
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
                     <XAxis type="number" stroke="#6b7280" tickLine={false} axisLine={false} />
                     <YAxis dataKey="category" type="category" stroke="#6b7280" tickLine={false} axisLine={false} width={110} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Tooltip formatter={(value: number | string | undefined) => formatCurrency(Number(value || 0))} />
                     <Bar dataKey="amount" fill="#4f8b80" radius={[0, 6, 6, 0]} name="Expense" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -482,7 +483,7 @@ const Reports: React.FC = () =>{
         {/* Client Performance — only shown when clients have activity in the selected period */}
         {(() => {
           const activeClients = performance
-            ? [...performance.clientsPerformance].filter(r => r.totalInvoices > 0).sort((a, b) => b.performanceScore - a.performanceScore)
+            ? [...performance.clientsPerformance].filter((r) => (r.totalInvoices ?? 0) > 0).sort((a, b) => b.performanceScore - a.performanceScore)
             : [];
           if (!performanceLoading && activeClients.length === 0) return null;
           return (

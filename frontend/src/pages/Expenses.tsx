@@ -7,7 +7,7 @@ import { formatDateDMY } from '../utils/formatDate';
 import Badge from '../components/common/Badge';
 import { FaTimes, FaTrash, FaMoneyCheckAlt } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
-import { formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
+import { formatCompanyMoney } from '../utils/currency';
 
 interface Expense {
   _id: string;

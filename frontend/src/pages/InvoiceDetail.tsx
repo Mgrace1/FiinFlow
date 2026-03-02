@@ -8,7 +8,6 @@ import Tooltip from '../components/common/Tooltip';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { formatDateDMY } from '../utils/formatDate';
 import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
-import { formatCompanyMoney } from '../utils/currency';
 
 interface Invoice {
   _id: string;

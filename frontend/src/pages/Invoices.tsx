@@ -8,7 +8,7 @@ import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import { formatDateDMY } from '../utils/formatDate';
 import { FaTimes, FaPlus, FaTrash, FaEye, FaPen } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
-import { formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
+import { type AppCurrency, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
 
 interface Invoice {
   _id: string;
@@ -309,7 +309,7 @@ const Invoices: React.FC = () => {
         invoiceNumber: invoice.invoiceNumber,
         invoiceType: isKnown ? rawType : 'other',
         amount: invoice.amount.toString(),
-        currency: invoice.currency || getCurrencyConfig().defaultCurrency,
+        currency: (String(invoice.currency || getCurrencyConfig().defaultCurrency).toUpperCase() === 'USD' ? 'USD' : 'RWF') as AppCurrency,
         taxApplied: (invoice as any).taxApplied ?? true,
         taxRate: (invoice as any).taxRate ?? getCurrencyConfig().taxRate,
         dueDate: invoice.dueDate.split('T')[0],
@@ -617,7 +617,7 @@ const Invoices: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Currency</label>
                       <select
                         value={formData.currency}
-                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, currency: (e.target.value === 'USD' ? 'USD' : 'RWF') as AppCurrency })}
                         disabled
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                       >
