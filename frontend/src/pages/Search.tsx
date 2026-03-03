@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { formatDateDMY } from '../utils/formatDate';
 import { formatCompanyMoney } from '../utils/currency';
+import { landingFeatures } from '../data/landingFeatures';
 
 interface SearchClient {
   _id: string;
@@ -34,6 +35,74 @@ interface SearchExpense {
   date?: string;
   paymentStatus?: string;
 }
+
+interface SearchNavigationItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  path: string;
+  keywords: string[];
+}
+
+const appNavigationIndex: SearchNavigationItem[] = [
+  {
+    id: 'nav-dashboard',
+    title: 'Dashboard',
+    description: 'Overview of business performance and quick actions.',
+    category: 'Workspace',
+    path: '/dashboard',
+    keywords: ['dashboard', 'home', 'overview', 'workspace'],
+  },
+  {
+    id: 'nav-clients',
+    title: 'Clients',
+    description: 'Manage clients, contacts, and account history.',
+    category: 'CRM',
+    path: '/clients',
+    keywords: ['clients', 'customers', 'contacts', 'crm'],
+  },
+  {
+    id: 'nav-invoices',
+    title: 'Invoices',
+    description: 'Create invoices and monitor payment status.',
+    category: 'Billing',
+    path: '/invoices',
+    keywords: ['invoice', 'billing', 'payments', 'receivables'],
+  },
+  {
+    id: 'nav-expenses',
+    title: 'Expenses',
+    description: 'Track spending, categories, and supplier costs.',
+    category: 'Finance',
+    path: '/expenses',
+    keywords: ['expenses', 'costs', 'spending', 'suppliers'],
+  },
+  {
+    id: 'nav-reports',
+    title: 'Reports',
+    description: 'Review revenue, costs, and profitability insights.',
+    category: 'Analytics',
+    path: '/reports',
+    keywords: ['reports', 'analytics', 'profit', 'cashflow', 'forecast'],
+  },
+  {
+    id: 'nav-team',
+    title: 'Team',
+    description: 'Invite and manage teammates and roles.',
+    category: 'Administration',
+    path: '/team',
+    keywords: ['team', 'users', 'members', 'roles', 'permissions'],
+  },
+  {
+    id: 'nav-settings',
+    title: 'Settings',
+    description: 'Configure company profile, branding, and preferences.',
+    category: 'Administration',
+    path: '/settings',
+    keywords: ['settings', 'configuration', 'company', 'branding', 'profile'],
+  },
+];
 
 const SearchPage: React.FC = () => {
   const { search } = useLocation();
@@ -103,10 +172,38 @@ const SearchPage: React.FC = () => {
     [expenses]
   );
 
-  const totalResults = clientResults.length + invoiceResults.length + expenseResults.length;
+  const navigationResults = useMemo(() => {
+    if (!query) return [];
+
+    const featurePages: SearchNavigationItem[] = landingFeatures.map((feature) => ({
+      id: `feature-${feature.slug}`,
+      title: feature.title,
+      description: feature.desc,
+      category: 'Feature Guide',
+      path: `/features/${feature.slug}`,
+      keywords: [feature.title, feature.desc, feature.slug, 'feature'],
+    }));
+
+    const allNavigationItems = [...appNavigationIndex, ...featurePages];
+
+    return allNavigationItems
+      .map((item) => {
+        const searchable = `${item.title} ${item.description} ${item.category} ${item.keywords.join(' ')}`.toLowerCase();
+        const startsWith = item.title.toLowerCase().startsWith(query);
+        const includes = searchable.includes(query);
+        if (!startsWith && !includes) return null;
+        return { item, score: startsWith ? 2 : 1 };
+      })
+      .filter((entry): entry is { item: SearchNavigationItem; score: number } => entry !== null)
+      .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title))
+      .slice(0, 12)
+      .map((entry) => entry.item);
+  }, [query]);
+
+  const totalResults = navigationResults.length + clientResults.length + invoiceResults.length + expenseResults.length;
 
   return (
-    <div className="max-w-5xl">
+    <div className="w-full max-w-none">
       <div className="mb-6 flex items-center gap-3">
         <div className="rounded-lg bg-blue-100 p-2 text-blue-700">
           <Search size={18} />
@@ -119,7 +216,7 @@ const SearchPage: React.FC = () => {
 
       {!query && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          Search across clients, invoices, and expenses from the navbar.
+          Search across pages, features, clients, invoices, and expenses from the navbar.
         </div>
       )}
 
@@ -137,12 +234,30 @@ const SearchPage: React.FC = () => {
 
       {!loading && query && !error && totalResults === 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          No matches found in clients, invoices, or expenses.
+          No matches found in pages, features, clients, invoices, or expenses.
         </div>
       )}
 
       {!loading && totalResults > 0 && (
         <div className="space-y-5">
+          {navigationResults.length > 0 && (
+            <section className="rounded-lg border border-gray-200 bg-white">
+              <div className="border-b border-gray-100 px-4 py-3">
+                <h2 className="text-sm font-semibold text-gray-900">Pages & Features ({navigationResults.length})</h2>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {navigationResults.map((result) => (
+                  <Link key={result.id} to={result.path} className="block px-4 py-3 hover:bg-gray-50">
+                    <p className="font-medium text-gray-900">{result.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {result.category} | {result.description}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           {clientResults.length > 0 && (
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">

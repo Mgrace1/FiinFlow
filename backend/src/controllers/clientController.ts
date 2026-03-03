@@ -3,12 +3,19 @@ import { Client, Invoice, Expense } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { ProfitService } from '../services/profitService';
 
+const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const hasMinPhoneDigits = (phone: string): boolean => phone.replace(/\D/g, '').length >= 10;
+
 /**
  * Create a new client
  */
 export const createClient = async (req: AuthRequest, res: Response) =>{
   try {
-    const { name, contactPerson, phone, email, address } = req.body;
+    const name = String(req.body?.name || '').trim();
+    const contactPerson = String(req.body?.contactPerson || '').trim();
+    const phone = String(req.body?.phone || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const address = String(req.body?.address || '').trim();
 
     if (!name || !contactPerson || !phone || !email || !address) {
       return res.status(400).json({
@@ -17,20 +24,27 @@ export const createClient = async (req: AuthRequest, res: Response) =>{
       });
     }
 
-    // Check for duplicate client by name, email, or phone
+    if (!hasMinPhoneDigits(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number must contain at least 10 digits',
+      });
+    }
+
+    // Company name is allowed to repeat. Only client person name, email, or phone must be unique in a workspace.
     const existingClient = await Client.findOne({
       companyId: req.companyId,
       $or: [
-        { name: { $regex: new RegExp(`^${name}$`, 'i') } },
-        { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+        { contactPerson: { $regex: new RegExp(`^${escapeRegex(contactPerson)}$`, 'i') } },
+        { email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } },
         { phone: phone },
       ],
     });
 
     if (existingClient) {
       let duplicateField = '';
-      if (existingClient.name.toLowerCase() === name.toLowerCase()) {
-        duplicateField = 'name';
+      if (existingClient.contactPerson.toLowerCase() === contactPerson.toLowerCase()) {
+        duplicateField = 'client name';
       } else if (existingClient.email.toLowerCase() === email.toLowerCase()) {
         duplicateField = 'email';
       } else if (existingClient.phone === phone) {
@@ -149,23 +163,41 @@ export const getClient = async (req: AuthRequest, res: Response) =>{
  */
 export const updateClient = async (req: AuthRequest, res: Response) =>{
   try {
-    const { name, contactPerson, phone, email, address } = req.body;
+    const name = String(req.body?.name || '').trim();
+    const contactPerson = String(req.body?.contactPerson || '').trim();
+    const phone = String(req.body?.phone || '').trim();
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const address = String(req.body?.address || '').trim();
 
-    // Check for duplicate client by name, email, or phone (excluding current client)
+    if (!name || !contactPerson || !phone || !email || !address) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide all required fields',
+      });
+    }
+
+    if (!hasMinPhoneDigits(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Phone number must contain at least 10 digits',
+      });
+    }
+
+    // Company name is allowed to repeat. Only client person name, email, or phone must be unique in a workspace.
     const existingClient = await Client.findOne({
       companyId: req.companyId,
       _id: { $ne: req.params.id },
       $or: [
-        { name: { $regex: new RegExp(`^${name}$`, 'i') } },
-        { email: { $regex: new RegExp(`^${email}$`, 'i') } },
+        { contactPerson: { $regex: new RegExp(`^${escapeRegex(contactPerson)}$`, 'i') } },
+        { email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } },
         { phone: phone },
       ],
     });
 
     if (existingClient) {
       let duplicateField = '';
-      if (existingClient.name.toLowerCase() === name.toLowerCase()) {
-        duplicateField = 'name';
+      if (existingClient.contactPerson.toLowerCase() === contactPerson.toLowerCase()) {
+        duplicateField = 'client name';
       } else if (existingClient.email.toLowerCase() === email.toLowerCase()) {
         duplicateField = 'email';
       } else if (existingClient.phone === phone) {

@@ -9,6 +9,7 @@ import { formatDateDMY } from '../utils/formatDate';
 import { FaTimes, FaPlus, FaTrash, FaEye, FaPen } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
 import { type AppCurrency, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
+import { getUserRole } from '../utils/roleUtils';
 
 interface Invoice {
   _id: string;
@@ -17,6 +18,8 @@ interface Invoice {
   clientId: any;
   amount: number;
   totalAmount: number;
+  amountPaid?: number;
+  remainingAmount?: number;
   currency?: string;
   status: string;
   dueDate: string;
@@ -43,6 +46,7 @@ interface InvoiceSubmitPayload {
   invoiceNumber: string;
   invoiceType: string;
   amount: string;
+  amountPaid: string;
   currency: string;
   taxApplied: boolean;
   taxRate: number;
@@ -82,6 +86,7 @@ const parseLineItemsFromDescription = (description?: string): LineItem[] => {
 const Invoices: React.FC = () => {
   const navigate = useNavigate();
   const companyConfig = getCurrencyConfig();
+  const isAdmin = getUserRole() === 'admin';
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -102,6 +107,7 @@ const Invoices: React.FC = () => {
     invoiceNumber: '',
     invoiceType: 'standard',
     amount: '',
+    amountPaid: '',
     currency: companyConfig.defaultCurrency,
     taxApplied: true,
     taxRate: companyConfig.taxRate,
@@ -151,6 +157,9 @@ const Invoices: React.FC = () => {
   const subtotal = lineItems.reduce((sum, item) => sum + item.qty * item.rate, 0);
   const taxAmount = formData.taxApplied ? subtotal * (formData.taxRate / 100) : 0;
   const total = subtotal + taxAmount;
+  const paidNow = Math.max(0, Number(formData.amountPaid || 0));
+  const paidNowCapped = Math.min(paidNow, total);
+  const remainingDue = Math.max(total - paidNowCapped, 0);
 
   // Sync total back to formData amount when line items change
   useEffect(() => {
@@ -162,6 +171,13 @@ const Invoices: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (paidNow > total) {
+      const message = 'Amount paid cannot be greater than total invoice amount.';
+      setError(message);
+      notifyError(message);
+      return;
+    }
 
     const resolvedType = formData.invoiceType === 'other'
       ? (customInvoiceType.trim().slice(0, 10) || 'standard')
@@ -177,6 +193,7 @@ const Invoices: React.FC = () => {
         ...formData,
         invoiceType: resolvedType,
         amount: subtotal.toString(),
+        amountPaid: Math.min(Math.max(Number(formData.amountPaid || 0), 0), total).toString(),
         description: itemDescriptions || formData.description,
         items: lineItems
           .filter((item) => item.product.trim())
@@ -226,6 +243,7 @@ const Invoices: React.FC = () => {
         notifySuccess('Invoice saved as draft.');
       }
 
+      window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoices();
       closeModal();
     };
@@ -273,6 +291,7 @@ const Invoices: React.FC = () => {
         notifyWarning('Invoice saved, but it was not marked as sent.');
       }
 
+      window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoices();
       setShowSendPreview(false);
       setPreviewData(null);
@@ -309,6 +328,7 @@ const Invoices: React.FC = () => {
         invoiceNumber: invoice.invoiceNumber,
         invoiceType: isKnown ? rawType : 'other',
         amount: invoice.amount.toString(),
+        amountPaid: String((invoice as any).amountPaid ?? 0),
         currency: (String(invoice.currency || getCurrencyConfig().defaultCurrency).toUpperCase() === 'USD' ? 'USD' : 'RWF') as AppCurrency,
         taxApplied: (invoice as any).taxApplied ?? true,
         taxRate: (invoice as any).taxRate ?? getCurrencyConfig().taxRate,
@@ -357,6 +377,7 @@ const Invoices: React.FC = () => {
       invoiceNumber: '',
       invoiceType: 'standard',
       amount: '',
+      amountPaid: '',
       currency: cfg.defaultCurrency,
       taxApplied: true,
       taxRate: cfg.taxRate,
@@ -482,14 +503,16 @@ const Invoices: React.FC = () => {
                         >
                           <FaPen className="text-sm" />
                         </button>
-                        <button
-                          onClick={() => setDeleteConfirm({ show: true, invoiceId: invoice._id })}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                          title="Delete"
-                          aria-label="Delete invoice"
-                        >
-                          <FaTrash className="text-sm" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setDeleteConfirm({ show: true, invoiceId: invoice._id })}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                            title="Delete"
+                            aria-label="Delete invoice"
+                          >
+                            <FaTrash className="text-sm" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -564,7 +587,7 @@ const Invoices: React.FC = () => {
                   <div className="text-left sm:text-right bg-gray-50 rounded-lg p-4 w-full sm:w-auto">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Balance Due</p>
                     <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {new Intl.NumberFormat('en-RW', { minimumFractionDigits: 0 }).format(total)} <span className="text-lg font-normal text-gray-500">{formData.currency}</span>
+                      {new Intl.NumberFormat('en-RW', { minimumFractionDigits: 0 }).format(remainingDue)} <span className="text-lg font-normal text-gray-500">{formData.currency}</span>
                     </p>
                   </div>
                 </div>
@@ -795,6 +818,29 @@ const Invoices: React.FC = () => {
                       <span className="text-gray-900 font-bold">Total</span>
                       <span className="text-gray-900 font-bold text-lg">{new Intl.NumberFormat('en-RW').format(total)} {formData.currency}</span>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount to be Paid</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.amountPaid}
+                        onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Amount Paid</span>
+                      <span className="text-gray-900 font-medium">{new Intl.NumberFormat('en-RW').format(paidNowCapped)} {formData.currency}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Remaining Due</span>
+                      <span className="text-amber-700 font-semibold">{new Intl.NumberFormat('en-RW').format(remainingDue)} {formData.currency}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Remaining balance will be due on the selected due date.
+                    </p>
                   </div>
                 </div>
 
@@ -853,6 +899,8 @@ const Invoices: React.FC = () => {
         const previewSubtotal = previewData.items.reduce((s, i) => s + i.amount, 0) || Number(previewData.amount) || 0;
         const previewTax = previewData.taxApplied ? previewSubtotal * ((previewData.taxRate || 0) / 100) : 0;
         const previewTotal = previewSubtotal + previewTax;
+        const previewAmountPaid = Math.min(Math.max(Number(previewData.amountPaid || 0), 0), previewTotal);
+        const previewRemaining = Math.max(previewTotal - previewAmountPaid, 0);
         const numFmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
         const displayItems = previewData.items.length > 0 ? previewData.items : [{
           name: 'Invoice item', description: previewData.description || '', quantity: 1,
@@ -949,6 +997,14 @@ const Invoices: React.FC = () => {
                         <span>Total ({previewData.currency})</span>
                         <span>{numFmt(previewTotal)}</span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Amount Paid</span>
+                        <span className="text-gray-900 font-medium">{numFmt(previewAmountPaid)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Remaining Due</span>
+                        <span className="text-gray-900 font-medium">{numFmt(previewRemaining)}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -990,7 +1046,7 @@ const Invoices: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
-        isOpen={deleteConfirm.show}
+        isOpen={isAdmin && deleteConfirm.show}
         title="Delete Invoice"
         message="Are you sure you want to delete this invoice? This action cannot be undone."
         confirmText="Delete"

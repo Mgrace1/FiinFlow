@@ -8,6 +8,7 @@ import Badge from '../components/common/Badge';
 import { FaTimes, FaTrash, FaMoneyCheckAlt } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { formatCompanyMoney } from '../utils/currency';
+import { getUserRole } from '../utils/roleUtils';
 
 interface Expense {
   _id: string;
@@ -32,6 +33,7 @@ interface Client {
 }
 
 const Expenses: React.FC = () =>{
+  const isAdmin = getUserRole() === 'admin';
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,6 +132,7 @@ const Expenses: React.FC = () =>{
 
     try {
       await apiClient.post('/expenses', payload);
+      window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchExpenses();
       closeModal();
       notifySuccess('Expense created successfully');
@@ -302,17 +305,19 @@ const Expenses: React.FC = () =>{
                     <FaMoneyCheckAlt className="text-sm" />
                   </button>
                 )}
-                <button
-                  onClick={(e) =>{
-                    e.stopPropagation();
-                    setDeleteConfirm({ show: true, expenseId: expense._id });
-                  }}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                  title="Delete"
-                  aria-label="Delete expense"
-                >
-                  <FaTrash className="text-sm" />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={(e) =>{
+                      e.stopPropagation();
+                      setDeleteConfirm({ show: true, expenseId: expense._id });
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                    title="Delete"
+                    aria-label="Delete expense"
+                  >
+                    <FaTrash className="text-sm" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -377,17 +382,19 @@ const Expenses: React.FC = () =>{
                         <FaMoneyCheckAlt className="text-sm" />
                       </button>
                     )}
-                    <button
-                      onClick={(e) =>{
-                        e.stopPropagation();
-                        setDeleteConfirm({ show: true, expenseId: expense._id });
-                      }}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                      title="Delete"
-                      aria-label="Delete expense"
-                    >
-                      <FaTrash className="text-sm" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={(e) =>{
+                          e.stopPropagation();
+                          setDeleteConfirm({ show: true, expenseId: expense._id });
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                        title="Delete"
+                        aria-label="Delete expense"
+                      >
+                        <FaTrash className="text-sm" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -619,7 +626,7 @@ const Expenses: React.FC = () =>{
 
       {/* Delete Confirmation Modal */}
     <ConfirmModal
-        isOpen={deleteConfirm.show}
+        isOpen={isAdmin && deleteConfirm.show}
         title="Delete Expense"
         message="Are you sure you want to delete this expense? This action cannot be undone."
         confirmText="Delete"

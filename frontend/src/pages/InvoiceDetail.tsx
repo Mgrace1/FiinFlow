@@ -193,6 +193,7 @@ const InvoiceDetail: React.FC = () =>{
         status: 'paid',
         ...paymentForm,
       });
+      window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoice();
       setShowPaymentModal(false);
       setPaymentConfirm(false);
@@ -205,6 +206,7 @@ const InvoiceDetail: React.FC = () =>{
   const handleStatusChange = async (newStatus: string) =>{
     try {
       await apiClient.patch(`/invoices/${invoiceId}/status`, { status: newStatus });
+      window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoice();
       setStatusConfirm({ show: false, status: null });
       notifySuccess(`Invoice marked as ${newStatus}`);
@@ -311,11 +313,11 @@ const handleSaveEdit = async () =>{
   const invoiceTitleLabel = invoiceTypeLabels[typeKey] || String(invoice.invoiceType || 'INVOICE').toUpperCase();
 
   return (
-    <div className="max-w-5xl mx-auto space-y-3">
+    <div className="w-full max-w-none space-y-4">
       {/* Compact header bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={() => navigate(-1)} className="text-sm text-gray-500 hover:text-gray-700 shrink-0">← Back</button>
+          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 shrink-0">← Back</button>
           <div className="h-4 w-px bg-gray-300 shrink-0" />
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <h1 className="text-lg font-bold text-gray-900 truncate">{invoice.invoiceNumber}</h1>
@@ -325,26 +327,26 @@ const handleSaveEdit = async () =>{
             <Badge variant={getStatusBadgeVariant(effectiveStatus)}>{effectiveStatus.toUpperCase()}</Badge>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white/90 p-1.5 shadow-sm shrink-0">
           {!editMode && (
-            <button onClick={() => setShowPDFConfirm(true)} className="btn btn-secondary text-sm px-3 py-1.5">Download PDF</button>
+            <button onClick={() => setShowPDFConfirm(true)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Download PDF</button>
           )}
           {!editMode && invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-            <button onClick={() => setEditMode(true)} className="btn btn-secondary text-sm px-3 py-1.5">Edit</button>
+            <button onClick={() => setEditMode(true)} className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">Edit</button>
           )}
           {editMode && (
             <>
-              <button onClick={() => setEditMode(false)} className="btn btn-secondary text-sm px-3 py-1.5">Cancel</button>
-              <button onClick={handleSaveEdit} className="btn btn-primary text-sm px-3 py-1.5">Save</button>
+              <button onClick={() => setEditMode(false)} className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
+              <button onClick={handleSaveEdit} className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">Save</button>
             </>
           )}
         </div>
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-6">
         {/* Left: Invoice document */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-8 xl:col-span-9 space-y-4">
           {editMode ? (
             <div className="bg-white rounded-lg shadow p-5 space-y-4">
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider border-b pb-2">Edit Invoice</h2>
@@ -481,7 +483,7 @@ const handleSaveEdit = async () =>{
         </div>
 
         {/* Right: Actions + Timeline */}
-        <div className="space-y-4">
+        <div className="lg:col-span-4 xl:col-span-3 space-y-4">
           {/* Status & Actions */}
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Invoice Status</h3>

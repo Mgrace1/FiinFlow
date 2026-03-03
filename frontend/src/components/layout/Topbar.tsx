@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ConfirmModal from '../common/ConfirmModal';
 import { Menu, Search, Bell, User, LogOut, ChevronDown, Loader2 } from 'lucide-react';
 import { apiClient } from '../../api/client';
 
-interface PendingExpense {
+interface AppNotification {
   _id: string;
-  supplier: string;
-  remainingAmount: number;
-  currency: string;
-  dueDate: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  relatedInvoiceId?: { _id: string; invoiceNumber?: string; totalAmount?: number } | string;
 }
 
 interface TopbarProps {
@@ -29,26 +31,53 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const [isSearchDebouncing, setIsSearchDebouncing] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [pendingExpenses, setPendingExpenses] = useState<PendingExpense[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchPendingExpenses = async () => {
-      try {
-        const response = await apiClient.get('/expenses');
-        if (response.data.success) {
-          const withBalance = (response.data.data as PendingExpense[]).filter(
-            (e) => e.remainingAmount > 0
-          );
-          setPendingExpenses(withBalance);
-        }
-      } catch {
-        // silently ignore — notifications are non-critical
+  const fetchNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+    try {
+      const response = await apiClient.get('/notifications', {
+        params: { unreadOnly: 'true' },
+      });
+
+      if (response.data.success) {
+        const unread = Array.isArray(response.data.data)
+          ? (response.data.data as AppNotification[])
+          : [];
+        setNotifications(unread.filter((n) => !n.isRead));
       }
-    };
-    fetchPendingExpenses();
+    } catch {
+      // silently ignore - notifications are non-critical
+    } finally {
+      setNotificationsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const timer = window.setInterval(fetchNotifications, 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (showNotifications) fetchNotifications();
+  }, [showNotifications, fetchNotifications]);
+
+  useEffect(() => {
+    const handleFocus = () => fetchNotifications();
+    const handleRefreshEvent = () => fetchNotifications();
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('finflow:notifications:refresh', handleRefreshEvent as EventListener);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('finflow:notifications:refresh', handleRefreshEvent as EventListener);
+    };
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('finflow_user');
@@ -73,7 +102,6 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
     }
   }, []);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -106,6 +134,9 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
     if (location.pathname === '/search') {
       const q = new URLSearchParams(location.search).get('q') || '';
       setSearchQuery(q);
+    } else {
+      setSearchQuery('');
+      setIsSearchDebouncing(false);
     }
   }, [location.pathname, location.search]);
 
@@ -136,14 +167,52 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
     return () => window.clearTimeout(timer);
   }, [searchQuery, navigate, location.pathname, location.search]);
 
+  const handleNotificationClick = async (notification: AppNotification) => {
+    try {
+      await apiClient.patch(`/notifications/${notification._id}/read`);
+    } catch {
+      // keep navigation even if mark-as-read fails
+    } finally {
+      setNotifications((prev) => prev.filter((n) => n._id !== notification._id));
+    }
+
+    setShowNotifications(false);
+
+    const relatedInvoiceId =
+      typeof notification.relatedInvoiceId === 'string'
+        ? notification.relatedInvoiceId
+        : notification.relatedInvoiceId?._id;
+
+    if (relatedInvoiceId) {
+      navigate(`/invoices/${relatedInvoiceId}`);
+      return;
+    }
+
+    if (notification.type.includes('invoice')) {
+      navigate('/invoices');
+      return;
+    }
+
+    if (notification.type.includes('expense')) {
+      navigate('/expenses');
+      return;
+    }
+
+    if (notification.type === 'budget_exceeded') {
+      navigate('/reports');
+      return;
+    }
+
+    navigate('/dashboard');
+  };
+
   const userInitials = userName
-    ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    ? userName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
     : 'U';
 
   return (
     <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 shadow-sm">
       <div className="flex items-center justify-between gap-4">
-        {/* Left: Hamburger + Title */}
         <div className="flex items-center gap-3">
           <button
             className="md:hidden text-gray-600 hover:text-gray-900"
@@ -161,9 +230,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
           </div>
         </div>
 
-        {/* Right: Notifications + User */}
         <div className="flex items-center gap-2">
-          {/* Search Bar (moved near notifications) */}
           <form onSubmit={handleSearch} className="hidden sm:block w-56 md:w-64 lg:w-72">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -174,22 +241,21 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
+                placeholder="Search pages, features, or records..."
                 className="w-full pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white placeholder-gray-400"
               />
             </div>
           </form>
 
-          {/* Notification Bell */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Bell size={20} />
-              {pendingExpenses.length > 0 && (
+              {notifications.length > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {pendingExpenses.length > 9 ? '9+' : pendingExpenses.length}
+                  {notifications.length > 9 ? '9+' : notifications.length}
                 </span>
               )}
             </button>
@@ -198,41 +264,40 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
               <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
-                  {pendingExpenses.length > 0 && (
+                  {notifications.length > 0 && (
                     <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">
-                      {pendingExpenses.length} unpaid
+                      {notifications.length} unread
                     </span>
                   )}
                 </div>
 
-                {pendingExpenses.length === 0 ? (
+                {notificationsLoading ? (
+                  <div className="p-6 text-center">
+                    <p className="text-sm text-gray-500">Loading notifications...</p>
+                  </div>
+                ) : notifications.length === 0 ? (
                   <div className="p-6 text-center">
                     <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No new notifications</p>
-                    <p className="text-xs text-gray-400 mt-1">You'll see reminders and alerts here</p>
+                    <p className="text-sm text-gray-500">No unread notifications</p>
+                    <p className="text-xs text-gray-400 mt-1">You're all caught up</p>
                   </div>
                 ) : (
                   <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
-                    {pendingExpenses.map((expense) => (
+                    {notifications.map((notification) => (
                       <div
-                        key={expense._id}
+                        key={notification._id}
                         className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
-                        onClick={() => { navigate('/expenses'); setShowNotifications(false); }}
+                        onClick={() => handleNotificationClick(notification)}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {expense.supplier}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              Due: {new Date(expense.dueDate).toLocaleDateString('en-GB')}
+                            <p className="text-sm font-medium text-gray-900 truncate">{notification.title}</p>
+                            <p className="text-xs text-gray-600 mt-0.5">{notification.message}</p>
+                            <p className="text-[11px] text-gray-400 mt-1">
+                              {new Date(notification.createdAt).toLocaleString('en-GB')}
                             </p>
                           </div>
-                          <span className="text-sm font-bold text-red-600 whitespace-nowrap">
-                            {expense.remainingAmount.toLocaleString()} {expense.currency}
-                          </span>
                         </div>
-                        <p className="text-xs text-orange-600 mt-1">Balance remaining</p>
                       </div>
                     ))}
                   </div>
@@ -241,7 +306,6 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
             )}
           </div>
 
-          {/* User Dropdown */}
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}

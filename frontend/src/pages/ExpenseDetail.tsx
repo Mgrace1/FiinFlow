@@ -138,7 +138,7 @@ const ExpenseDetail: React.FC = () =>{
   }
 
   const canEdit = userRole === 'admin' || userRole === 'finance_manager';
-  const canDelete = userRole === 'admin' || userRole === 'finance_manager';
+  const canDelete = userRole === 'admin';
 
   const getCategoryBadgeVariant = (category: string) =>{
     const variantMap: { [key: string]: 'transport' | 'office' | 'marketing' | 'utilities' | 'salaries' | 'other' } = {

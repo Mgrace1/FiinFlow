@@ -46,6 +46,7 @@ const Settings: React.FC = () =>{
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'company' | 'security' | 'branding' | 'workspaces'>('company');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [saveConfirm, setSaveConfirm] = useState(false);
   const [switchingWorkspaceId, setSwitchingWorkspaceId] = useState<string | null>(null);
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
@@ -70,6 +71,7 @@ const Settings: React.FC = () =>{
       const rawUser = localStorage.getItem('finflow_user');
       const parsedUser = rawUser ? JSON.parse(rawUser) : null;
       const email = String(parsedUser?.email || '').trim().toLowerCase();
+      setIsAdmin(String(parsedUser?.role || '').toLowerCase() === 'admin');
       if (email) {
         setCurrentUserEmail(email);
         setWorkspaceForm((prev) => ({ ...prev, email }));
@@ -78,6 +80,12 @@ const Settings: React.FC = () =>{
       // ignore malformed local user payload
     }
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin && (activeTab === 'branding' || activeTab === 'workspaces')) {
+      setActiveTab('company');
+    }
+  }, [isAdmin, activeTab]);
 
   const fetchCompany = async () =>{
     try {
@@ -213,26 +221,30 @@ const Settings: React.FC = () =>{
             >
               Security
           </button>
-          <button
-              onClick={() =>setActiveTab('branding')}
-              className={`px-6 py-4 text-sm font-medium ${
-                activeTab === 'branding'
-                  ? 'border-b-2 border-primary-500 text-primary-500'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Branding
-          </button>
-          <button
-              onClick={() =>setActiveTab('workspaces')}
-              className={`px-6 py-4 text-sm font-medium ${
-                activeTab === 'workspaces'
-                  ? 'border-b-2 border-primary-500 text-primary-500'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Workspaces
-          </button>
+          {isAdmin && (
+            <button
+                onClick={() =>setActiveTab('branding')}
+                className={`px-6 py-4 text-sm font-medium ${
+                  activeTab === 'branding'
+                    ? 'border-b-2 border-primary-500 text-primary-500'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Branding
+            </button>
+          )}
+          {isAdmin && (
+            <button
+                onClick={() =>setActiveTab('workspaces')}
+                className={`px-6 py-4 text-sm font-medium ${
+                  activeTab === 'workspaces'
+                    ? 'border-b-2 border-primary-500 text-primary-500'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Workspaces
+            </button>
+          )}
         </nav>
       </div>
 
@@ -326,10 +338,10 @@ const Settings: React.FC = () =>{
           {activeTab === 'security' && (
             <ChangePassword />
           )}
-          {activeTab === 'branding' && (
+          {isAdmin && activeTab === 'branding' && (
             <CompanySettings embedded />
           )}
-          {activeTab === 'workspaces' && (
+          {isAdmin && activeTab === 'workspaces' && (
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <div>

@@ -5,6 +5,7 @@ import EmptyState from '../components/common/EmptyState';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { Search, Plus, X, Calendar, Upload, TrendingUp, TrendingDown } from 'lucide-react';
 import { getErrorMessage, notifyError, notifyInfo, notifySuccess } from '../utils/toast';
+import { getUserRole } from '../utils/roleUtils';
 
 interface Transaction {
   _id: string;
@@ -17,6 +18,7 @@ interface Transaction {
 }
 
 const Transactions: React.FC = () =>{
+  const isAdmin = getUserRole() === 'admin';
 
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -255,15 +257,17 @@ const Transactions: React.FC = () =>{
                     </p>
                     <p className="text-sm text-gray-500">{formatDate(transaction.date)}</p>
                   </div>
-                  <button
-                      onClick={(e) =>{
-                        e.stopPropagation();
-                        setDeleteConfirm({ show: true, transactionId: transaction._id });
-                      }}
-                      className="text-red-500 hover:text-red-700 px-2"
-                    >
-                      Delete
-                  </button>
+                  {isAdmin && (
+                    <button
+                        onClick={(e) =>{
+                          e.stopPropagation();
+                          setDeleteConfirm({ show: true, transactionId: transaction._id });
+                        }}
+                        className="text-red-500 hover:text-red-700 px-2"
+                      >
+                        Delete
+                    </button>
+                  )}
                 </div>
               </div>
               ))}
@@ -410,7 +414,7 @@ const Transactions: React.FC = () =>{
 
       {/* Delete Confirmation Modal */}
     <ConfirmModal
-        isOpen={deleteConfirm.show}
+        isOpen={isAdmin && deleteConfirm.show}
         title="Delete Transaction"
         message="Are you sure you want to delete this transaction? This action cannot be undone."
         confirmText="Delete"

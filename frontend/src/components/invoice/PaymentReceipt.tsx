@@ -27,7 +27,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
   onUpload,
 }) => {
   const userRole = getUserRole();
-  const canDelete = userRole === 'admin' || userRole === 'finance_manager';
+  const canDelete = userRole === 'admin';
 
   const paymentReceipts = receipts.filter(r => r.type === 'payment_receipt');
 

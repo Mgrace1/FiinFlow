@@ -5,6 +5,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import ErrorState from '../components/common/ErrorState';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
+import { getUserRole } from '../utils/roleUtils';
 
 interface Company {
   _id: string;
@@ -27,6 +28,7 @@ interface CompanySettingsProps {
 }
 
 const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =>{
+  const isAdmin = getUserRole() === 'admin';
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -135,6 +137,7 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
   };
 
   const handleRemoveLogo = async () =>{
+    if (!isAdmin) return;
     try {
       const response = await apiClient.put('/companies', {
         ...company,
@@ -259,13 +262,13 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
               </button>
               )}
 
-              {logoPreview && !logoFile && (
-              <button
-                  onClick={() =>setShowRemoveLogoConfirm(true)}
-                  className="btn btn-danger w-full"
-                >
-                  Remove Logo
-              </button>
+              {isAdmin && logoPreview && !logoFile && (
+                <button
+                    onClick={() =>setShowRemoveLogoConfirm(true)}
+                    className="btn btn-danger w-full"
+                  >
+                    Remove Logo
+                </button>
               )}
           </div>
 
@@ -503,7 +506,7 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
       </div>
 
       <ConfirmModal
-          isOpen={showRemoveLogoConfirm}
+          isOpen={isAdmin && showRemoveLogoConfirm}
           title="Remove Company Logo"
           message="Are you sure you want to remove your company logo? This action cannot be undone."
           confirmText="Remove"

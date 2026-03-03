@@ -25,6 +25,10 @@ const ClientSchema: Schema = new Schema(
       type: String,
       required: [true, 'Phone is required'],
       trim: true,
+      validate: {
+        validator: (value: string) => (value || '').replace(/\D/g, '').length >= 10,
+        message: 'Phone number must contain at least 10 digits',
+      },
     },
     email: {
       type: String,

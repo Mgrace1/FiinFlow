@@ -6,6 +6,7 @@ import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { FaEye, FaPen, FaTrash } from 'react-icons/fa';
+import { getUserRole } from '../utils/roleUtils';
 
 interface Client {
   _id: string;
@@ -18,6 +19,7 @@ interface Client {
 
 const Clients: React.FC = () =>{
   const navigate = useNavigate();
+  const isAdmin = getUserRole() === 'admin';
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -55,6 +57,14 @@ const Clients: React.FC = () =>{
   const handleSubmit = async (e: React.FormEvent) =>{
     e.preventDefault();
     setError('');
+
+    const phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      const message = 'Phone number must contain at least 10 digits.';
+      setError(message);
+      notifyError(message);
+      return;
+    }
 
     try {
       if (editingClient) {
@@ -172,14 +182,16 @@ const Clients: React.FC = () =>{
                 >
                   <FaPen className="text-sm" />
                 </button>
-                <button
-                  onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                  title="Delete"
-                  aria-label="Delete client"
-                >
-                  <FaTrash className="text-sm" />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                    title="Delete"
+                    aria-label="Delete client"
+                  >
+                    <FaTrash className="text-sm" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -239,14 +251,16 @@ const Clients: React.FC = () =>{
                     >
                       <FaPen className="text-sm" />
                     </button>
-                    <button
-                      onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                      title="Delete"
-                      aria-label="Delete client"
-                    >
-                      <FaTrash className="text-sm" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                        title="Delete"
+                        aria-label="Delete client"
+                      >
+                        <FaTrash className="text-sm" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -313,8 +327,10 @@ const Clients: React.FC = () =>{
                   type="tel"
                   value={formData.phone}
                   onChange={(e) =>setFormData({ ...formData, phone: e.target.value })}
+                  minLength={10}
                   required
                   className="input"
+                  title="Phone number must contain at least 10 digits"
                 />
             </div>
             <div>
@@ -348,7 +364,7 @@ const Clients: React.FC = () =>{
 
       {/* Delete Confirmation Modal */}
     <ConfirmModal
-        isOpen={deleteConfirm.show}
+        isOpen={isAdmin && deleteConfirm.show}
         title="Delete Client"
         message="Are you sure you want to delete this client? This action cannot be undone."
         confirmText="Delete"

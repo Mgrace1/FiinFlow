@@ -1,6 +1,12 @@
 import { Response } from 'express';
-import { Expense } from '../models';
+import { Expense, Notification } from '../models';
 import { AuthRequest } from '../middleware/auth';
+
+const isSameCalendarDate = (a: Date, b: Date): boolean => (
+  a.getFullYear() === b.getFullYear()
+  && a.getMonth() === b.getMonth()
+  && a.getDate() === b.getDate()
+);
 
 export const createExpense = async (req: AuthRequest, res: Response) =>{
   try {
@@ -35,6 +41,17 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
 
     const expenseObj = expense.toObject() as any;
     expenseObj.remainingAmount = expenseObj.amount - expenseObj.amountPaid;
+
+    const dueAt = new Date(dueDate);
+    const today = new Date();
+    if (expenseObj.remainingAmount > 0 && isSameCalendarDate(dueAt, today)) {
+      await Notification.create({
+        companyId: req.companyId,
+        type: 'expense_due_today',
+        title: 'Expense Payment Due Today',
+        message: `Expense for ${supplier} is due today with ${Number(expenseObj.remainingAmount || 0).toLocaleString()} ${(currency || 'RWF')} remaining.`,
+      });
+    }
 
     res.status(201).json({
       success: true,

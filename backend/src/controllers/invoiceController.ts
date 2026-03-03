@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { Company, Invoice, File as FileModel } from '../models';
+import { Company, Invoice, File as FileModel, Notification } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import fs from 'fs';
 import { sendInvoiceSentEmail } from '../utils/emailService';
@@ -87,6 +87,25 @@ const normalizeInvoiceType = (invoiceType?: string) => {
   }
   // Allow custom type (user-defined, max 20 chars)
   return normalized.slice(0, 20) || 'standard';
+};
+
+const toSafeNumber = (value: any, fallback = 0): number => {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+};
+
+const isSameCalendarDate = (a: Date, b: Date): boolean => (
+  a.getFullYear() === b.getFullYear()
+  && a.getMonth() === b.getMonth()
+  && a.getDate() === b.getDate()
+);
+
+const enrichInvoiceAmounts = (invoice: any) => {
+  const raw = typeof invoice?.toObject === 'function' ? invoice.toObject() : invoice;
+  const totalAmount = Math.max(0, toSafeNumber(raw?.totalAmount, toSafeNumber(raw?.amount, 0)));
+  const amountPaid = Math.max(0, Math.min(totalAmount, toSafeNumber(raw?.amountPaid, 0)));
+  const remainingAmount = Math.max(0, totalAmount - amountPaid);
+  return { ...raw, totalAmount, amountPaid, remainingAmount };
 };
 
 const sendInvoiceSentNotification = async (invoice: any, companyId: any, mode: 'new' | 'updated' = 'new') => {
@@ -216,6 +235,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       notes,
       description,
       items,
+      amountPaid,
       proformaFileId,
       invoiceType,
       status,
@@ -228,12 +248,28 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       });
     }
 
-    const initialStatus = status === 'sent' ? 'sent' : 'draft';
+    let initialStatus = status === 'sent' ? 'sent' : 'draft';
     const company = await Company.findById(req.companyId).select('taxRate defaultCurrency').lean();
     const safeTaxRate = Number.isFinite(Number(taxRate))
       ? Number(taxRate)
       : Number(company?.taxRate ?? 18);
     const safeCurrency = String(currency || company?.defaultCurrency || 'RWF').toUpperCase() === 'USD' ? 'USD' : 'RWF';
+    const safeAmount = Math.max(0, toSafeNumber(amount, 0));
+    const computedTotalAmount = Boolean(taxApplied) && safeTaxRate > 0
+      ? safeAmount + (safeAmount * safeTaxRate / 100)
+      : safeAmount;
+    const safeAmountPaid = Math.max(0, toSafeNumber(amountPaid, 0));
+
+    if (safeAmountPaid > computedTotalAmount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amount paid cannot be greater than total amount',
+      });
+    }
+
+    if (computedTotalAmount > 0 && safeAmountPaid >= computedTotalAmount) {
+      initialStatus = 'paid';
+    }
 
     const normalizedItems = normalizeInvoiceItems(items);
 
@@ -242,18 +278,20 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       clientId,
       invoiceNumber,
       invoiceType: normalizeInvoiceType(invoiceType),
-      amount,
+      amount: safeAmount,
       items: normalizedItems,
       currency: safeCurrency,
       taxApplied: Boolean(taxApplied),
       taxRate: safeTaxRate >= 0 ? safeTaxRate : 0,
-      totalAmount: amount,
+      totalAmount: computedTotalAmount,
+      amountPaid: safeAmountPaid,
       dueDate,
       notes,
       description,
       proformaFileId,
       status: initialStatus,
       sentAt: initialStatus === 'sent' ? new Date() : undefined,
+      paidAt: initialStatus === 'paid' ? new Date() : undefined,
       createdBy: req.userId,
     });
 
@@ -265,10 +303,23 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       emailNotification = await sendInvoiceSentNotification(invoice, req.companyId);
     }
 
+    const remainingAmount = Math.max(0, computedTotalAmount - safeAmountPaid);
+    const dueAt = new Date(dueDate);
+    const today = new Date();
+    if (remainingAmount > 0 && isSameCalendarDate(dueAt, today)) {
+      await Notification.create({
+        companyId: req.companyId,
+        type: 'invoice_due_today',
+        title: 'Invoice Payment Due Today',
+        message: `Invoice ${invoiceNumber} is due today with ${remainingAmount.toLocaleString()} ${safeCurrency} remaining.`,
+        relatedInvoiceId: invoice._id,
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: 'Invoice created successfully',
-      data: invoice,
+      data: enrichInvoiceAmounts(invoice),
       emailNotification,
     });
   } catch (error: any) {
@@ -298,7 +349,7 @@ export const getInvoices = async (req: AuthRequest, res: Response) =>{
 
     res.json({
       success: true,
-      data: invoices,
+      data: invoices.map(enrichInvoiceAmounts),
     });
   } catch (error: any) {
     console.error('Get invoices error:', error);
@@ -330,7 +381,7 @@ export const getInvoice = async (req: AuthRequest, res: Response) =>{
 
     res.json({
       success: true,
-      data: invoice,
+      data: enrichInvoiceAmounts(invoice),
     });
   } catch (error: any) {
     console.error('Get invoice error:', error);
@@ -350,17 +401,10 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     if (updates.invoiceType !== undefined) {
       updates.invoiceType = normalizeInvoiceType(updates.invoiceType);
     }
-
-    const invoice = await Invoice.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        companyId: req.companyId,
-      },
-      updates,
-      { new: true, runValidators: true }
-    )
-      .populate('clientId')
-      .populate('createdBy');
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      companyId: req.companyId,
+    });
 
     if (!invoice) {
       return res.status(404).json({
@@ -369,12 +413,46 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
       });
     }
 
+    const nextAmount = updates.amount !== undefined ? Math.max(0, toSafeNumber(updates.amount, 0)) : Math.max(0, toSafeNumber(invoice.amount, 0));
+    const nextTaxApplied = updates.taxApplied !== undefined ? Boolean(updates.taxApplied) : Boolean(invoice.taxApplied);
+    const nextTaxRate = updates.taxRate !== undefined ? Math.max(0, toSafeNumber(updates.taxRate, 0)) : Math.max(0, toSafeNumber(invoice.taxRate, 0));
+    const nextTotalAmount = nextTaxApplied && nextTaxRate > 0
+      ? nextAmount + (nextAmount * nextTaxRate / 100)
+      : nextAmount;
+
+    const requestedAmountPaid = updates.amountPaid !== undefined
+      ? Math.max(0, toSafeNumber(updates.amountPaid, 0))
+      : Math.max(0, toSafeNumber(invoice.amountPaid, 0));
+
+    if (requestedAmountPaid > nextTotalAmount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amount paid cannot be greater than total amount',
+      });
+    }
+
+    updates.amount = nextAmount;
+    updates.taxApplied = nextTaxApplied;
+    updates.taxRate = nextTaxRate;
+    updates.totalAmount = nextTotalAmount;
+    updates.amountPaid = requestedAmountPaid;
+
+    if (nextTotalAmount > 0 && requestedAmountPaid >= nextTotalAmount) {
+      updates.status = 'paid';
+      updates.paidAt = invoice.paidAt || new Date();
+    }
+
+    invoice.set(updates);
+    await invoice.save();
+    await invoice.populate('clientId');
+    await invoice.populate('createdBy');
+
     const emailNotification = await sendInvoiceSentNotification(invoice, req.companyId, 'updated');
 
     res.json({
       success: true,
       message: 'Invoice updated successfully',
-      data: invoice,
+      data: enrichInvoiceAmounts(invoice),
       emailNotification,
     });
   } catch (error: any) {
@@ -431,6 +509,7 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
       }
 
       // Set payment details
+      invoice.amountPaid = Number(invoice.totalAmount || invoice.amount || 0);
       invoice.paidAt = new Date();
       invoice.paymentMethod = paymentMethod;
       invoice.paymentReference = paymentReference;
@@ -457,7 +536,7 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
     res.json({
       success: true,
       message: `Invoice marked as ${status}`,
-      data: invoice,
+      data: enrichInvoiceAmounts(invoice),
       emailNotification,
     });
   } catch (error: any) {
@@ -473,7 +552,7 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
   try {
     const { paymentDate, amountPaid, receiptFileId, paymentMethod, paymentReference, receivedBy } = req.body;
 
-    if (!paymentDate || !amountPaid) {
+    if (!paymentDate || amountPaid === undefined || amountPaid === null) {
       return res.status(400).json({
         success: false,
         error: 'Please provide payment date and amount paid',
@@ -504,22 +583,38 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
       });
     }
 
-    invoice.status = 'paid';
+    const safeAmountPaid = Math.max(0, toSafeNumber(amountPaid, 0));
+    const invoiceTotal = Math.max(0, toSafeNumber(invoice.totalAmount, toSafeNumber(invoice.amount, 0)));
+    if (safeAmountPaid > invoiceTotal) {
+      return res.status(400).json({
+        success: false,
+        error: 'Amount paid cannot be greater than total amount',
+      });
+    }
+
+    invoice.amountPaid = safeAmountPaid;
     invoice.paymentDate = paymentDate;
-    invoice.paidAt = new Date();
-    invoice.amountPaid = amountPaid;
     invoice.receiptFileId = receiptFileId;
     invoice.paymentMethod = paymentMethod;
     invoice.paymentReference = paymentReference;
     invoice.receivedBy = receivedBy;
+
+    if (safeAmountPaid >= invoiceTotal) {
+      invoice.status = 'paid';
+      invoice.paidAt = new Date();
+    } else {
+      const isPastDue = invoice.dueDate ? new Date(invoice.dueDate).getTime() < Date.now() : false;
+      invoice.status = isPastDue ? 'overdue' : 'sent';
+      invoice.paidAt = undefined;
+    }
 
     await invoice.save();
     await invoice.populate('clientId');
 
     res.json({
       success: true,
-      message: 'Invoice marked as paid',
-      data: invoice,
+      message: safeAmountPaid >= invoiceTotal ? 'Invoice marked as paid' : 'Partial payment recorded',
+      data: enrichInvoiceAmounts(invoice),
     });
   } catch (error: any) {
     console.error('Mark invoice as paid error:', error);

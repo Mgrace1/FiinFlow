@@ -8,6 +8,7 @@ import { formatDateDMY } from '../utils/formatDate';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { FaPen, FaTrash, FaPaperPlane } from 'react-icons/fa';
 import { strongPasswordErrorMessage, validateStrongPassword } from '../utils/password';
+import { getUserRole } from '../utils/roleUtils';
 
 interface TeamMember {
   _id: string;
@@ -22,6 +23,7 @@ interface TeamMember {
 }
 
 const TeamMembers: React.FC = () =>{
+  const isAdmin = getUserRole() === 'admin';
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -278,14 +280,16 @@ const TeamMembers: React.FC = () =>{
                   >
                     <FaPaperPlane className="text-sm" />
                 </button>
-                <button
-                    onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                    title="Cancel invite"
-                    aria-label="Cancel invite"
-                  >
-                    <FaTrash className="text-sm" />
-                </button>
+                {isAdmin && (
+                  <button
+                      onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                      title="Cancel invite"
+                      aria-label="Cancel invite"
+                    >
+                      <FaTrash className="text-sm" />
+                  </button>
+                )}
               </>
               ) : (
               <>
@@ -297,14 +301,16 @@ const TeamMembers: React.FC = () =>{
                   >
                     <FaPen className="text-sm" />
                 </button>
-                <button
-                    onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                    title="Remove"
-                    aria-label="Remove member"
-                  >
-                    <FaTrash className="text-sm" />
-                </button>
+                {isAdmin && (
+                  <button
+                      onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                      title="Remove"
+                      aria-label="Remove member"
+                    >
+                      <FaTrash className="text-sm" />
+                  </button>
+                )}
               </>
               )}
           </div>
@@ -370,14 +376,16 @@ const TeamMembers: React.FC = () =>{
                       >
                         <FaPaperPlane className="text-xs" />
                     </button>
-                    <button
-                        onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                        title="Cancel invite"
-                        aria-label="Cancel invite"
-                      >
-                        <FaTrash className="text-xs" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                          onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                          title="Cancel invite"
+                          aria-label="Cancel invite"
+                        >
+                          <FaTrash className="text-xs" />
+                      </button>
+                    )}
                   </>
                   ) : (
                   <>
@@ -389,14 +397,16 @@ const TeamMembers: React.FC = () =>{
                       >
                         <FaPen className="text-xs" />
                     </button>
-                    <button
-                        onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                        title="Remove"
-                        aria-label="Remove member"
-                      >
-                        <FaTrash className="text-xs" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                          onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                          title="Remove"
+                          aria-label="Remove member"
+                        >
+                          <FaTrash className="text-xs" />
+                      </button>
+                    )}
                   </>
                   )}
                 </div>
@@ -581,7 +591,7 @@ const TeamMembers: React.FC = () =>{
       )}
 
     <ConfirmModal
-        isOpen={deleteConfirm.show}
+        isOpen={isAdmin && deleteConfirm.show}
         title="Remove Team Member"
         message="Are you sure you want to remove this team member? They will lose access to this workspace."
         confirmText="Remove"

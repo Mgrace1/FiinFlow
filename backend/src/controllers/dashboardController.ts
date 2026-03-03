@@ -12,6 +12,12 @@ export const getDashboardData = async (req: AuthRequest, res: Response) =>{
     const outstandingInvoices = await Invoice.find({
       companyId: req.companyId,
       status: { $in: ['draft', 'sent', 'overdue'] },
+      $expr: {
+        $lt: [
+          { $ifNull: ['$amountPaid', 0] },
+          { $ifNull: ['$totalAmount', '$amount'] },
+        ],
+      },
     }).countDocuments();
 
     // Get recent uploads
@@ -116,13 +122,15 @@ export const getReports = async (req: AuthRequest, res: Response) =>{
     let totalPending = 0;
 
     invoices.forEach((inv: any) =>{
-      const converted = convert(inv.totalAmount, inv.currency);
-      if (inv.status === 'paid') {
-        totalPaid += converted;
-      } else {
-        totalPending += converted;
+      const convertedTotal = convert(inv.totalAmount, inv.currency);
+      const convertedPaid = Math.min(convert(inv.amountPaid || 0, inv.currency), convertedTotal);
+      const convertedRemaining = Math.max(convertedTotal - convertedPaid, 0);
+
+      totalPaid += convertedPaid;
+      if (inv.status !== 'cancelled') {
+        totalPending += convertedRemaining;
       }
-      totalRevenue += converted;
+      totalRevenue += convertedTotal;
     });
 
     let totalExpenses = 0;
@@ -182,10 +190,18 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) =>{
     const overdueInvoices = invoices.filter((inv) =>inv.status === 'overdue');
     const draftInvoices = invoices.filter((inv) =>inv.status === 'draft');
 
-    const totalRevenue = paidInvoices.reduce((sum, inv: any) =>sum + convert(inv.totalAmount, inv.currency), 0);
+    const totalRevenue = invoices.reduce((sum, inv: any) => {
+      const convertedTotal = convert(inv.totalAmount, inv.currency);
+      const convertedPaid = Math.min(convert(inv.amountPaid || 0, inv.currency), convertedTotal);
+      return sum + convertedPaid;
+    }, 0);
     const pendingAmount = invoices
       .filter((inv) =>inv.status === 'sent' || inv.status === 'overdue')
-      .reduce((sum, inv: any) =>sum + convert(inv.totalAmount, inv.currency), 0);
+      .reduce((sum, inv: any) => {
+        const convertedTotal = convert(inv.totalAmount, inv.currency);
+        const convertedPaid = Math.min(convert(inv.amountPaid || 0, inv.currency), convertedTotal);
+        return sum + Math.max(convertedTotal - convertedPaid, 0);
+      }, 0);
 
     // Get expenses
     const expenses = await Expense.find({ companyId });

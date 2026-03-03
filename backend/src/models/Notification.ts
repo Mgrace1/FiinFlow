@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 
 export type NotificationType =
   | 'user_signup'
+  | 'expense_due_today'
+  | 'invoice_due_today'
   | 'invoice_overdue'
   | 'invoice_paid'
   | 'invoice_sent'
@@ -33,7 +35,7 @@ const NotificationSchema: Schema = new Schema(
     },
     type: {
       type: String,
-      enum: ['user_signup', 'invoice_overdue', 'invoice_paid', 'invoice_sent', 'budget_exceeded'],
+      enum: ['user_signup', 'expense_due_today', 'invoice_due_today', 'invoice_overdue', 'invoice_paid', 'invoice_sent', 'budget_exceeded'],
       required: [true, 'Notification type is required'],
     },
     title: {
