@@ -39,15 +39,51 @@ interface WorkspaceFormData {
   exchangeRateUSD: number;
 }
 
+interface PaymentIngestionConnection {
+  _id: string;
+  channel: 'gmail' | 'sms_forward';
+  identifier: string;
+  displayName?: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+interface PaymentIngestionEvent {
+  _id: string;
+  source: 'gmail' | 'sms' | 'manual';
+  channelIdentifier?: string;
+  status: 'received' | 'processed' | 'ignored' | 'duplicate' | 'failed';
+  subject?: string;
+  messageText: string;
+  createdAt?: string;
+  parsed?: any;
+  match?: any;
+  errorMessage?: string;
+}
+
+interface IngestionFormData {
+  source: 'manual' | 'gmail' | 'sms';
+  directionHint: 'unknown' | 'incoming' | 'outgoing';
+  channelIdentifier: string;
+  subject: string;
+  messageText: string;
+  dryRun: boolean;
+}
+
 
 const Settings: React.FC = () =>{
   const { setAuth, companyId: activeCompanyId } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'company' | 'security' | 'branding' | 'workspaces'>('company');
+  const [activeTab, setActiveTab] = useState<'company' | 'security' | 'branding' | 'workspaces' | 'payments'>('company');
   const [isAdmin, setIsAdmin] = useState(false);
   const [saveConfirm, setSaveConfirm] = useState(false);
+  const [deleteWorkspaceConfirm, setDeleteWorkspaceConfirm] = useState<{ show: boolean; workspace: Workspace | null }>({
+    show: false,
+    workspace: null,
+  });
+  const [deletingWorkspaceId, setDeletingWorkspaceId] = useState<string | null>(null);
   const [switchingWorkspaceId, setSwitchingWorkspaceId] = useState<string | null>(null);
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
@@ -61,6 +97,26 @@ const Settings: React.FC = () =>{
     defaultCurrency: 'RWF',
     taxRate: 18,
     exchangeRateUSD: 1300,
+  });
+  const [connections, setConnections] = useState<PaymentIngestionConnection[]>([]);
+  const [events, setEvents] = useState<PaymentIngestionEvent[]>([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [creatingConnection, setCreatingConnection] = useState(false);
+  const [deletingConnectionId, setDeletingConnectionId] = useState<string | null>(null);
+  const [submittingAlert, setSubmittingAlert] = useState(false);
+  const [connectionForm, setConnectionForm] = useState({
+    channel: 'gmail' as 'gmail' | 'sms_forward',
+    identifier: '',
+    displayName: '',
+  });
+  const [ingestionForm, setIngestionForm] = useState<IngestionFormData>({
+    source: 'manual',
+    directionHint: 'unknown',
+    channelIdentifier: '',
+    subject: '',
+    messageText: '',
+    dryRun: true,
   });
 
   useEffect(() =>{
@@ -82,8 +138,15 @@ const Settings: React.FC = () =>{
   }, []);
 
   useEffect(() => {
-    if (!isAdmin && (activeTab === 'branding' || activeTab === 'workspaces')) {
+    if (!isAdmin && (activeTab === 'branding' || activeTab === 'workspaces' || activeTab === 'payments')) {
       setActiveTab('company');
+    }
+  }, [isAdmin, activeTab]);
+
+  useEffect(() => {
+    if (isAdmin && activeTab === 'payments') {
+      fetchIngestionConnections();
+      fetchIngestionEvents();
     }
   }, [isAdmin, activeTab]);
 
@@ -188,6 +251,138 @@ const Settings: React.FC = () =>{
     }
   };
 
+  const fetchIngestionConnections = async () => {
+    setConnectionsLoading(true);
+    try {
+      const response = await apiClient.get('/payment-ingestion/connections');
+      if (response.data?.success) {
+        setConnections(response.data.data || []);
+      }
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to load payment ingestion connections'));
+    } finally {
+      setConnectionsLoading(false);
+    }
+  };
+
+  const fetchIngestionEvents = async () => {
+    setEventsLoading(true);
+    try {
+      const response = await apiClient.get('/payment-ingestion/events?limit=20');
+      if (response.data?.success) {
+        setEvents(response.data.data || []);
+      }
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to load ingestion events'));
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  const askDeleteWorkspace = (workspace: Workspace) => {
+    if (String(workspace.companyId) === String(activeCompanyId)) {
+      notifyError('You cannot delete the current active workspace.');
+      return;
+    }
+    setDeleteWorkspaceConfirm({ show: true, workspace });
+  };
+
+  const confirmDeleteWorkspace = async () => {
+    const workspace = deleteWorkspaceConfirm.workspace;
+    if (!workspace) return;
+    if (String(workspace.companyId) === String(activeCompanyId)) {
+      notifyError('You cannot delete the current active workspace.');
+      setDeleteWorkspaceConfirm({ show: false, workspace: null });
+      return;
+    }
+
+    setDeletingWorkspaceId(workspace.companyId);
+    try {
+      await apiClient.delete(`/companies/${workspace.companyId}`);
+      notifySuccess(`Workspace "${workspace.companyName}" deleted successfully`);
+      setDeleteWorkspaceConfirm({ show: false, workspace: null });
+      fetchWorkspaces();
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to delete workspace'));
+    } finally {
+      setDeletingWorkspaceId(null);
+    }
+  };
+
+  const handleCreateConnection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!connectionForm.identifier.trim()) {
+      notifyError('Identifier is required');
+      return;
+    }
+
+    setCreatingConnection(true);
+    try {
+      await apiClient.post('/payment-ingestion/connections', {
+        channel: connectionForm.channel,
+        identifier: connectionForm.identifier.trim(),
+        displayName: connectionForm.displayName.trim() || undefined,
+      });
+      notifySuccess('Payment ingestion connection added');
+      setConnectionForm({ channel: 'gmail', identifier: '', displayName: '' });
+      fetchIngestionConnections();
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to create payment ingestion connection'));
+    } finally {
+      setCreatingConnection(false);
+    }
+  };
+
+  const handleDeleteConnection = async (connectionId: string) => {
+    setDeletingConnectionId(connectionId);
+    try {
+      await apiClient.delete(`/payment-ingestion/connections/${connectionId}`);
+      notifySuccess('Connection deleted');
+      fetchIngestionConnections();
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to delete connection'));
+    } finally {
+      setDeletingConnectionId(null);
+    }
+  };
+
+  const handleSubmitIngestionAlert = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ingestionForm.messageText.trim()) {
+      notifyError('Message text is required');
+      return;
+    }
+
+    setSubmittingAlert(true);
+    try {
+      const response = await apiClient.post('/payment-ingestion/alerts', {
+        source: ingestionForm.source,
+        directionHint: ingestionForm.directionHint,
+        channelIdentifier: ingestionForm.channelIdentifier.trim() || undefined,
+        subject: ingestionForm.subject.trim() || undefined,
+        messageText: ingestionForm.messageText.trim(),
+        dryRun: ingestionForm.dryRun,
+      });
+
+      const status = String(response.data?.data?.status || '').toLowerCase();
+      if (status === 'processed') {
+        notifySuccess('Alert processed and payment applied');
+      } else if (status === 'ignored') {
+        notifyError('Alert parsed but no matching invoice/expense found');
+      } else if (status === 'duplicate') {
+        notifyError('Duplicate alert ignored');
+      } else {
+        notifySuccess('Alert ingested');
+      }
+
+      fetchIngestionEvents();
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to ingest payment alert'));
+    } finally {
+      setSubmittingAlert(false);
+    }
+  };
+
 
   if (loading) return <div>Loading...</div>;
 
@@ -243,6 +438,18 @@ const Settings: React.FC = () =>{
                 }`}
               >
                 Workspaces
+            </button>
+          )}
+          {isAdmin && (
+            <button
+                onClick={() =>setActiveTab('payments')}
+                className={`px-6 py-4 text-sm font-medium ${
+                  activeTab === 'payments'
+                    ? 'border-b-2 border-primary-500 text-primary-500'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Payment Alerts
             </button>
           )}
         </nav>
@@ -388,18 +595,205 @@ const Settings: React.FC = () =>{
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleSwitchWorkspace(workspace.companyId)}
-                          disabled={isActive || isSwitching}
-                          className={isActive ? 'btn btn-secondary' : 'btn btn-primary'}
-                        >
-                          {isActive ? 'Current' : isSwitching ? 'Switching...' : 'Switch'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleSwitchWorkspace(workspace.companyId)}
+                            disabled={isActive || isSwitching || deletingWorkspaceId === workspace.companyId}
+                            className={isActive ? 'btn btn-secondary' : 'btn btn-primary'}
+                          >
+                            {isActive ? 'Current' : isSwitching ? 'Switching...' : 'Switch'}
+                          </button>
+                          <button
+                            onClick={() => askDeleteWorkspace(workspace)}
+                            disabled={isActive || deletingWorkspaceId === workspace.companyId}
+                            className={isActive ? 'btn btn-secondary' : 'btn btn-danger'}
+                            title={isActive ? 'Cannot delete current workspace' : 'Delete workspace'}
+                          >
+                            {deletingWorkspaceId === workspace.companyId ? 'Deleting...' : isActive ? 'Cannot Delete' : 'Delete'}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
+            </div>
+          )}
+          {isAdmin && activeTab === 'payments' && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <form onSubmit={handleCreateConnection} className="rounded-lg border border-gray-200 p-4">
+                  <h3 className="mb-1 text-lg font-semibold text-gray-900">Connect Mailbox or SMS Forward</h3>
+                  <p className="mb-4 text-sm text-gray-600">
+                    Add a mailbox address or SMS-forward sender to enable payment alert ingestion.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <select
+                      className="input"
+                      value={connectionForm.channel}
+                      onChange={(e) => setConnectionForm({ ...connectionForm, channel: e.target.value as 'gmail' | 'sms_forward' })}
+                    >
+                      <option value="gmail">Gmail</option>
+                      <option value="sms_forward">SMS Forward</option>
+                    </select>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder={connectionForm.channel === 'gmail' ? 'alerts@yourcompany.com' : 'Sender phone or identifier'}
+                      value={connectionForm.identifier}
+                      onChange={(e) => setConnectionForm({ ...connectionForm, identifier: e.target.value })}
+                      required
+                    />
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Display name (optional)"
+                      value={connectionForm.displayName}
+                      onChange={(e) => setConnectionForm({ ...connectionForm, displayName: e.target.value })}
+                    />
+                    <button type="submit" className="btn btn-primary w-full" disabled={creatingConnection}>
+                      {creatingConnection ? 'Saving...' : 'Add Connection'}
+                    </button>
+                  </div>
+                </form>
+
+                <form onSubmit={handleSubmitIngestionAlert} className="rounded-lg border border-gray-200 p-4">
+                  <h3 className="mb-1 text-lg font-semibold text-gray-900">Manual Alert Ingestion</h3>
+                  <p className="mb-4 text-sm text-gray-600">
+                    Paste a payment alert from email/SMS and let the system detect and apply payment.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <select
+                        className="input"
+                        value={ingestionForm.source}
+                        onChange={(e) => setIngestionForm({ ...ingestionForm, source: e.target.value as 'manual' | 'gmail' | 'sms' })}
+                      >
+                        <option value="manual">Manual</option>
+                        <option value="gmail">Gmail</option>
+                        <option value="sms">SMS</option>
+                      </select>
+                      <select
+                        className="input"
+                        value={ingestionForm.directionHint}
+                        onChange={(e) => setIngestionForm({ ...ingestionForm, directionHint: e.target.value as 'unknown' | 'incoming' | 'outgoing' })}
+                      >
+                        <option value="unknown">Direction: Unknown</option>
+                        <option value="incoming">Incoming</option>
+                        <option value="outgoing">Outgoing</option>
+                      </select>
+                    </div>
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Channel identifier (optional)"
+                      value={ingestionForm.channelIdentifier}
+                      onChange={(e) => setIngestionForm({ ...ingestionForm, channelIdentifier: e.target.value })}
+                    />
+                    <input
+                      type="text"
+                      className="input"
+                      placeholder="Subject (optional)"
+                      value={ingestionForm.subject}
+                      onChange={(e) => setIngestionForm({ ...ingestionForm, subject: e.target.value })}
+                    />
+                    <textarea
+                      className="input min-h-[120px]"
+                      placeholder="Paste full payment alert text"
+                      value={ingestionForm.messageText}
+                      onChange={(e) => setIngestionForm({ ...ingestionForm, messageText: e.target.value })}
+                      required
+                    />
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={ingestionForm.dryRun}
+                        onChange={(e) => setIngestionForm({ ...ingestionForm, dryRun: e.target.checked })}
+                      />
+                      Dry run (parse and match only, do not update invoice/expense)
+                    </label>
+                    <button type="submit" className="btn btn-primary w-full" disabled={submittingAlert}>
+                      {submittingAlert ? 'Processing...' : 'Ingest Alert'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Connected Sources</h3>
+                  <button onClick={fetchIngestionConnections} className="btn btn-secondary" disabled={connectionsLoading}>
+                    {connectionsLoading ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+                <div className="p-4">
+                  {connectionsLoading ? (
+                    <p className="text-sm text-gray-500">Loading connections...</p>
+                  ) : connections.length === 0 ? (
+                    <p className="text-sm text-gray-500">No mailbox or SMS forwarding connections yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {connections.map((connection) => (
+                        <div key={connection._id} className="flex items-center justify-between rounded-md border border-gray-200 p-3">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {connection.displayName || connection.identifier}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {connection.channel === 'gmail' ? 'Gmail' : 'SMS Forward'} | {connection.identifier}
+                            </p>
+                          </div>
+                          <button
+                            className="btn btn-danger"
+                            onClick={() => handleDeleteConnection(connection._id)}
+                            disabled={deletingConnectionId === connection._id}
+                          >
+                            {deletingConnectionId === connection._id ? 'Removing...' : 'Remove'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Recent Ingestion Events</h3>
+                  <button onClick={fetchIngestionEvents} className="btn btn-secondary" disabled={eventsLoading}>
+                    {eventsLoading ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+                <div className="max-h-96 overflow-auto p-4">
+                  {eventsLoading ? (
+                    <p className="text-sm text-gray-500">Loading events...</p>
+                  ) : events.length === 0 ? (
+                    <p className="text-sm text-gray-500">No ingestion events yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {events.map((event) => (
+                        <div key={event._id} className="rounded-md border border-gray-200 p-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-gray-900">
+                              {String(event.source || '').toUpperCase()} | {event.status}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {event.createdAt ? new Date(event.createdAt).toLocaleString() : ''}
+                            </p>
+                          </div>
+                          {event.subject && (
+                            <p className="mt-1 text-sm text-gray-700">Subject: {event.subject}</p>
+                          )}
+                          <p className="mt-1 line-clamp-2 text-sm text-gray-600">{event.messageText}</p>
+                          {event.errorMessage && (
+                            <p className="mt-1 text-xs text-red-600">Error: {event.errorMessage}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
       </div>
@@ -501,6 +895,16 @@ const Settings: React.FC = () =>{
         variant="primary"
         onConfirm={confirmSave}
         onCancel={() =>setSaveConfirm(false)}
+      />
+    <ConfirmModal
+        isOpen={deleteWorkspaceConfirm.show}
+        title="Delete Workspace"
+        message={`Are you sure you want to delete "${deleteWorkspaceConfirm.workspace?.companyName || 'this workspace'}"? This will permanently remove all its data and cannot be undone.`}
+        confirmText="Delete Workspace"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDeleteWorkspace}
+        onCancel={() => setDeleteWorkspaceConfirm({ show: false, workspace: null })}
       />
   </div>
   );

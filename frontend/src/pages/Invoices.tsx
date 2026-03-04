@@ -878,8 +878,8 @@ const Invoices: React.FC = () => {
       )}
 
       {showSendPreview && previewData && (() => {
-        const accentColor = '#4f8b80';
         const companyRaw = (() => { try { return JSON.parse(localStorage.getItem('finflow_company') || '{}'); } catch { return {}; } })();
+        const accentColor = String(companyRaw.brandColor || '#2563EB');
         const companyName = companyRaw.displayName || companyRaw.name || 'Your Company';
         const companyAddress = companyRaw.address || '';
         const companyPhone = companyRaw.phone || '';

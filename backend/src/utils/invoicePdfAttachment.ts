@@ -44,7 +44,7 @@ export const generateInvoicePdfAttachmentBuffer = async (invoice: any, company: 
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const accentColor = '#4f8b80';
+    const accentColor = String(company?.brandColor || '#2563EB');
     const companyName = company.displayName || company.name || 'Company';
     const client = invoice.clientId as any;
     const clientName = client?.name || 'N/A';

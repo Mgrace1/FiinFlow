@@ -22,6 +22,7 @@ import Starfield from './components/common/Starfield';
 import Landing from './pages/Landing';
 import FeatureDetail from './pages/FeatureDetail';
 import NotFound from './pages/NotFound';
+import ResearchConsent from './pages/ResearchConsent';
 import { ToastContainer } from 'react-toastify';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -46,6 +47,7 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/setup/company" element={<CompanySetup />} />
       <Route path="/setup/user" element={<UserSetup />} />
+      <Route path="/consent" element={<ResearchConsent />} />
       <Route path="/features/:slug" element={<FeatureDetail />} />
 
       {/* Publicly accessible invoice detail */}

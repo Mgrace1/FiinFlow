@@ -208,6 +208,7 @@ const Dashboard: React.FC = () => {
     const monthMap = new Map(seed.map((row) => [row.key, row]));
 
     latestInvoices.forEach((invoice) => {
+      if (invoice.status === 'cancelled') return;
       const dt = getDateValue(invoice.createdAt || invoice.updatedAt);
       if (!dt) return;
       const key = `${dt.getFullYear()}-${dt.getMonth()}`;

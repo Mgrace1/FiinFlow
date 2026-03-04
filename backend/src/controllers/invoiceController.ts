@@ -100,6 +100,30 @@ const isSameCalendarDate = (a: Date, b: Date): boolean => (
   && a.getDate() === b.getDate()
 );
 
+const createInvoiceOverdueNotification = async (invoice: any, companyId: any) => {
+  try {
+    const existing = await Notification.findOne({
+      companyId,
+      type: 'invoice_overdue',
+      relatedInvoiceId: invoice._id,
+      isRead: false,
+    });
+
+    if (existing) return;
+
+    const clientName = (invoice?.clientId as any)?.name || 'Unknown Client';
+    await Notification.create({
+      companyId,
+      type: 'invoice_overdue',
+      title: 'Invoice Overdue',
+      message: `Invoice ${invoice.invoiceNumber} for ${clientName} is now overdue.`,
+      relatedInvoiceId: invoice._id,
+    });
+  } catch (error) {
+    console.error('Create overdue notification error:', error);
+  }
+};
+
 const enrichInvoiceAmounts = (invoice: any) => {
   const raw = typeof invoice?.toObject === 'function' ? invoice.toObject() : invoice;
   const totalAmount = Math.max(0, toSafeNumber(raw?.totalAmount, toSafeNumber(raw?.amount, 0)));
@@ -147,7 +171,7 @@ const sendInvoiceSentNotification = async (invoice: any, companyId: any, mode: '
       clientName: client?.contactPerson || client?.name || 'Client',
       companyName,
       companyLogoUrl,
-      companyBrandColor: company?.brandColor || '#4f8b80',
+      companyBrandColor: company?.brandColor || '#2563EB',
       companyAddress: String(company?.address || ''),
       companyPhone: String(company?.phone || ''),
       invoiceNumber: invoice.invoiceNumber,
@@ -267,8 +291,16 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       });
     }
 
+    const hasOutstanding = computedTotalAmount > 0 && safeAmountPaid < computedTotalAmount;
+    const dueAtCreate = new Date(dueDate);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const shouldBeOverdueOnCreate = hasOutstanding && dueAtCreate.getTime() < startOfToday.getTime();
+
     if (computedTotalAmount > 0 && safeAmountPaid >= computedTotalAmount) {
       initialStatus = 'paid';
+    } else if (shouldBeOverdueOnCreate) {
+      initialStatus = 'overdue';
     }
 
     const normalizedItems = normalizeInvoiceItems(items);
@@ -301,6 +333,10 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
     let emailNotification: any = null;
     if (initialStatus === 'sent') {
       emailNotification = await sendInvoiceSentNotification(invoice, req.companyId);
+    }
+
+    if (initialStatus === 'overdue') {
+      await createInvoiceOverdueNotification(invoice, req.companyId);
     }
 
     const remainingAmount = Math.max(0, computedTotalAmount - safeAmountPaid);
@@ -437,15 +473,28 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     updates.totalAmount = nextTotalAmount;
     updates.amountPaid = requestedAmountPaid;
 
+    const dueDateToUse = updates.dueDate !== undefined ? new Date(updates.dueDate) : new Date(invoice.dueDate);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const hasOutstanding = nextTotalAmount > 0 && requestedAmountPaid < nextTotalAmount;
+    const shouldAutoOverdue = hasOutstanding && dueDateToUse.getTime() < startOfToday.getTime();
+
     if (nextTotalAmount > 0 && requestedAmountPaid >= nextTotalAmount) {
       updates.status = 'paid';
       updates.paidAt = invoice.paidAt || new Date();
+    } else if (shouldAutoOverdue && invoice.status !== 'draft' && invoice.status !== 'cancelled') {
+      updates.status = 'overdue';
+      updates.paidAt = undefined;
     }
 
     invoice.set(updates);
     await invoice.save();
     await invoice.populate('clientId');
     await invoice.populate('createdBy');
+
+    if (invoice.status === 'overdue') {
+      await createInvoiceOverdueNotification(invoice, req.companyId);
+    }
 
     const emailNotification = await sendInvoiceSentNotification(invoice, req.companyId, 'updated');
 
@@ -522,11 +571,16 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
       invoice.sentAt = new Date();
     }
 
+    const previousStatus = invoice.status;
     invoice.status = status;
     await invoice.save();
 
     await invoice.populate('clientId');
     await invoice.populate('createdBy');
+
+    if (status === 'overdue' && previousStatus !== 'overdue') {
+      await createInvoiceOverdueNotification(invoice, req.companyId);
+    }
 
     let emailNotification: any = null;
     if (shouldSendSentNotification) {
@@ -610,6 +664,10 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
 
     await invoice.save();
     await invoice.populate('clientId');
+
+    if (invoice.status === 'overdue') {
+      await createInvoiceOverdueNotification(invoice, req.companyId);
+    }
 
     res.json({
       success: true,

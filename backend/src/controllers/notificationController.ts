@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Notification from '../models/Notification';
+import Invoice from '../models/Invoice';
 import { AuthRequest } from '../middleware/auth';
 
 /**
@@ -8,6 +9,47 @@ import { AuthRequest } from '../middleware/auth';
 export const getNotifications = async (req: AuthRequest, res: Response) =>{
   try {
     const { unreadOnly } = req.query;
+
+    // Ensure overdue invoice notifications exist (backfill safety)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const overdueInvoices = await Invoice.find({
+      companyId: req.companyId,
+      dueDate: { $lt: startOfToday },
+      status: { $in: ['draft', 'sent', 'overdue'] },
+      $expr: {
+        $lt: [
+          { $ifNull: ['$amountPaid', 0] },
+          { $ifNull: ['$totalAmount', '$amount'] },
+        ],
+      },
+    })
+      .select('_id invoiceNumber clientId')
+      .populate('clientId', 'name');
+
+    for (const invoice of overdueInvoices) {
+      const exists = await Notification.findOne({
+        companyId: req.companyId,
+        type: 'invoice_overdue',
+        relatedInvoiceId: invoice._id,
+        isRead: false,
+      }).select('_id');
+
+      if (exists) continue;
+
+      if ((invoice as any).status !== 'overdue') {
+        await Invoice.updateOne({ _id: invoice._id }, { status: 'overdue' });
+      }
+
+      await Notification.create({
+        companyId: req.companyId,
+        type: 'invoice_overdue',
+        title: 'Invoice Overdue',
+        message: `Invoice ${invoice.invoiceNumber} for ${(invoice.clientId as any)?.name || 'Unknown Client'} is now overdue.`,
+        relatedInvoiceId: invoice._id,
+      });
+    }
 
     const filter: any = { companyId: req.companyId };
     if (unreadOnly === 'true') {

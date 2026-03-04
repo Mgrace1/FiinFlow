@@ -296,7 +296,7 @@ const handleSaveEdit = async () =>{
   const companyPhone = String(companyData.phone || '');
   const paymentInstructions = String(companyData.defaultPaymentInstructions || '');
   const payLines = paymentInstructions ? paymentInstructions.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
-  const accentColor = '#4f8b80';
+  const accentColor = String(companyData.brandColor || '#2563EB');
   const numFmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   const invoiceTaxAmt = invoice.taxApplied ? (invoice.totalAmount - invoice.amount) : 0;
   const effectiveStatus = invoice.status === 'sent' && new Date(invoice.dueDate) < new Date() ? 'overdue' : invoice.status;

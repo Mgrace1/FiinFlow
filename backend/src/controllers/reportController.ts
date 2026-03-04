@@ -156,7 +156,7 @@ export const generateInvoicePDF = async (req: AuthRequest, res: Response) =>{
 
     doc.pipe(res);
 
-    const accentColor = '#4f8b80';
+    const accentColor = String((company as any).brandColor || '#2563EB');
     const companyName = company.displayName || company.name || 'Company';
     const client = invoice.clientId as any;
     const clientName = client?.name || 'N/A';

@@ -216,6 +216,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) =>{
     const latestInvoices = await Invoice.find({
       companyId,
       createdAt: { $gte: sixMonthsAgo },
+      status: { $ne: 'cancelled' },
     })
       .populate('clientId', 'name')
       .sort({ createdAt: -1 })

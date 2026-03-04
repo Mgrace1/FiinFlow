@@ -4,7 +4,6 @@ import { Search } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { formatDateDMY } from '../utils/formatDate';
 import { formatCompanyMoney } from '../utils/currency';
-import { landingFeatures } from '../data/landingFeatures';
 
 interface SearchClient {
   _id: string;
@@ -175,18 +174,7 @@ const SearchPage: React.FC = () => {
   const navigationResults = useMemo(() => {
     if (!query) return [];
 
-    const featurePages: SearchNavigationItem[] = landingFeatures.map((feature) => ({
-      id: `feature-${feature.slug}`,
-      title: feature.title,
-      description: feature.desc,
-      category: 'Feature Guide',
-      path: `/features/${feature.slug}`,
-      keywords: [feature.title, feature.desc, feature.slug, 'feature'],
-    }));
-
-    const allNavigationItems = [...appNavigationIndex, ...featurePages];
-
-    return allNavigationItems
+    return appNavigationIndex
       .map((item) => {
         const searchable = `${item.title} ${item.description} ${item.category} ${item.keywords.join(' ')}`.toLowerCase();
         const startsWith = item.title.toLowerCase().startsWith(query);
@@ -216,7 +204,7 @@ const SearchPage: React.FC = () => {
 
       {!query && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          Search across pages, features, clients, invoices, and expenses from the navbar.
+          Search across pages, clients, invoices, and expenses from the navbar.
         </div>
       )}
 
@@ -234,7 +222,7 @@ const SearchPage: React.FC = () => {
 
       {!loading && query && !error && totalResults === 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          No matches found in pages, features, clients, invoices, or expenses.
+          No matches found in pages, clients, invoices, or expenses.
         </div>
       )}
 
@@ -243,7 +231,7 @@ const SearchPage: React.FC = () => {
           {navigationResults.length > 0 && (
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-gray-900">Pages & Features ({navigationResults.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-900">Pages ({navigationResults.length})</h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {navigationResults.map((result) => (

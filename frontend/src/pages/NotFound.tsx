@@ -9,7 +9,6 @@ const NotFound: React.FC = () => {
     <div className="min-h-screen landing-bg flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
         <div className="mb-3 inline-flex items-center gap-2">
-          <span className="landing-dot" />
           <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">FiinFlow</span>
         </div>
 

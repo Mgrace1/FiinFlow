@@ -130,14 +130,6 @@
       linear-gradient(180deg, #f9faf8 0%, #eef2ec 48%, #f9faf8 100%);
   }
 
-  .landing-dot {
-    width: 0.72rem;
-    height: 0.72rem;
-    border-radius: 9999px;
-    background: linear-gradient(135deg, #5f6f52, #8b9a72);
-    box-shadow: 0 0 0 4px rgba(95, 111, 82, 0.2);
-  }
-
   .landing-glass-card {
     box-shadow:
       0 30px 70px -38px rgba(2, 6, 23, 0.55),

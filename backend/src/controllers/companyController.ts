@@ -159,27 +159,36 @@ export const updateCompany = async (req: AuthRequest, res: Response) =>{
       brandColor,
       brandSecondaryColor,
       invoiceFooterText,
+      invoicePrefix,
+      defaultPaymentInstructions,
       taxRegistrationNumber,
     } = req.body;
 
+    const updatePayload: Record<string, any> = {};
+    const assignIfDefined = (key: string, value: any) => {
+      if (value !== undefined) updatePayload[key] = value;
+    };
+
+    assignIfDefined('name', name);
+    assignIfDefined('email', email);
+    assignIfDefined('address', address);
+    assignIfDefined('phone', phone);
+    assignIfDefined('industry', industry);
+    assignIfDefined('defaultCurrency', defaultCurrency);
+    assignIfDefined('exchangeRateUSD', exchangeRateUSD);
+    assignIfDefined('taxRate', taxRate);
+    assignIfDefined('logoUrl', logoUrl);
+    assignIfDefined('displayName', displayName);
+    assignIfDefined('brandColor', brandColor);
+    assignIfDefined('brandSecondaryColor', brandSecondaryColor);
+    assignIfDefined('invoiceFooterText', invoiceFooterText);
+    assignIfDefined('invoicePrefix', invoicePrefix);
+    assignIfDefined('defaultPaymentInstructions', defaultPaymentInstructions);
+    assignIfDefined('taxRegistrationNumber', taxRegistrationNumber);
+
     const company = await Company.findByIdAndUpdate(
       req.companyId,
-      {
-        name,
-        email,
-        address,
-        phone,
-        industry,
-        defaultCurrency,
-        exchangeRateUSD,
-        taxRate,
-        logoUrl,
-        displayName,
-        brandColor,
-        brandSecondaryColor,
-        invoiceFooterText,
-        taxRegistrationNumber,
-      },
+      updatePayload,
       { new: true, runValidators: true }
     );
 
@@ -210,6 +219,23 @@ export const updateCompany = async (req: AuthRequest, res: Response) =>{
 export const deleteCompany = async (req: AuthRequest, res: Response) =>{
   try {
     const companyId = req.params.companyId || req.companyId;
+    const activeCompanyId = String(req.companyId || '');
+    const targetCompanyId = String(companyId || '');
+
+    if (!targetCompanyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Target workspace is required',
+      });
+    }
+
+    // Safety: current active workspace cannot be deleted
+    if (activeCompanyId === targetCompanyId) {
+      return res.status(400).json({
+        success: false,
+        error: 'You cannot delete the current active workspace',
+      });
+    }
 
     // Check if user is admin (using userRole from AuthRequest)
     if (req.userRole !== 'admin') {
@@ -219,8 +245,31 @@ export const deleteCompany = async (req: AuthRequest, res: Response) =>{
       });
     }
 
+    // Security: when deleting another workspace, ensure the same email is also admin in that target workspace
+    const currentUser = req.userId ? await User.findById(req.userId).select('email') : null;
+    const currentEmail = String(currentUser?.email || '').trim().toLowerCase();
+    if (!currentEmail) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unable to verify workspace admin access',
+      });
+    }
+
+    const adminInTarget = await User.findOne({
+      companyId: targetCompanyId,
+      email: currentEmail,
+      role: 'admin',
+    }).select('_id');
+
+    if (!adminInTarget) {
+      return res.status(403).json({
+        success: false,
+        error: 'You are not an admin of the selected workspace',
+      });
+    }
+
     // Verify company exists
-    const company = await Company.findById(companyId);
+    const company = await Company.findById(targetCompanyId);
     if (!company) {
       return res.status(404).json({
         success: false,
@@ -229,35 +278,35 @@ export const deleteCompany = async (req: AuthRequest, res: Response) =>{
     }
 
     // Delete all associated data in order
-    const { User, Client, Invoice, Expense, File, Notification } = require('../models');
+    const { Client, Invoice, Expense, File, Notification } = require('../models');
 
     // 1. Delete all notifications
-    await Notification.deleteMany({ companyId });
-    console.log(`Deleted notifications for company ${companyId}`);
+    await Notification.deleteMany({ companyId: targetCompanyId });
+    console.log(`Deleted notifications for company ${targetCompanyId}`);
 
     // 2. Delete all files
-    await File.deleteMany({ companyId });
-    console.log(`Deleted files for company ${companyId}`);
+    await File.deleteMany({ companyId: targetCompanyId });
+    console.log(`Deleted files for company ${targetCompanyId}`);
 
     // 3. Delete all expenses
-    await Expense.deleteMany({ companyId });
-    console.log(`Deleted expenses for company ${companyId}`);
+    await Expense.deleteMany({ companyId: targetCompanyId });
+    console.log(`Deleted expenses for company ${targetCompanyId}`);
 
     // 4. Delete all invoices
-    await Invoice.deleteMany({ companyId });
-    console.log(`Deleted invoices for company ${companyId}`);
+    await Invoice.deleteMany({ companyId: targetCompanyId });
+    console.log(`Deleted invoices for company ${targetCompanyId}`);
 
     // 5. Delete all clients
-    await Client.deleteMany({ companyId });
-    console.log(`Deleted clients for company ${companyId}`);
+    await Client.deleteMany({ companyId: targetCompanyId });
+    console.log(`Deleted clients for company ${targetCompanyId}`);
 
     // 6. Delete all users
-    await User.deleteMany({ companyId });
-    console.log(`Deleted users for company ${companyId}`);
+    await User.deleteMany({ companyId: targetCompanyId });
+    console.log(`Deleted users for company ${targetCompanyId}`);
 
     // 7. Finally delete the company
-    await Company.findByIdAndDelete(companyId);
-    console.log(`Deleted company ${companyId}`);
+    await Company.findByIdAndDelete(targetCompanyId);
+    console.log(`Deleted company ${targetCompanyId}`);
 
     res.json({
       success: true,

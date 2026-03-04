@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { ArrowLeft, Clipboard } from 'lucide-react';
-import ConsentModal from '../components/common/ConsentModal';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 
 const CompanySetup: React.FC = () => {
@@ -10,7 +9,6 @@ const CompanySetup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [consentChecked, setConsentChecked] = useState(false);
-  const [showConsentModal, setShowConsentModal] = useState(false);
   const [credentials, setCredentials] = useState<{
     companyId: string;
     companyName: string;
@@ -170,7 +168,6 @@ const CompanySetup: React.FC = () => {
 
         <div className="text-center">
           <div className="mb-3 inline-flex items-center gap-2">
-            <span className="landing-dot" />
             <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">FiinFlow</span>
           </div>
           <h1 className="mt-3 text-4xl font-bold text-slate-900">Create your workspace</h1>
@@ -267,7 +264,7 @@ const CompanySetup: React.FC = () => {
               </label>
               <button
                 type="button"
-                onClick={() => setShowConsentModal(true)}
+                onClick={() => navigate('/consent')}
                 className="mt-2 text-xs font-semibold text-primary-600 hover:text-primary-500"
               >
                 Read full consent information
@@ -294,7 +291,6 @@ const CompanySetup: React.FC = () => {
         </p>
       </div>
 
-      <ConsentModal isOpen={showConsentModal} onClose={() => setShowConsentModal(false)} />
     </div>
   );
 };

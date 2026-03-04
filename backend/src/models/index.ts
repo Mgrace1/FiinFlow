@@ -5,3 +5,5 @@ export { default as Invoice } from './Invoice';
 export { default as Expense } from './Expense';
 export { default as File } from './File';
 export { default as Notification } from './Notification';
+export { default as PaymentIngestionConnection } from './PaymentIngestionConnection';
+export { default as PaymentIngestionEvent } from './PaymentIngestionEvent';
