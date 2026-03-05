@@ -105,13 +105,15 @@ function App() {
       <RouteAwareStarfield />
       <ToastContainer
         position="top-right"
-        autoClose={3500}
+        autoClose={2000}
         hideProgressBar={false}
         newestOnTop
         closeOnClick
         pauseOnHover
         draggable
         theme="light"
+        className="fiinflow-toast-container"
+        toastClassName="fiinflow-toast"
       />
     </AuthProvider>
   </BrowserRouter>

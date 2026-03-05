@@ -151,19 +151,19 @@ const Transactions: React.FC = () =>{
   const displayedTransactions = filteredTransactions.slice(0, visibleCount);
 
   return (
-  <div className="max-w-6xl mx-auto">
+  <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
       {/* Top Header */}
-      <div className="px-6 pt-5 pb-4 border-b border-gray-200">
+      <div className="px-4 pt-4 pb-4 sm:px-6 sm:pt-5 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-gray-500">{companyName}</p>
         </div>
-        <h1 className="text-4xl font-bold text-gray-900">Transactions</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Transactions</h1>
       </div>
 
       {/* Tabs */}
-      <div className="px-6 pt-4 border-b border-gray-200">
-        <div className="flex items-center gap-8 text-sm">
+      <div className="px-4 sm:px-6 pt-4 border-b border-gray-200">
+        <div className="flex items-center gap-5 sm:gap-8 text-sm overflow-x-auto scrollbar-hide whitespace-nowrap">
           <button
             onClick={() =>setActiveTab('bank')}
             className={`pb-3 border-b-2 transition ${
@@ -200,7 +200,7 @@ const Transactions: React.FC = () =>{
       </div>
 
       {/* Filter Bar */}
-      <div className="px-6 py-4 border-b border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <input
           type="date"
           value={startDate}
@@ -227,8 +227,8 @@ const Transactions: React.FC = () =>{
         </div>
       </div>
 
-      {/* Transactions Table */}
-      <div className="overflow-x-auto">
+      {/* Transactions Table / Mobile Cards */}
+      <div>
         {displayedTransactions.length === 0 ? (
           <div className="p-6">
             <EmptyState
@@ -238,39 +238,76 @@ const Transactions: React.FC = () =>{
             />
           </div>
         ) : (
-          <table className="w-full min-w-[860px] text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-right">Spent</th>
-                <th className="px-4 py-3 text-right">Received</th>
-                <th className="px-4 py-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {displayedTransactions.map((transaction) =>(
-                <tr key={transaction._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-700">{formatDate(transaction.date)}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{transaction.name}</td>
-                  <td className="px-4 py-3 text-right text-gray-900 font-medium">
-                    {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-gray-900 font-medium">
-                    {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+          <>
+            <div className="md:hidden divide-y divide-gray-200">
+              {displayedTransactions.map((transaction) => (
+                <div key={transaction._id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500">{formatDate(transaction.date)}</p>
+                      <p className="mt-1 font-semibold text-gray-900">{transaction.name}</p>
+                    </div>
                     <Link
                       to={transaction.type === 'income' ? `/invoices/${transaction._id}` : `/expenses/${transaction._id}`}
                       className="text-sky-500 hover:text-sky-700 font-semibold text-sm"
                     >
                       Link
                     </Link>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-md bg-gray-50 px-3 py-2">
+                      <p className="text-xs text-gray-500">Spent</p>
+                      <p className="font-medium text-gray-900">
+                        {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
+                      </p>
+                    </div>
+                    <div className="rounded-md bg-gray-50 px-3 py-2">
+                      <p className="text-xs text-gray-500">Received</p>
+                      <p className="font-medium text-gray-900">
+                        {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full min-w-[860px] text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    <th className="px-4 py-3 text-left">Date</th>
+                    <th className="px-4 py-3 text-left">Name</th>
+                    <th className="px-4 py-3 text-right">Spent</th>
+                    <th className="px-4 py-3 text-right">Received</th>
+                    <th className="px-4 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {displayedTransactions.map((transaction) =>(
+                    <tr key={transaction._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-700">{formatDate(transaction.date)}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">{transaction.name}</td>
+                      <td className="px-4 py-3 text-right text-gray-900 font-medium">
+                        {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900 font-medium">
+                        {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          to={transaction.type === 'income' ? `/invoices/${transaction._id}` : `/expenses/${transaction._id}`}
+                          className="text-sky-500 hover:text-sky-700 font-semibold text-sm"
+                        >
+                          Link
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

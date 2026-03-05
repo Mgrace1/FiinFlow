@@ -389,18 +389,18 @@ const Settings: React.FC = () =>{
   if (loading) return <div>Loading...</div>;
 
   return (
-  <div>
+  <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
     <div className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Settings</h1>
       <p className="text-gray-600">Manage your account preferences and settings</p>
     </div>
 
     <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
       <div className="border-b border-gray-200">
-        <nav className="flex -mb-px">
+        <nav className="flex -mb-px overflow-x-auto whitespace-nowrap">
           <button
               onClick={() =>setActiveTab('company')}
-              className={`px-6 py-4 text-sm font-medium ${
+              className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                 activeTab === 'company'
                   ? 'border-b-2 border-primary-500 text-primary-500'
                   : 'text-gray-500 hover:text-gray-700'
@@ -410,7 +410,7 @@ const Settings: React.FC = () =>{
           </button>
           <button
               onClick={() =>setActiveTab('security')}
-              className={`px-6 py-4 text-sm font-medium ${
+              className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                 activeTab === 'security'
                   ? 'border-b-2 border-primary-500 text-primary-500'
                   : 'text-gray-500 hover:text-gray-700'
@@ -421,7 +421,7 @@ const Settings: React.FC = () =>{
           {isAdmin && (
             <button
                 onClick={() =>setActiveTab('branding')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'branding'
                     ? 'border-b-2 border-primary-500 text-primary-500'
                     : 'text-gray-500 hover:text-gray-700'
@@ -433,7 +433,7 @@ const Settings: React.FC = () =>{
           {isAdmin && (
             <button
                 onClick={() =>setActiveTab('workspaces')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'workspaces'
                     ? 'border-b-2 border-primary-500 text-primary-500'
                     : 'text-gray-500 hover:text-gray-700'
@@ -445,7 +445,7 @@ const Settings: React.FC = () =>{
           {isAdmin && (
             <button
                 onClick={() =>setActiveTab('payments')}
-                className={`px-6 py-4 text-sm font-medium ${
+                className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'payments'
                     ? 'border-b-2 border-primary-500 text-primary-500'
                     : 'text-gray-500 hover:text-gray-700'
@@ -457,7 +457,7 @@ const Settings: React.FC = () =>{
         </nav>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
           {activeTab === 'company' && company && (
           <form onSubmit={handleUpdateCompany} className="space-y-4 max-w-2xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -552,7 +552,7 @@ const Settings: React.FC = () =>{
           )}
           {isAdmin && activeTab === 'workspaces' && (
             <div>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Switch Company Workspace</h3>
                   <p className="text-sm text-gray-600">
@@ -576,7 +576,7 @@ const Settings: React.FC = () =>{
                     return (
                       <div
                         key={`${workspace.companyId}-${workspace.userId}`}
-                        className={`flex items-center justify-between rounded-lg border p-4 ${
+                        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border p-4 ${
                           isActive ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-white'
                         }`}
                       >
@@ -597,7 +597,7 @@ const Settings: React.FC = () =>{
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                           <button
                             onClick={() => handleSwitchWorkspace(workspace.companyId)}
                             disabled={isActive || isSwitching || deletingWorkspaceId === workspace.companyId}
@@ -722,7 +722,7 @@ const Settings: React.FC = () =>{
               </div>
 
               <div className="rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 px-4 py-3">
                   <h3 className="text-lg font-semibold text-gray-900">Connected Sources</h3>
                   <button onClick={fetchIngestionConnections} className="btn btn-secondary" disabled={connectionsLoading}>
                     {connectionsLoading ? 'Refreshing...' : 'Refresh'}
@@ -736,7 +736,7 @@ const Settings: React.FC = () =>{
                   ) : (
                     <div className="space-y-2">
                       {connections.map((connection) => (
-                        <div key={connection._id} className="flex items-center justify-between rounded-md border border-gray-200 p-3">
+                        <div key={connection._id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-md border border-gray-200 p-3">
                           <div>
                             <p className="font-medium text-gray-900">
                               {connection.displayName || connection.identifier}
@@ -760,7 +760,7 @@ const Settings: React.FC = () =>{
               </div>
 
               <div className="rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 px-4 py-3">
                   <h3 className="text-lg font-semibold text-gray-900">Recent Ingestion Events</h3>
                   <button onClick={fetchIngestionEvents} className="btn btn-secondary" disabled={eventsLoading}>
                     {eventsLoading ? 'Refreshing...' : 'Refresh'}
@@ -775,7 +775,7 @@ const Settings: React.FC = () =>{
                     <div className="space-y-2">
                       {events.map((event) => (
                         <div key={event._id} className="rounded-md border border-gray-200 p-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-sm font-semibold text-gray-900">
                               {String(event.source || '').toUpperCase()} | {event.status}
                             </p>

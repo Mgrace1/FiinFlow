@@ -169,6 +169,38 @@
 .from-cyan-500 { --tw-gradient-from: #8b9a72 var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(139 154 114 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
 .to-blue-600 { --tw-gradient-to: #5f6f52 var(--tw-gradient-to-position) !important; }
 
+/* Responsive Toastify overrides */
+.Toastify__toast-container.fiinflow-toast-container {
+  width: min(92vw, 380px);
+  padding: 0;
+}
+
+.Toastify__toast.fiinflow-toast {
+  border-radius: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .Toastify__toast-container--top-right.fiinflow-toast-container {
+    left: 0.75rem;
+    right: 0.75rem;
+    top: 0.75rem;
+    width: auto;
+  }
+
+  .Toastify__toast.fiinflow-toast {
+    margin-bottom: 0.5rem;
+    min-height: 0;
+    padding: 0.625rem 0.75rem;
+  }
+
+  .Toastify__toast.fiinflow-toast .Toastify__toast-body {
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

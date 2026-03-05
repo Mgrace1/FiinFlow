@@ -261,8 +261,8 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="absolute right-0 mt-2 w-[min(20rem,calc(100vw-1.5rem))] sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="p-3 sm:p-4 border-b border-gray-100 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
                   {notifications.length > 0 && (
                     <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">
@@ -272,28 +272,28 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                 </div>
 
                 {notificationsLoading ? (
-                  <div className="p-6 text-center">
+                  <div className="p-4 sm:p-6 text-center">
                     <p className="text-sm text-gray-500">Loading notifications...</p>
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="p-6 text-center">
+                  <div className="p-4 sm:p-6 text-center">
                     <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">No unread notifications</p>
                     <p className="text-xs text-gray-400 mt-1">You're all caught up</p>
                   </div>
                 ) : (
-                  <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                  <div className="max-h-[48vh] sm:max-h-80 overflow-y-auto divide-y divide-gray-100">
                     {notifications.map((notification) => (
                       <div
                         key={notification._id}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                        className="px-3 sm:px-4 py-2.5 sm:py-3 hover:bg-gray-50 cursor-pointer"
                         onClick={() => handleNotificationClick(notification)}
                       >
                         <div className="flex items-start gap-2">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{notification.title}</p>
-                            <p className="text-xs text-gray-600 mt-0.5">{notification.message}</p>
-                            <p className="text-[11px] text-gray-400 mt-1">
+                            <p className="text-xs text-gray-600 mt-0.5 break-words line-clamp-2">{notification.message}</p>
+                            <p className="text-[10px] sm:text-[11px] text-gray-400 mt-1">
                               {new Date(notification.createdAt).toLocaleString('en-GB')}
                             </p>
                           </div>
