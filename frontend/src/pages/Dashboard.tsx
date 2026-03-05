@@ -31,6 +31,7 @@ import { apiClient } from '../api/client';
 import { getUserRole } from '../utils/roleUtils';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { formatCompanyMoney, getCurrencyConfig, convertCurrencyAmount } from '../utils/currency';
+import { notifyError } from '../utils/toast';
 
 interface DashboardStats {
   totalInvoices: number;
@@ -337,7 +338,7 @@ const Dashboard: React.FC = () => {
 
       setShowPDFConfirm(false);
     } catch (error) {
-      alert('Failed to download summary PDF');
+      notifyError('Failed to download summary PDF');
       setShowPDFConfirm(false);
     }
   };

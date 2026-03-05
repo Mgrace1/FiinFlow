@@ -188,10 +188,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                           minute: '2-digit',
                         })}
                       </p>
-                      {receipt.uploadedBy && (
+                      {receipt.uploadedBy?.name && (
                         <p>
                           <span className="font-medium">Uploaded by:</span>{' '}
-                          {receipt.uploadedBy.name || 'Unknown'}
+                          {receipt.uploadedBy.name}
                         </p>
                       )}
                     </div>

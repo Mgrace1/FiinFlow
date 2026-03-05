@@ -17,7 +17,8 @@ export const getNotifications = async (req: AuthRequest, res: Response) =>{
     const overdueInvoices = await Invoice.find({
       companyId: req.companyId,
       dueDate: { $lt: startOfToday },
-      status: { $in: ['draft', 'sent', 'overdue'] },
+      // Draft invoices must remain draft until explicitly sent.
+      status: { $in: ['sent', 'overdue'] },
       $expr: {
         $lt: [
           { $ifNull: ['$amountPaid', 0] },

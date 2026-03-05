@@ -26,7 +26,8 @@ export const notifyInvoicesDueToday = () =>{
 
       const dueTodayInvoices = await Invoice.find({
         dueDate: { $gte: startOfDay, $lte: endOfDay },
-        status: { $in: ['draft', 'sent', 'overdue'] },
+        // Draft invoices are internal and should not trigger due reminders.
+        status: { $in: ['sent', 'overdue'] },
         ...hasOutstandingBalanceQuery,
       }).populate('clientId', 'name');
 
@@ -73,7 +74,8 @@ export const checkOverdueInvoices = () =>{
       // Find invoices that are past due date and not paid or overdue
       const overdueInvoices = await Invoice.find({
         dueDate: { $lt: today },
-        status: { $in: ['draft', 'sent'] },
+        // Only sent invoices can become overdue automatically.
+        status: { $in: ['sent'] },
         ...hasOutstandingBalanceQuery,
       }).populate('clientId', 'name')
         .populate('companyId', 'name');

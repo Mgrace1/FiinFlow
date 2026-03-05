@@ -154,6 +154,35 @@ export const updateUser = async (req: AuthRequest, res: Response) =>{
   try {
     const { name, email, phone, role, password } = req.body;
 
+    // Load target user first to enforce role-change protections
+    const targetUser = await User.findOne({
+      _id: req.params.id,
+      companyId: req.companyId,
+    }).select('role');
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    // Rule 1: Admin users are immutable via update endpoint
+    if (targetUser.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Admin users cannot be updated',
+      });
+    }
+
+    // Rule 2: No user can be promoted to admin via update endpoint
+    if (role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Updating a user to admin is not allowed',
+      });
+    }
+
     const updateData: any = { name, email, phone, role };
 
     // Only update password if provided
@@ -168,10 +197,7 @@ export const updateUser = async (req: AuthRequest, res: Response) =>{
     }
 
     const user = await User.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        companyId: req.companyId,
-      },
+      { _id: req.params.id, companyId: req.companyId },
       updateData,
       { new: true, runValidators: true }
     );

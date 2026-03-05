@@ -28,7 +28,6 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log('API Client Error:', error);
     const suppressErrorToast = Boolean(error?.config?.suppressErrorToast);
     if (error.response?.status === 401) {
       // Check if the request URL is for a specific invoice

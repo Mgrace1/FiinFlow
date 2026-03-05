@@ -308,7 +308,12 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
     const dueAtCreate = parsedDueDate;
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const shouldBeOverdueOnCreate = hasOutstanding && dueAtCreate.getTime() < startOfToday.getTime();
+    // Only sent invoices can become overdue automatically.
+    // Draft invoices must remain draft until explicitly sent.
+    const shouldBeOverdueOnCreate =
+      initialStatus === 'sent'
+      && hasOutstanding
+      && dueAtCreate.getTime() < startOfToday.getTime();
 
     if (computedTotalAmount > 0 && safeAmountPaid >= computedTotalAmount) {
       initialStatus = 'paid';
@@ -335,7 +340,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       description,
       proformaFileId,
       status: initialStatus,
-      sentAt: initialStatus === 'sent' ? new Date() : undefined,
+      sentAt: (initialStatus === 'sent' || initialStatus === 'overdue') ? new Date() : undefined,
       paidAt: initialStatus === 'paid' ? new Date() : undefined,
       createdBy: req.userId,
     });
@@ -444,6 +449,10 @@ export const getInvoice = async (req: AuthRequest, res: Response) =>{
 export const updateInvoice = async (req: AuthRequest, res: Response) =>{
   try {
     const updates = { ...req.body } as any;
+    const requestedStatus = String(req.body?.status || '').toLowerCase();
+    // Status lifecycle is automatic in this endpoint.
+    // We only support explicit draft -> sent promotion during update.
+    delete updates.status;
     if (updates.items !== undefined) {
       updates.items = normalizeInvoiceItems(updates.items);
     }
@@ -471,6 +480,8 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
         error: 'Invoice not found',
       });
     }
+    const previousStatus = String(invoice.status || 'draft');
+    const promoteDraftToSent = previousStatus === 'draft' && requestedStatus === 'sent';
 
     const nextAmount = updates.amount !== undefined ? Math.max(0, toSafeNumber(updates.amount, 0)) : Math.max(0, toSafeNumber(invoice.amount, 0));
     const nextTaxApplied = updates.taxApplied !== undefined ? Boolean(updates.taxApplied) : Boolean(invoice.taxApplied);
@@ -510,12 +521,32 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     const hasOutstanding = nextTotalAmount > 0 && requestedAmountPaid < nextTotalAmount;
     const shouldAutoOverdue = hasOutstanding && dueDateToUse.getTime() < startOfToday.getTime();
 
+    let nextStatus = previousStatus;
     if (nextTotalAmount > 0 && requestedAmountPaid >= nextTotalAmount) {
-      updates.status = 'paid';
+      nextStatus = 'paid';
+    } else if (previousStatus === 'cancelled') {
+      nextStatus = 'cancelled';
+    } else if (previousStatus === 'draft' && !promoteDraftToSent) {
+      // Keep draft invoices as draft until explicitly sent.
+      nextStatus = 'draft';
+    } else {
+      // Sent invoices are auto-managed by due date.
+      nextStatus = shouldAutoOverdue ? 'overdue' : 'sent';
+    }
+
+    updates.status = nextStatus;
+    if (nextStatus === 'paid') {
       updates.paidAt = invoice.paidAt || new Date();
-    } else if (shouldAutoOverdue && invoice.status !== 'draft' && invoice.status !== 'cancelled') {
-      updates.status = 'overdue';
+      if (!invoice.sentAt) {
+        updates.sentAt = new Date();
+      }
+    } else {
       updates.paidAt = undefined;
+      if (nextStatus === 'sent' || nextStatus === 'overdue') {
+        updates.sentAt = invoice.sentAt || new Date();
+      } else if (nextStatus === 'draft') {
+        updates.sentAt = undefined;
+      }
     }
 
     invoice.set(updates);
@@ -523,11 +554,14 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     await invoice.populate('clientId');
     await invoice.populate('createdBy');
 
-    if (invoice.status === 'overdue') {
+    if (invoice.status === 'overdue' && previousStatus !== 'overdue') {
       await createInvoiceOverdueNotification(invoice, req.companyId);
     }
 
-    const emailNotification = await sendInvoiceSentNotification(invoice, req.companyId, 'updated');
+    let emailNotification: any = null;
+    if (invoice.status === 'sent') {
+      emailNotification = await sendInvoiceSentNotification(invoice, req.companyId, 'updated');
+    }
 
     res.json({
       success: true,
@@ -574,6 +608,23 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
         error: 'Invoice not found',
       });
     }
+    const previousStatus = String(invoice.status || 'draft');
+
+    // Enforce lifecycle transitions:
+    // draft -> sent
+    // sent/overdue -> paid or cancelled
+    // (overdue may still be set internally)
+    if (status !== previousStatus) {
+      let allowed = false;
+      if (previousStatus === 'draft' && status === 'sent') allowed = true;
+      if ((previousStatus === 'sent' || previousStatus === 'overdue') && (status === 'paid' || status === 'cancelled' || status === 'overdue')) allowed = true;
+      if (!allowed) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid status transition from ${previousStatus} to ${status}`,
+        });
+      }
+    }
 
     // PHASE 1: Require payment_receipt attachment before marking as Paid
     if (status === 'paid') {
@@ -602,7 +653,6 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
       invoice.sentAt = new Date();
     }
 
-    const previousStatus = invoice.status;
     invoice.status = status;
     await invoice.save();
 

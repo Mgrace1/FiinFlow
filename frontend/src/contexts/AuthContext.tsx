@@ -17,28 +17,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthContext: useEffect called');
     try {
       const savedToken = localStorage.getItem('finflow_token');
       const savedCompanyId = localStorage.getItem('finflow_companyId');
-      console.log('AuthContext: savedToken from localStorage:', savedToken);
-      console.log('AuthContext: savedCompanyId from localStorage:', savedCompanyId);
       if (savedToken && savedCompanyId) {
-        console.log('AuthContext: setting token and companyId from localStorage');
         setToken(savedToken);
         setCompanyId(savedCompanyId);
       }
-    } catch (error) {
-      console.error('AuthContext: error in useEffect:', error);
+    } catch {
+      // Ignore localStorage parsing/access errors and continue unauthenticated.
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const setAuth = (newToken: string, newCompanyId: string) => {
-    console.log('AuthContext: setAuth called');
-    console.log('AuthContext: newToken:', newToken);
-    console.log('AuthContext: newCompanyId:', newCompanyId);
     setToken(newToken);
     setCompanyId(newCompanyId);
     localStorage.setItem('finflow_token', newToken);

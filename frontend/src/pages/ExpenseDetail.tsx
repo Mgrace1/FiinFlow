@@ -385,10 +385,10 @@ const ExpenseDetail: React.FC = () =>{
               <span className="text-gray-600">Created:</span>
               <p className="font-medium">{formatDateTime(expense.createdAt)}</p>
             </div>
-              {expense.createdBy && (
+              {expense.createdBy?.name && (
               <div>
                 <span className="text-gray-600">Created By:</span>
-                <p className="font-medium">{expense.createdBy.name || 'Unknown'}</p>
+                <p className="font-medium">{expense.createdBy.name}</p>
               </div>
               )}
             <div>

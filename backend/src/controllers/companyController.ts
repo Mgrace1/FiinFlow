@@ -23,12 +23,24 @@ const generatePassword = (): string =>{
 export const createCompany = async (req: Request, res: Response) =>{
   try {
     const { name, email, address, phone, industry, defaultCurrency, exchangeRateUSD, taxRate } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
     // Validate required fields
     if (!name || !email || !address || !phone) {
       return res.status(400).json({
         success: false,
         error: 'Please provide all required fields: name, email, address, phone',
+      });
+    }
+
+    // Public self-registration rule:
+    // If this email already has an account anywhere, block registration.
+    // (Workspace creation for same email is handled by /api/auth/workspaces and remains allowed.)
+    const existingUserWithEmail = await User.findOne({ email: normalizedEmail }).select('_id');
+    if (existingUserWithEmail) {
+      return res.status(409).json({
+        success: false,
+        error: 'An account with this email already exists. Please log in instead.',
       });
     }
 
@@ -46,7 +58,7 @@ export const createCompany = async (req: Request, res: Response) =>{
     // Create company
     const company = await Company.create({
       name,
-      email,
+      email: normalizedEmail,
       address,
       phone,
       industry,
@@ -63,7 +75,7 @@ export const createCompany = async (req: Request, res: Response) =>{
     const adminUser = await User.create({
       companyId: company._id,
       name: 'Admin',
-      email,
+      email: normalizedEmail,
       password: temporaryPassword,
       role: 'admin',
     });
@@ -100,7 +112,7 @@ export const createCompany = async (req: Request, res: Response) =>{
         companyId: company._id,
         companyName: company.name,
         loginUrl,
-        adminEmail: email,
+        adminEmail: normalizedEmail,
         adminTemporaryPassword: temporaryPassword,
       },
     });
