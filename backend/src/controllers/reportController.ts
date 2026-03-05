@@ -218,24 +218,16 @@ export const generateInvoicePDF = async (req: AuthRequest, res: Response) =>{
       doc.text(String(company.phone), 50, 98);
     }
 
-    // Top right: logo placeholder / actual logo
-    doc.rect(330, 52, 220, 64).lineWidth(1).strokeColor('#B6C5C1').stroke();
+    // Top right: actual logo only (no placeholder)
     if (company.logoUrl) {
       try {
         const logoPath = path.join(__dirname, '../../uploads/company-logos', path.basename(company.logoUrl));
         if (fs.existsSync(logoPath)) {
           doc.image(logoPath, 346, 62, { fit: [190, 42], align: 'center', valign: 'center' });
-        } else {
-          doc.fontSize(16).fillColor(accentColor).font('Helvetica-Bold');
-          doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
         }
       } catch {
-        doc.fontSize(16).fillColor(accentColor).font('Helvetica-Bold');
-        doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
+        // Intentionally ignore logo rendering failures.
       }
-    } else {
-      doc.fontSize(16).fillColor(accentColor).font('Helvetica-Bold');
-      doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
     }
 
     // Invoice title
@@ -408,23 +400,15 @@ export const generateExpensesPDF = async (req: AuthRequest, res: Response) =>{
       if (company.address) doc.text(String(company.address), 50, 82, { width: 240 });
       if (company.phone) doc.text(String(company.phone), 50, 98);
 
-      doc.rect(330, 52, 220, 64).lineWidth(1).strokeColor('#B6C5C1').stroke();
       if (company.logoUrl) {
         try {
           const logoPath = path.join(__dirname, '../../uploads/company-logos', path.basename(company.logoUrl));
           if (fs.existsSync(logoPath)) {
             doc.image(logoPath, 346, 62, { fit: [190, 42], align: 'center', valign: 'center' });
-          } else {
-            doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-            doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
           }
         } catch {
-          doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-          doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
+          // Intentionally ignore logo rendering failures.
         }
-      } else {
-        doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-        doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
       }
 
       doc.fontSize(34).fillColor(accentColor).font(FONT_BOLD);
@@ -689,23 +673,15 @@ export const generateSummaryPDF = async (req: AuthRequest, res: Response) =>{
       if (company.address) doc.text(String(company.address), 50, 82, { width: 240 });
       if (company.phone) doc.text(String(company.phone), 50, 98);
 
-      doc.rect(330, 52, 220, 64).lineWidth(1).strokeColor('#B6C5C1').stroke();
       if (company.logoUrl) {
         try {
           const logoPath = path.join(__dirname, '../../uploads/company-logos', path.basename(company.logoUrl));
           if (fs.existsSync(logoPath)) {
             doc.image(logoPath, 346, 62, { fit: [190, 42], align: 'center', valign: 'center' });
-          } else {
-            doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-            doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
           }
         } catch {
-          doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-          doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
+          // Intentionally ignore logo rendering failures.
         }
-      } else {
-        doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-        doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
       }
 
       doc.fontSize(30).fillColor(accentColor).font(FONT_BOLD);

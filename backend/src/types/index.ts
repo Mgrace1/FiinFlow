@@ -127,6 +127,7 @@ export interface IExpense {
   category: string;
   amount: number;
   amountPaid: number;
+  date: Date;
   currency: Currency;
   dueDate: Date;
   paymentMethod: string;

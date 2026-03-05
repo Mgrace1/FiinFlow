@@ -39,6 +39,10 @@ const ExpenseSchema: Schema = new Schema(
       default: 0,
       min: 0,
     },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
     currency: {
       type: String,
       enum: ['RWF', 'USD'],

@@ -8,9 +8,15 @@ const isSameCalendarDate = (a: Date, b: Date): boolean => (
   && a.getDate() === b.getDate()
 );
 
+const parseValidDate = (value: any): Date | null => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 export const createExpense = async (req: AuthRequest, res: Response) =>{
   try {
-    const { clientId, receiptFileId, supplier, category, amount, amountPaid, currency, dueDate, description, paymentMethod } = req.body;
+    const { clientId, receiptFileId, supplier, category, amount, amountPaid, currency, dueDate, date, description, paymentMethod } = req.body;
 
     if (!supplier || !category || !amount || !dueDate || !paymentMethod) {
       return res.status(400).json({
@@ -21,6 +27,16 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
 
     const totalAmount = Number(amount);
     const paid = Number(amountPaid) || 0;
+    const parsedDueDate = parseValidDate(dueDate);
+    if (!parsedDueDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid due date',
+      });
+    }
+
+    const parsedExplicitDate = parseValidDate(date);
+    const dateMeta = parsedExplicitDate || parsedDueDate || new Date();
 
     const expense = await Expense.create({
       companyId: req.companyId,
@@ -30,8 +46,9 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
       category,
       amount: totalAmount,
       amountPaid: paid,
+      date: dateMeta,
       currency: currency || 'RWF',
-      dueDate,
+      dueDate: parsedDueDate,
       description,
       paymentMethod,
       paymentStatus: paid >= totalAmount ? 'paid' : 'pending',
@@ -44,7 +61,7 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
     const expenseObj = expense.toObject() as any;
     expenseObj.remainingAmount = expenseObj.amount - expenseObj.amountPaid;
 
-    const dueAt = new Date(dueDate);
+    const dueAt = parsedDueDate;
     const today = new Date();
     if (expenseObj.remainingAmount > 0 && isSameCalendarDate(dueAt, today)) {
       await Notification.create({
@@ -78,8 +95,26 @@ export const getExpenses = async (req: AuthRequest, res: Response) =>{
     if (category) filter.category = category;
     if (startDate || endDate) {
       filter.dueDate = {};
-      if (startDate) filter.dueDate.$gte = new Date(startDate as string);
-      if (endDate) filter.dueDate.$lte = new Date(endDate as string);
+      if (startDate) {
+        const parsedStartDate = parseValidDate(startDate as string);
+        if (!parsedStartDate) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid start date',
+          });
+        }
+        filter.dueDate.$gte = parsedStartDate;
+      }
+      if (endDate) {
+        const parsedEndDate = parseValidDate(endDate as string);
+        if (!parsedEndDate) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid end date',
+          });
+        }
+        filter.dueDate.$lte = parsedEndDate;
+      }
     }
 
     const expenses = await Expense.find(filter)
@@ -89,6 +124,7 @@ export const getExpenses = async (req: AuthRequest, res: Response) =>{
 
     const expensesWithRemaining = expenses.map((e) => {
       const obj = e.toObject() as any;
+      obj.date = obj.date || obj.createdAt || obj.dueDate;
       obj.remainingAmount = obj.amount - (obj.amountPaid || 0);
       return obj;
     });
@@ -123,6 +159,7 @@ export const getExpense = async (req: AuthRequest, res: Response) =>{
     }
 
     const expenseObj = expense.toObject() as any;
+    expenseObj.date = expenseObj.date || expenseObj.createdAt || expenseObj.dueDate;
     expenseObj.remainingAmount = expenseObj.amount - (expenseObj.amountPaid || 0);
 
     res.json({
@@ -140,7 +177,34 @@ export const getExpense = async (req: AuthRequest, res: Response) =>{
 
 export const updateExpense = async (req: AuthRequest, res: Response) =>{
   try {
-    const updates = req.body;
+    const updates = { ...req.body } as any;
+
+    if (updates.dueDate !== undefined) {
+      const parsedDueDate = parseValidDate(updates.dueDate);
+      if (!parsedDueDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid due date',
+        });
+      }
+      updates.dueDate = parsedDueDate;
+
+      // Keep metadata date aligned when due date changes and explicit date is absent.
+      if (updates.date === undefined) {
+        updates.date = parsedDueDate;
+      }
+    }
+
+    if (updates.date !== undefined) {
+      const parsedDate = parseValidDate(updates.date);
+      if (!parsedDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid date',
+        });
+      }
+      updates.date = parsedDate;
+    }
 
     const expense = await Expense.findOneAndUpdate(
       {
@@ -163,7 +227,10 @@ export const updateExpense = async (req: AuthRequest, res: Response) =>{
     res.json({
       success: true,
       message: 'Expense updated successfully',
-      data: expense,
+      data: {
+        ...(expense.toObject() as any),
+        date: (expense as any).date || (expense as any).createdAt || (expense as any).dueDate,
+      },
     });
   } catch (error: any) {
     console.error('Update expense error:', error);

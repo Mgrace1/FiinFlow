@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
+import { Link } from 'react-router-dom';
 import ConfirmModal from '../components/common/ConfirmModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import { formatDateDMY } from '../utils/formatDate';
 import Badge from '../components/common/Badge';
-import { FaTimes, FaTrash, FaMoneyCheckAlt, FaEye } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaEye, FaFileAlt } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { formatCompanyMoney } from '../utils/currency';
 import { getUserRole } from '../utils/roleUtils';
@@ -44,7 +45,6 @@ const Expenses: React.FC = () =>{
     expenseId: null,
   });
   const [showPDFConfirm, setShowPDFConfirm] = useState(false);
-  const [isPaying, setIsPaying] = useState(false);
   const [formError, setFormError] = useState('');
   const [customCategory, setCustomCategory] = useState('');
   const [formData, setFormData] = useState({
@@ -109,6 +109,13 @@ const Expenses: React.FC = () =>{
       return;
     }
 
+    const linkedClient = clients.find((c) => c._id === formData.clientId);
+    const resolvedSupplier = linkedClient?.name || formData.supplier.trim();
+    if (!resolvedSupplier) {
+      setFormError('Please provide a supplier name or select a linked client.');
+      return;
+    }
+
     const detailLines: string[] = [];
     if (formData.referenceNumber.trim()) {
       detailLines.push(`Reference: ${formData.referenceNumber.trim()}`);
@@ -135,7 +142,7 @@ const Expenses: React.FC = () =>{
     const payload = {
       clientId: formData.clientId || undefined,
       receiptFileId,
-      supplier: formData.supplier.trim(),
+      supplier: resolvedSupplier,
       category: resolvedCategory,
       amount: parsedAmount,
       amountPaid: parsedAmountPaid,
@@ -168,22 +175,6 @@ const Expenses: React.FC = () =>{
       console.error('Failed to delete expense:', error);
       notifyError(getErrorMessage(error, 'Failed to delete expense'));
     } 
-  };
-
-  const handlePay = async (expenseId: string) => {
-    setIsPaying(true);
-    try {
-      const response = await apiClient.post('/kpay/pay', { expenseId });
-      if (response.data.success) {
-        window.open(response.data.data.url, '_blank');
-        notifySuccess('Payment link opened in a new tab');
-      }
-    } catch (error) {
-      console.error('Failed to initiate payment:', error);
-      notifyError(getErrorMessage(error, 'Failed to initiate payment'));
-    } finally {
-      setIsPaying(false);
-    }
   };
 
   const getReceiptId = (expense: Expense): string | null => {
@@ -269,7 +260,7 @@ const Expenses: React.FC = () =>{
     return statusMap[status] || 'default';
   };
 
-  if (loading || isPaying) return <LoadingOverlay message={isPaying ? 'Initiating payment...' : 'Loading expenses...'} />;
+  if (loading) return <LoadingOverlay message="Loading expenses..." />;
 
   return (
   <div>
@@ -343,22 +334,17 @@ const Expenses: React.FC = () =>{
                     title="View Receipt"
                     aria-label="View receipt"
                   >
-                    <FaEye className="text-sm" />
+                    <FaFileAlt className="text-sm" />
                   </button>
                 )}
-                {expense.paymentStatus === 'pending' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePay(expense._id);
-                    }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
-                    title="Pay"
-                    aria-label="Pay expense"
-                  >
-                    <FaMoneyCheckAlt className="text-sm" />
-                  </button>
-                )}
+                <Link
+                  to={`/expenses/${expense._id}`}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
+                  title="View Expense"
+                  aria-label="View expense details"
+                >
+                  <FaEye className="text-sm" />
+                </Link>
                 {isAdmin && (
                   <button
                     onClick={(e) =>{
@@ -433,22 +419,17 @@ const Expenses: React.FC = () =>{
                         title="View Receipt"
                         aria-label="View receipt"
                       >
-                        <FaEye className="text-sm" />
+                        <FaFileAlt className="text-sm" />
                       </button>
                     )}
-                    {expense.paymentStatus === 'pending' && (
-                      <button
-                        onClick={(e) =>{
-                          e.stopPropagation();
-                          handlePay(expense._id);
-                        }}
-                        className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
-                        title="Pay"
-                        aria-label="Pay expense"
-                      >
-                        <FaMoneyCheckAlt className="text-sm" />
-                      </button>
-                    )}
+                    <Link
+                      to={`/expenses/${expense._id}`}
+                      className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
+                      title="View Expense"
+                      aria-label="View expense details"
+                    >
+                      <FaEye className="text-sm" />
+                    </Link>
                     {isAdmin && (
                       <button
                         onClick={(e) =>{
@@ -493,17 +474,57 @@ const Expenses: React.FC = () =>{
                 <div className="lg:col-span-2 space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier *</label>
-                      <input
-                        type="text"
-                        value={formData.supplier}
-                        onChange={(e) =>setFormData({ ...formData, supplier: e.target.value })}
-                        required
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="Supplier or vendor name"
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Linked Client (Optional)</label>
+                      <select
+                        value={formData.clientId}
+                        onChange={(e) =>{
+                          const selectedClientId = e.target.value;
+                          const selectedClient = clients.find((c) => c._id === selectedClientId);
+                          setFormData({
+                            ...formData,
+                            clientId: selectedClientId,
+                            supplier: selectedClient ? selectedClient.name : formData.supplier,
+                          });
+                        }}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                      >
+                        <option value="">No linked client</option>
+                        {clients.map((client) => (
+                          <option key={client._id} value={client._id}>
+                            {client.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
+                    {!formData.clientId && (
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier Name *</label>
+                        <input
+                          type="text"
+                          value={formData.supplier}
+                          onChange={(e) =>setFormData({ ...formData, supplier: e.target.value })}
+                          required={!formData.clientId}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          placeholder="Supplier or vendor name"
+                        />
+                      </div>
+                    )}
+
+                    {formData.clientId && (
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier Name</label>
+                        <input
+                          type="text"
+                          value={formData.supplier}
+                          readOnly
+                          className="w-full px-3 py-2.5 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-600"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
                       <select
@@ -536,21 +557,6 @@ const Expenses: React.FC = () =>{
                       )}
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Linked Client (Optional)</label>
-                      <select
-                        value={formData.clientId}
-                        onChange={(e) =>setFormData({ ...formData, clientId: e.target.value })}
-                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
-                      >
-                        <option value="">No linked client</option>
-                        {clients.map((client) => (
-                          <option key={client._id} value={client._id}>
-                            {client.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

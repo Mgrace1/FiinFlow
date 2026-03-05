@@ -94,23 +94,15 @@ export const generateInvoicePdfAttachmentBuffer = async (invoice: any, company: 
       doc.text(String(company.phone), 50, 98);
     }
 
-    doc.rect(330, 52, 220, 64).lineWidth(1).strokeColor('#B6C5C1').stroke();
     if (company.logoUrl) {
       try {
         const logoPath = path.join(__dirname, '../../uploads/company-logos', path.basename(company.logoUrl));
         if (fs.existsSync(logoPath)) {
           doc.image(logoPath, 346, 62, { fit: [190, 42], align: 'center', valign: 'center' });
-        } else {
-          doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-          doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
         }
       } catch {
-        doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-        doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
+        // Intentionally ignore logo rendering failures.
       }
-    } else {
-      doc.fontSize(16).fillColor(accentColor).font(FONT_BOLD);
-      doc.text('Upload Logo', 390, 76, { width: 130, align: 'center' });
     }
 
     const titleText = invoiceTypeLabel.toUpperCase();

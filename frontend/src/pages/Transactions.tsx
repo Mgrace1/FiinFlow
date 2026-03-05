@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
+import { Link } from 'react-router-dom';
 import ConfirmModal from '../components/common/ConfirmModal';
 import EmptyState from '../components/common/EmptyState';
 import LoadingOverlay from '../components/common/LoadingOverlay';
-import { Search, Plus, X, Calendar, Upload } from 'lucide-react';
-import { getErrorMessage, notifyError, notifyInfo, notifySuccess } from '../utils/toast';
+import { Search } from 'lucide-react';
+import { notifyInfo } from '../utils/toast';
 import { getUserRole } from '../utils/roleUtils';
 
 interface Transaction {
   _id: string;
   type: 'income' | 'expense';
   amount: number;
-  category: string;
   date: string;
-  description: string;
+  name: string;
   currency: string;
 }
 
@@ -24,24 +24,15 @@ const Transactions: React.FC = () =>{
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; transactionId: string | null }>({
     show: false,
     transactionId: null,
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'bank' | 'receipts' | 'sales' | 'expenses'>('bank');
-  const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_30'>('all');
-  const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [visibleCount, setVisibleCount] = useState(8);
-  const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
-  const [formData, setFormData] = useState({
-    amount: '',
-    category: 'Salary',
-    date: new Date().toISOString().split('T')[0],
-    description: '',
-    receipt: null as File | null,
-  });
   const companyName = (() =>{
     try {
       const company = JSON.parse(localStorage.getItem('finflow_company') || '{}');
@@ -57,7 +48,7 @@ const Transactions: React.FC = () =>{
 
   useEffect(() =>{
     filterTransactions();
-  }, [transactions, searchQuery, activeTab, dateFilter, transactionFilter]);
+  }, [transactions, searchQuery, activeTab, startDate, endDate]);
 
   const fetchTransactions = async () =>{
     try {
@@ -71,9 +62,8 @@ const Transactions: React.FC = () =>{
         _id: exp._id,
         type: 'expense' as const,
         amount: exp.amount,
-        category: exp.category,
         date: exp.date,
-        description: exp.supplier || exp.description || '',
+        name: exp.supplier || exp.description || 'Expense',
         currency: exp.currency,
       })) : [];
 
@@ -81,9 +71,8 @@ const Transactions: React.FC = () =>{
         _id: inv._id,
         type: 'income' as const,
         amount: inv.totalAmount,
-        category: 'Salary',
         date: inv.createdAt,
-        description: inv.invoiceNumber || 'Invoice',
+        name: inv.clientId?.name || inv.clientName || 'Client',
         currency: inv.currency,
       })) : [];
 
@@ -109,21 +98,20 @@ const Transactions: React.FC = () =>{
       filtered = filtered.filter((t) => t.type === 'expense');
     }
 
-    if (transactionFilter !== 'all') {
-      filtered = filtered.filter((t) => t.type === transactionFilter);
-    }
-
-    if (dateFilter !== 'all') {
-      const now = new Date();
+    if (startDate || endDate) {
       filtered = filtered.filter((t) =>{
         const txDate = new Date(t.date);
-        if (dateFilter === 'this_month') {
-          return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+        const txDateOnly = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate());
+
+        if (startDate) {
+          const from = new Date(startDate);
+          const fromOnly = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+          if (txDateOnly < fromOnly) return false;
         }
-        if (dateFilter === 'last_30') {
-          const threshold = new Date();
-          threshold.setDate(now.getDate() - 30);
-          return txDate >= threshold;
+        if (endDate) {
+          const to = new Date(endDate);
+          const toOnly = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+          if (txDateOnly > toOnly) return false;
         }
         return true;
       });
@@ -131,8 +119,8 @@ const Transactions: React.FC = () =>{
 
     if (searchQuery) {
       filtered = filtered.filter((t) =>
-        t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.category.toLowerCase().includes(searchQuery.toLowerCase())
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t._id.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -140,58 +128,10 @@ const Transactions: React.FC = () =>{
     setVisibleCount(8);
   };
 
-  const handleSubmit = async (e: React.FormEvent) =>{
-    e.preventDefault();
-    try {
-      if (transactionType === 'expense') {
-        await apiClient.post('/expenses', {
-          supplier: formData.description || 'Expense',
-          category: formData.category,
-          amount: parseFloat(formData.amount),
-          currency: 'USD',
-          date: formData.date,
-          description: formData.description,
-        });
-      } else {
-        // For income, we'd need to create an invoice or use a different endpoint
-        // For now, we'll just show a message
-        notifyInfo('Income transactions are added via invoices');
-      }
-      fetchTransactions();
-      setShowModal(false);
-      resetForm();
-      notifySuccess('Transaction created successfully');
-    } catch (error) {
-      console.error('Failed to create transaction:', error);
-      notifyError(getErrorMessage(error, 'Failed to create transaction'));
-    }
-  };
-
   const handleDelete = async () =>{
     if (!deleteConfirm.transactionId) return;
-    try {
-      const transaction = transactions.find((t) => t._id === deleteConfirm.transactionId);
-      if (transaction?.type === 'expense') {
-        await apiClient.delete(`/expenses/${deleteConfirm.transactionId}`);
-      }
-      fetchTransactions();
-      setDeleteConfirm({ show: false, transactionId: null });
-      notifySuccess('Transaction deleted successfully');
-    } catch (error) {
-      console.error('Failed to delete transaction:', error);
-      notifyError(getErrorMessage(error, 'Failed to delete transaction'));
-    }
-  };
-
-  const resetForm = () =>{
-    setFormData({
-      amount: '',
-      category: 'Salary',
-      date: new Date().toISOString().split('T')[0],
-      description: '',
-      receipt: null,
-    });
-    setTransactionType('expense');
+    setDeleteConfirm({ show: false, transactionId: null });
+    notifyInfo('Delete action will be available soon');
   };
 
   const formatCurrency = (amount: number) =>{
@@ -217,13 +157,6 @@ const Transactions: React.FC = () =>{
       <div className="px-6 pt-5 pb-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-gray-500">{companyName}</p>
-          <button
-            onClick={() =>setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition"
-          >
-            <Plus className="w-4 h-4" />
-            Add account
-          </button>
         </div>
         <h1 className="text-4xl font-bold text-gray-900">Transactions</h1>
       </div>
@@ -237,7 +170,7 @@ const Transactions: React.FC = () =>{
               activeTab === 'bank' ? 'border-gray-900 text-gray-900 font-semibold' : 'border-transparent text-gray-400'
             }`}
           >
-            Bank transactions
+            Transactions
           </button>
           <button
             onClick={() =>setActiveTab('receipts')}
@@ -267,25 +200,21 @@ const Transactions: React.FC = () =>{
       </div>
 
       {/* Filter Bar */}
-      <div className="px-6 py-4 border-b border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <select
-          value={dateFilter}
-          onChange={(e) =>setDateFilter(e.target.value as 'all' | 'this_month' | 'last_30')}
+      <div className="px-6 py-4 border-b border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          <option value="all">All dates</option>
-          <option value="this_month">This month</option>
-          <option value="last_30">Last 30 days</option>
-        </select>
-        <select
-          value={transactionFilter}
-          onChange={(e) =>setTransactionFilter(e.target.value as 'all' | 'income' | 'expense')}
+          aria-label="Start date"
+        />
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-        >
-          <option value="all">All transactions</option>
-          <option value="income">Income only</option>
-          <option value="expense">Expenses only</option>
-        </select>
+          aria-label="End date"
+        />
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -305,23 +234,15 @@ const Transactions: React.FC = () =>{
             <EmptyState
               icon=""
               title="No transactions found"
-              subtitle="Try changing filters or add a new transaction."
-              action={{
-                label: '+ Add Transaction',
-                onClick: () =>setShowModal(true),
-              }}
+              subtitle="Try changing filters."
             />
           </div>
         ) : (
           <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                <th className="px-4 py-3 text-left w-10">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                </th>
                 <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Category</th>
+                <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-right">Spent</th>
                 <th className="px-4 py-3 text-right">Received</th>
                 <th className="px-4 py-3 text-right">Action</th>
@@ -330,12 +251,8 @@ const Transactions: React.FC = () =>{
             <tbody className="divide-y divide-gray-200">
               {displayedTransactions.map((transaction) =>(
                 <tr key={transaction._id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <input type="checkbox" className="rounded border-gray-300" />
-                  </td>
                   <td className="px-4 py-3 text-gray-700">{formatDate(transaction.date)}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{transaction.description}</td>
-                  <td className="px-4 py-3 text-gray-700">{transaction.category}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{transaction.name}</td>
                   <td className="px-4 py-3 text-right text-gray-900 font-medium">
                     {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
                   </td>
@@ -343,13 +260,12 @@ const Transactions: React.FC = () =>{
                     {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => notifyInfo('This action will be available soon')}
+                    <Link
+                      to={transaction.type === 'income' ? `/invoices/${transaction._id}` : `/expenses/${transaction._id}`}
                       className="text-sky-500 hover:text-sky-700 font-semibold text-sm"
                     >
-                      Add
-                    </button>
+                      Link
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -370,143 +286,6 @@ const Transactions: React.FC = () =>{
         </div>
       )}
     </div>
-
-      {/* Add Transaction Modal */}
-      {showModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Add Transaction</h2>
-            <button
-                onClick={() =>{
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-          <p className="text-gray-600 mb-6">Record a new income or expense transaction</p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Transaction Type Selector */}
-            <div className="flex gap-2 mb-4">
-              <button
-                  type="button"
-                  onClick={() =>setTransactionType('expense')}
-                  className={`flex-1 px-4 py-2 rounded-full font-medium transition-colors ${
-                    transactionType === 'expense'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  Expense
-              </button>
-              <button
-                  type="button"
-                  onClick={() =>setTransactionType('income')}
-                  className={`flex-1 px-4 py-2 rounded-full font-medium transition-colors ${
-                    transactionType === 'income'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  Income
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
-              <input
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) =>setFormData({ ...formData, amount: e.target.value })}
-                  required
-                  placeholder="$ 0.00"
-                  className="input w-full"
-                />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-              <select
-                  value={formData.category}
-                  onChange={(e) =>setFormData({ ...formData, category: e.target.value })}
-                  required
-                  className="input w-full"
-                >
-                <option value="Salary">Salary</option>
-                <option value="Food">Food</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Utilities">Utilities</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-              <div className="relative">
-                <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) =>setFormData({ ...formData, date: e.target.value })}
-                    required
-                    className="input w-full"
-                  />
-                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-              <input
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) =>setFormData({ ...formData, description: e.target.value })}
-                  required
-                  placeholder="e.g., Grocery shopping, Monthly rent..."
-                  className="input w-full"
-                />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Receipt (Optional)</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-500 transition-colors">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Click to upload receipt image</p>
-                <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>setFormData({ ...formData, receipt: e.target.files?.[0] || null })}
-                    className="hidden"
-                    id="receipt-upload"
-                  />
-                <label htmlFor="receipt-upload" className="cursor-pointer" />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                  type="button"
-                  onClick={() =>{
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="btn btn-secondary flex-1"
-                >
-                  Cancel
-              </button>
-              <button type="submit" className="btn btn-primary flex-1 bg-green-500 hover:bg-green-600">
-                  Add Transaction
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-      )}
 
       {/* Delete Confirmation Modal */}
     <ConfirmModal

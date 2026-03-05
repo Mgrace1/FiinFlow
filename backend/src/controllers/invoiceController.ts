@@ -100,6 +100,12 @@ const isSameCalendarDate = (a: Date, b: Date): boolean => (
   && a.getDate() === b.getDate()
 );
 
+const parseValidDate = (value: any): Date | null => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const createInvoiceOverdueNotification = async (invoice: any, companyId: any) => {
   try {
     const existing = await Notification.findOne({
@@ -283,6 +289,13 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       ? safeAmount + (safeAmount * safeTaxRate / 100)
       : safeAmount;
     const safeAmountPaid = Math.max(0, toSafeNumber(amountPaid, 0));
+    const parsedDueDate = parseValidDate(dueDate);
+    if (!parsedDueDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid due date',
+      });
+    }
 
     if (safeAmountPaid > computedTotalAmount) {
       return res.status(400).json({
@@ -292,7 +305,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
     }
 
     const hasOutstanding = computedTotalAmount > 0 && safeAmountPaid < computedTotalAmount;
-    const dueAtCreate = new Date(dueDate);
+    const dueAtCreate = parsedDueDate;
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const shouldBeOverdueOnCreate = hasOutstanding && dueAtCreate.getTime() < startOfToday.getTime();
@@ -317,7 +330,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       taxRate: safeTaxRate >= 0 ? safeTaxRate : 0,
       totalAmount: computedTotalAmount,
       amountPaid: safeAmountPaid,
-      dueDate,
+      dueDate: parsedDueDate,
       notes,
       description,
       proformaFileId,
@@ -340,7 +353,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
     }
 
     const remainingAmount = Math.max(0, computedTotalAmount - safeAmountPaid);
-    const dueAt = new Date(dueDate);
+    const dueAt = parsedDueDate;
     const today = new Date();
     if (remainingAmount > 0 && isSameCalendarDate(dueAt, today)) {
       await Notification.create({
@@ -437,6 +450,16 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     if (updates.invoiceType !== undefined) {
       updates.invoiceType = normalizeInvoiceType(updates.invoiceType);
     }
+    if (updates.dueDate !== undefined) {
+      const parsedDueDate = parseValidDate(updates.dueDate);
+      if (!parsedDueDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid due date',
+        });
+      }
+      updates.dueDate = parsedDueDate;
+    }
     const invoice = await Invoice.findOne({
       _id: req.params.id,
       companyId: req.companyId,
@@ -473,7 +496,15 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     updates.totalAmount = nextTotalAmount;
     updates.amountPaid = requestedAmountPaid;
 
-    const dueDateToUse = updates.dueDate !== undefined ? new Date(updates.dueDate) : new Date(invoice.dueDate);
+    const dueDateToUse = updates.dueDate !== undefined
+      ? parseValidDate(updates.dueDate)
+      : parseValidDate(invoice.dueDate);
+    if (!dueDateToUse) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid due date',
+      });
+    }
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const hasOutstanding = nextTotalAmount > 0 && requestedAmountPaid < nextTotalAmount;
@@ -638,6 +669,13 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
     }
 
     const safeAmountPaid = Math.max(0, toSafeNumber(amountPaid, 0));
+    const parsedPaymentDate = parseValidDate(paymentDate);
+    if (!parsedPaymentDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment date',
+      });
+    }
     const invoiceTotal = Math.max(0, toSafeNumber(invoice.totalAmount, toSafeNumber(invoice.amount, 0)));
     if (safeAmountPaid > invoiceTotal) {
       return res.status(400).json({
@@ -647,7 +685,7 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
     }
 
     invoice.amountPaid = safeAmountPaid;
-    invoice.paymentDate = paymentDate;
+    invoice.paymentDate = parsedPaymentDate;
     invoice.receiptFileId = receiptFileId;
     invoice.paymentMethod = paymentMethod;
     invoice.paymentReference = paymentReference;
