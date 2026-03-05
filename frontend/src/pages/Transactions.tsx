@@ -3,7 +3,7 @@ import { apiClient } from '../api/client';
 import ConfirmModal from '../components/common/ConfirmModal';
 import EmptyState from '../components/common/EmptyState';
 import LoadingOverlay from '../components/common/LoadingOverlay';
-import { Search, Plus, X, Calendar, Upload, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, Plus, X, Calendar, Upload } from 'lucide-react';
 import { getErrorMessage, notifyError, notifyInfo, notifySuccess } from '../utils/toast';
 import { getUserRole } from '../utils/roleUtils';
 
@@ -30,7 +30,10 @@ const Transactions: React.FC = () =>{
     transactionId: null,
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [activeTab, setActiveTab] = useState<'bank' | 'receipts' | 'sales' | 'expenses'>('bank');
+  const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_30'>('all');
+  const [transactionFilter, setTransactionFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [visibleCount, setVisibleCount] = useState(8);
   const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
   const [formData, setFormData] = useState({
     amount: '',
@@ -39,8 +42,14 @@ const Transactions: React.FC = () =>{
     description: '',
     receipt: null as File | null,
   });
-
-  const categories = ['All Categories', 'Salary', 'Food', 'Transportation', 'Entertainment', 'Utilities', 'Other'];
+  const companyName = (() =>{
+    try {
+      const company = JSON.parse(localStorage.getItem('finflow_company') || '{}');
+      return company.displayName || company.name || 'Your Company';
+    } catch {
+      return 'Your Company';
+    }
+  })();
 
   useEffect(() =>{
     fetchTransactions();
@@ -48,7 +57,7 @@ const Transactions: React.FC = () =>{
 
   useEffect(() =>{
     filterTransactions();
-  }, [transactions, searchQuery, selectedCategory]);
+  }, [transactions, searchQuery, activeTab, dateFilter, transactionFilter]);
 
   const fetchTransactions = async () =>{
     try {
@@ -92,6 +101,34 @@ const Transactions: React.FC = () =>{
   const filterTransactions = () =>{
     let filtered = [...transactions];
 
+    if (activeTab === 'sales') {
+      filtered = filtered.filter((t) => t.type === 'income');
+    } else if (activeTab === 'expenses') {
+      filtered = filtered.filter((t) => t.type === 'expense');
+    } else if (activeTab === 'receipts') {
+      filtered = filtered.filter((t) => t.type === 'expense');
+    }
+
+    if (transactionFilter !== 'all') {
+      filtered = filtered.filter((t) => t.type === transactionFilter);
+    }
+
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter((t) =>{
+        const txDate = new Date(t.date);
+        if (dateFilter === 'this_month') {
+          return txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
+        }
+        if (dateFilter === 'last_30') {
+          const threshold = new Date();
+          threshold.setDate(now.getDate() - 30);
+          return txDate >= threshold;
+        }
+        return true;
+      });
+    }
+
     if (searchQuery) {
       filtered = filtered.filter((t) =>
         t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -99,11 +136,8 @@ const Transactions: React.FC = () =>{
       );
     }
 
-    if (selectedCategory !== 'All Categories') {
-      filtered = filtered.filter((t) => t.category === selectedCategory);
-    }
-
     setFilteredTransactions(filtered);
+    setVisibleCount(8);
   };
 
   const handleSubmit = async (e: React.FormEvent) =>{
@@ -169,110 +203,172 @@ const Transactions: React.FC = () =>{
 
   const formatDate = (dateString: string) =>{
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-GB');
   };
 
   if (loading) return <LoadingOverlay message="Loading transactions..." />;
 
-  return (
-  <div>
-      {/* Header */}
-    <div className="mb-6">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Transactions</h1>
-      <p className="text-gray-600">View and manage your transactions</p>
-    </div>
+  const displayedTransactions = filteredTransactions.slice(0, visibleCount);
 
-      {/* Search and Filter */}
-    <div className="flex flex-col md:flex-row gap-4 mb-6">
-      <div className="flex-1 relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
+  return (
+  <div className="max-w-6xl mx-auto">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      {/* Top Header */}
+      <div className="px-6 pt-5 pb-4 border-b border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-gray-500">{companyName}</p>
+          <button
+            onClick={() =>setShowModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Add account
+          </button>
+        </div>
+        <h1 className="text-4xl font-bold text-gray-900">Transactions</h1>
+      </div>
+
+      {/* Tabs */}
+      <div className="px-6 pt-4 border-b border-gray-200">
+        <div className="flex items-center gap-8 text-sm">
+          <button
+            onClick={() =>setActiveTab('bank')}
+            className={`pb-3 border-b-2 transition ${
+              activeTab === 'bank' ? 'border-gray-900 text-gray-900 font-semibold' : 'border-transparent text-gray-400'
+            }`}
+          >
+            Bank transactions
+          </button>
+          <button
+            onClick={() =>setActiveTab('receipts')}
+            className={`pb-3 border-b-2 transition ${
+              activeTab === 'receipts' ? 'border-gray-900 text-gray-900 font-semibold' : 'border-transparent text-gray-400'
+            }`}
+          >
+            Receipts
+          </button>
+          <button
+            onClick={() =>setActiveTab('sales')}
+            className={`pb-3 border-b-2 transition ${
+              activeTab === 'sales' ? 'border-gray-900 text-gray-900 font-semibold' : 'border-transparent text-gray-400'
+            }`}
+          >
+            Income
+          </button>
+          <button
+            onClick={() =>setActiveTab('expenses')}
+            className={`pb-3 border-b-2 transition ${
+              activeTab === 'expenses' ? 'border-gray-900 text-gray-900 font-semibold' : 'border-transparent text-gray-400'
+            }`}
+          >
+            Expenses
+          </button>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="px-6 py-4 border-b border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <select
+          value={dateFilter}
+          onChange={(e) =>setDateFilter(e.target.value as 'all' | 'this_month' | 'last_30')}
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="all">All dates</option>
+          <option value="this_month">This month</option>
+          <option value="last_30">Last 30 days</option>
+        </select>
+        <select
+          value={transactionFilter}
+          onChange={(e) =>setTransactionFilter(e.target.value as 'all' | 'income' | 'expense')}
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        >
+          <option value="all">All transactions</option>
+          <option value="income">Income only</option>
+          <option value="expense">Expenses only</option>
+        </select>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
             type="text"
-            placeholder="Search"
+            placeholder="Search transactions"
             value={searchQuery}
             onChange={(e) =>setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           />
+        </div>
       </div>
-      <div className="w-full md:w-64">
-        <select
-            value={selectedCategory}
-            onChange={(e) =>setSelectedCategory(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          >
-            {categories.map((cat) =>(
-            <option key={cat} value={cat}>
-                {cat}
-            </option>
-            ))}
-        </select>
-      </div>
-      <button
-          onClick={() =>setShowModal(true)}
-          className="btn btn-primary flex items-center gap-2 whitespace-nowrap"
-        >
-        <Plus className="w-4 h-4" />
-        Add Transaction
-      </button>
-    </div>
 
-      {/* Transactions List */}
-    <div className="bg-white rounded-lg shadow">
-        {filteredTransactions.length === 0 ? (
-        <EmptyState
-            icon=""
-            title="No transactions found"
-            subtitle="Add your first transaction to get started"
-            action={{
-              label: '+ Add Transaction',
-              onClick: () =>setShowModal(true),
-            }}
-          />
-        ) : (
-          <div className="divide-y divide-gray-200">
-              {filteredTransactions.map((transaction) =>(
-              <div
-                  key={transaction._id}
-                  className="p-4 hover:bg-gray-50 flex items-center justify-between"
-                >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
-                      {transaction.type === 'income' ? (
-                      <TrendingUp className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <TrendingDown className="w-5 h-5 text-red-600" />
-                      )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{transaction.description}</p>
-                    <p className="text-sm text-gray-600">{transaction.category}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className={`font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                    </p>
-                    <p className="text-sm text-gray-500">{formatDate(transaction.date)}</p>
-                  </div>
-                  {isAdmin && (
-                    <button
-                        onClick={(e) =>{
-                          e.stopPropagation();
-                          setDeleteConfirm({ show: true, transactionId: transaction._id });
-                        }}
-                        className="text-red-500 hover:text-red-700 px-2"
-                      >
-                        Delete
-                    </button>
-                  )}
-                </div>
-              </div>
-              ))}
+      {/* Transactions Table */}
+      <div className="overflow-x-auto">
+        {displayedTransactions.length === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              icon=""
+              title="No transactions found"
+              subtitle="Try changing filters or add a new transaction."
+              action={{
+                label: '+ Add Transaction',
+                onClick: () =>setShowModal(true),
+              }}
+            />
           </div>
+        ) : (
+          <table className="w-full min-w-[860px] text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                <th className="px-4 py-3 text-left w-10">
+                  <input type="checkbox" className="rounded border-gray-300" />
+                </th>
+                <th className="px-4 py-3 text-left">Date</th>
+                <th className="px-4 py-3 text-left">Description</th>
+                <th className="px-4 py-3 text-left">Category</th>
+                <th className="px-4 py-3 text-right">Spent</th>
+                <th className="px-4 py-3 text-right">Received</th>
+                <th className="px-4 py-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {displayedTransactions.map((transaction) =>(
+                <tr key={transaction._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <input type="checkbox" className="rounded border-gray-300" />
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">{formatDate(transaction.date)}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">{transaction.description}</td>
+                  <td className="px-4 py-3 text-gray-700">{transaction.category}</td>
+                  <td className="px-4 py-3 text-right text-gray-900 font-medium">
+                    {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900 font-medium">
+                    {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => notifyInfo('This action will be available soon')}
+                      className="text-sky-500 hover:text-sky-700 font-semibold text-sm"
+                    >
+                      Add
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
+      </div>
+
+      {/* Footer */}
+      {filteredTransactions.length > visibleCount && (
+        <div className="px-6 py-4 border-t border-gray-200 text-center">
+          <button
+            onClick={() => setVisibleCount((prev) => prev + 8)}
+            className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+          >
+            Load more
+          </button>
+        </div>
+      )}
     </div>
 
       {/* Add Transaction Modal */}

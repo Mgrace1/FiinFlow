@@ -14,6 +14,7 @@ import Invoices from './pages/Invoices';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Expenses from './pages/Expenses';
 import ExpenseDetail from './pages/ExpenseDetail';
+import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import TeamMembers from './pages/TeamMembers';
@@ -66,6 +67,7 @@ function AppRoutes() {
         <Route path="clients" element={<Clients />} />
         <Route path="clients/:clientId" element={<ClientDetail />} />
         <Route path="invoices" element={<Invoices />} />
+        <Route path="transactions" element={<Transactions />} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="expenses/:expenseId" element={<ExpenseDetail />} />
         <Route path="reports" element={<Reports />} />

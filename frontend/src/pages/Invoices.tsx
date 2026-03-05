@@ -46,6 +46,7 @@ interface InvoiceSubmitPayload {
   invoiceNumber: string;
   invoiceType: string;
   amount: string;
+  amountPaid?: string;
   currency: string;
   taxApplied: boolean;
   taxRate: number;

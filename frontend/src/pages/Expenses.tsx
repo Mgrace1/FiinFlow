@@ -5,7 +5,7 @@ import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import { formatDateDMY } from '../utils/formatDate';
 import Badge from '../components/common/Badge';
-import { FaTimes, FaTrash, FaMoneyCheckAlt } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaMoneyCheckAlt, FaEye } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { formatCompanyMoney } from '../utils/currency';
 import { getUserRole } from '../utils/roleUtils';
@@ -14,6 +14,7 @@ interface Expense {
   _id: string;
   supplier: string;
   category: string;
+  receiptFileId?: string | { _id?: string; originalName?: string; mimeType?: string };
   amount: number;
   amountPaid: number;
   remainingAmount: number;
@@ -56,6 +57,7 @@ const Expenses: React.FC = () =>{
     referenceNumber: '',
     description: '',
     paymentMethod: 'Bank',
+    receiptFile: null as File | null,
   });
 
   useEffect(() =>{
@@ -119,8 +121,20 @@ const Expenses: React.FC = () =>{
       ? customCategory.trim()
       : formData.category;
 
+    let receiptFileId: string | undefined;
+    if (formData.receiptFile) {
+      const filePayload = new FormData();
+      filePayload.append('file', formData.receiptFile);
+      filePayload.append('type', 'receipt');
+      const uploaded = await apiClient.post('/files', filePayload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      receiptFileId = uploaded?.data?.data?._id;
+    }
+
     const payload = {
       clientId: formData.clientId || undefined,
+      receiptFileId,
       supplier: formData.supplier.trim(),
       category: resolvedCategory,
       amount: parsedAmount,
@@ -172,6 +186,32 @@ const Expenses: React.FC = () =>{
     }
   };
 
+  const getReceiptId = (expense: Expense): string | null => {
+    if (!expense.receiptFileId) return null;
+    if (typeof expense.receiptFileId === 'string') return expense.receiptFileId;
+    return expense.receiptFileId._id || null;
+  };
+
+  const handleViewReceipt = async (expense: Expense) => {
+    const receiptId = getReceiptId(expense);
+    if (!receiptId) return;
+    try {
+      const response = await apiClient.get(`/files/${receiptId}/download?inline=true`, {
+        responseType: 'blob',
+      });
+      const fallbackMimeType =
+        typeof expense.receiptFileId === 'object' ? expense.receiptFileId.mimeType : undefined;
+      const contentType = String(response.headers['content-type'] || fallbackMimeType || 'application/octet-stream');
+      const blob = new Blob([response.data], { type: contentType });
+      const blobUrl = window.URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      // Let browser open it first, then release URL
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10_000);
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Failed to open receipt'));
+    }
+  };
+
   const resetForm = () =>{
     setFormData({
       clientId: '',
@@ -183,6 +223,7 @@ const Expenses: React.FC = () =>{
       referenceNumber: '',
       description: '',
       paymentMethod: 'Bank',
+      receiptFile: null,
     });
     setCustomCategory('');
     setFormError('');
@@ -292,6 +333,19 @@ const Expenses: React.FC = () =>{
                 <p className="mt-3 text-xs text-gray-500 border-t pt-2 leading-relaxed">{expense.description}</p>
               )}
               <div className="mt-4 flex justify-end gap-x-4">
+                {getReceiptId(expense) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewReceipt(expense);
+                    }}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                    title="View Receipt"
+                    aria-label="View receipt"
+                  >
+                    <FaEye className="text-sm" />
+                  </button>
+                )}
                 {expense.paymentStatus === 'pending' && (
                   <button
                     onClick={(e) => {
@@ -369,6 +423,19 @@ const Expenses: React.FC = () =>{
                     <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                    {getReceiptId(expense) && (
+                      <button
+                        onClick={(e) =>{
+                          e.stopPropagation();
+                          handleViewReceipt(expense);
+                        }}
+                        className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                        title="View Receipt"
+                        aria-label="View receipt"
+                      >
+                        <FaEye className="text-sm" />
+                      </button>
+                    )}
                     {expense.paymentStatus === 'pending' && (
                       <button
                         onClick={(e) =>{
@@ -570,6 +637,22 @@ const Expenses: React.FC = () =>{
                       rows={4}
                       placeholder="Add details about this expense..."
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Receipt (Optional)</label>
+                    <label className="btn btn-primary cursor-pointer inline-flex items-center">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => setFormData({ ...formData, receiptFile: e.target.files?.[0] || null })}
+                      />
+                      {formData.receiptFile ? 'Change Receipt' : '+ Upload Receipt'}
+                    </label>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {formData.receiptFile ? `Selected: ${formData.receiptFile.name}` : 'Accepted: PDF, JPG, JPEG, PNG'}
+                    </p>
                   </div>
                 </div>
 
