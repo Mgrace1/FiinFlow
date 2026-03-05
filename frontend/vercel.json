@@ -1,4 +1,4 @@
-git {
+ {
   "rewrites": [
     {
       "source": "/(.*)",
