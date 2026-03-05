@@ -391,19 +391,19 @@ const Settings: React.FC = () =>{
   return (
   <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
     <div className="mb-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-      <p className="text-gray-600">Manage your account preferences and settings</p>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Settings</h1>
+      <p className="text-gray-600 dark:text-gray-400">Manage your account preferences and settings</p>
     </div>
 
-    <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-      <div className="border-b border-gray-200">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow hover:shadow-md transition-shadow">
+      <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex -mb-px overflow-x-auto whitespace-nowrap">
           <button
               onClick={() =>setActiveTab('company')}
               className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                 activeTab === 'company'
                   ? 'border-b-2 border-primary-500 text-primary-500'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               Company Profile
@@ -413,7 +413,7 @@ const Settings: React.FC = () =>{
               className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                 activeTab === 'security'
                   ? 'border-b-2 border-primary-500 text-primary-500'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               Security
@@ -424,7 +424,7 @@ const Settings: React.FC = () =>{
                 className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'branding'
                     ? 'border-b-2 border-primary-500 text-primary-500'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 Branding
@@ -436,7 +436,7 @@ const Settings: React.FC = () =>{
                 className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'workspaces'
                     ? 'border-b-2 border-primary-500 text-primary-500'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 Workspaces
@@ -448,7 +448,7 @@ const Settings: React.FC = () =>{
                 className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'payments'
                     ? 'border-b-2 border-primary-500 text-primary-500'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
                 Payment Alerts
@@ -462,7 +462,7 @@ const Settings: React.FC = () =>{
           <form onSubmit={handleUpdateCompany} className="space-y-4 max-w-2xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
                 <input
                     type="text"
                     value={company.name}
@@ -471,7 +471,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                 <input
                     type="email"
                     value={company.email}
@@ -480,7 +480,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                 <input
                     type="tel"
                     value={company.phone}
@@ -489,7 +489,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
                 <input
                     type="text"
                     value={company.industry || ''}
@@ -499,7 +499,7 @@ const Settings: React.FC = () =>{
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
               <textarea
                   value={company.address}
                   onChange={(e) =>setCompany({ ...company, address: e.target.value })}
@@ -509,7 +509,7 @@ const Settings: React.FC = () =>{
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Currency</label>
                 <select
                     value={company.defaultCurrency}
                     onChange={(e) =>setCompany({ ...company, defaultCurrency: e.target.value })}
@@ -520,7 +520,7 @@ const Settings: React.FC = () =>{
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Rate (%)</label>
                 <input
                     type="number"
                     value={company.taxRate}
@@ -529,7 +529,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">USD Exchange Rate</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">USD Exchange Rate</label>
                 <input
                     type="number"
                     value={company.exchangeRateUSD}
@@ -554,8 +554,8 @@ const Settings: React.FC = () =>{
             <div>
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Switch Company Workspace</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Switch Company Workspace</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Use one email across multiple companies and choose which workspace to manage in this session.
                   </p>
                 </div>
@@ -567,7 +567,7 @@ const Settings: React.FC = () =>{
                 </button>
               </div>
               {workspaces.length === 0 ? (
-                <p className="text-sm text-gray-500">No workspaces found for this email.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No workspaces found for this email.</p>
               ) : (
                 <div className="space-y-3">
                   {workspaces.map((workspace) => {
@@ -577,7 +577,7 @@ const Settings: React.FC = () =>{
                       <div
                         key={`${workspace.companyId}-${workspace.userId}`}
                         className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border p-4 ${
-                          isActive ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-white'
+                          isActive ? 'border-primary-400 bg-primary-50 dark:border-gray-600 dark:bg-gray-800' : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -585,14 +585,14 @@ const Settings: React.FC = () =>{
                             <img
                               src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${workspace.logoUrl}`}
                               alt={workspace.companyName}
-                              className="h-10 w-10 rounded-md border border-gray-200 object-cover"
+                              className="h-10 w-10 rounded-md border border-gray-200 dark:border-gray-700 object-cover"
                             />
                           ) : (
-                            <div className="h-10 w-10 rounded-md border border-dashed border-gray-300 bg-gray-50" />
+                            <div className="h-10 w-10 rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800" />
                           )}
                           <div>
-                            <p className="font-semibold text-gray-900">{workspace.companyName}</p>
-                            <p className="text-xs text-gray-600">
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">{workspace.companyName}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
                               Role: {workspace.role} {workspace.companyEmail ? `| ${workspace.companyEmail}` : ''}
                             </p>
                           </div>
@@ -624,9 +624,9 @@ const Settings: React.FC = () =>{
           {isAdmin && activeTab === 'payments' && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <form onSubmit={handleCreateConnection} className="rounded-lg border border-gray-200 p-4">
-                  <h3 className="mb-1 text-lg font-semibold text-gray-900">Connect Mailbox or SMS Forward</h3>
-                  <p className="mb-4 text-sm text-gray-600">
+                <form onSubmit={handleCreateConnection} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Connect Mailbox or SMS Forward</h3>
+                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
                     Add a mailbox address or SMS-forward sender to enable payment alert ingestion.
                   </p>
                   <div className="grid grid-cols-1 gap-3">
@@ -659,9 +659,9 @@ const Settings: React.FC = () =>{
                   </div>
                 </form>
 
-                <form onSubmit={handleSubmitIngestionAlert} className="rounded-lg border border-gray-200 p-4">
-                  <h3 className="mb-1 text-lg font-semibold text-gray-900">Manual Alert Ingestion</h3>
-                  <p className="mb-4 text-sm text-gray-600">
+                <form onSubmit={handleSubmitIngestionAlert} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+                  <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Manual Alert Ingestion</h3>
+                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
                     Paste a payment alert from email/SMS and let the system detect and apply payment.
                   </p>
                   <div className="grid grid-cols-1 gap-3">
@@ -706,7 +706,7 @@ const Settings: React.FC = () =>{
                       onChange={(e) => setIngestionForm({ ...ingestionForm, messageText: e.target.value })}
                       required
                     />
-                    <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <input
                         type="checkbox"
                         checked={ingestionForm.dryRun}
@@ -721,27 +721,27 @@ const Settings: React.FC = () =>{
                 </form>
               </div>
 
-              <div className="rounded-lg border border-gray-200">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 px-4 py-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Connected Sources</h3>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Connected Sources</h3>
                   <button onClick={fetchIngestionConnections} className="btn btn-secondary" disabled={connectionsLoading}>
                     {connectionsLoading ? 'Refreshing...' : 'Refresh'}
                   </button>
                 </div>
                 <div className="p-4">
                   {connectionsLoading ? (
-                    <p className="text-sm text-gray-500">Loading connections...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading connections...</p>
                   ) : connections.length === 0 ? (
-                    <p className="text-sm text-gray-500">No mailbox or SMS forwarding connections yet.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No mailbox or SMS forwarding connections yet.</p>
                   ) : (
                     <div className="space-y-2">
                       {connections.map((connection) => (
-                        <div key={connection._id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-md border border-gray-200 p-3">
+                        <div key={connection._id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-md border border-gray-200 dark:border-gray-700 p-3">
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
                               {connection.displayName || connection.identifier}
                             </p>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
                               {connection.channel === 'gmail' ? 'Gmail' : 'SMS Forward'} | {connection.identifier}
                             </p>
                           </div>
@@ -759,34 +759,34 @@ const Settings: React.FC = () =>{
                 </div>
               </div>
 
-              <div className="rounded-lg border border-gray-200">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 px-4 py-3">
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Ingestion Events</h3>
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Ingestion Events</h3>
                   <button onClick={fetchIngestionEvents} className="btn btn-secondary" disabled={eventsLoading}>
                     {eventsLoading ? 'Refreshing...' : 'Refresh'}
                   </button>
                 </div>
                 <div className="max-h-96 overflow-auto p-4">
                   {eventsLoading ? (
-                    <p className="text-sm text-gray-500">Loading events...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading events...</p>
                   ) : events.length === 0 ? (
-                    <p className="text-sm text-gray-500">No ingestion events yet.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No ingestion events yet.</p>
                   ) : (
                     <div className="space-y-2">
                       {events.map((event) => (
-                        <div key={event._id} className="rounded-md border border-gray-200 p-3">
+                        <div key={event._id} className="rounded-md border border-gray-200 dark:border-gray-700 p-3">
                           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                               {String(event.source || '').toUpperCase()} | {event.status}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {event.createdAt ? new Date(event.createdAt).toLocaleString() : ''}
                             </p>
                           </div>
                           {event.subject && (
-                            <p className="mt-1 text-sm text-gray-700">Subject: {event.subject}</p>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">Subject: {event.subject}</p>
                           )}
-                          <p className="mt-1 line-clamp-2 text-sm text-gray-600">{event.messageText}</p>
+                          <p className="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{event.messageText}</p>
                           {event.errorMessage && (
                             <p className="mt-1 text-xs text-red-600">Error: {event.errorMessage}</p>
                           )}
@@ -803,12 +803,12 @@ const Settings: React.FC = () =>{
 
     {showCreateWorkspaceModal && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl">
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h3 className="text-lg font-semibold text-gray-900">Create New Workspace</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg shadow-2xl">
+          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create New Workspace</h3>
             <button
               onClick={() => setShowCreateWorkspaceModal(false)}
-              className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
             >
               &times;
             </button>
@@ -825,7 +825,7 @@ const Settings: React.FC = () =>{
               />
               <input
                 type="email"
-                className="input cursor-not-allowed bg-gray-100 text-gray-600"
+                className="input cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                 placeholder="Workspace owner email"
                 value={workspaceForm.email || currentUserEmail}
                 readOnly
@@ -875,7 +875,7 @@ const Settings: React.FC = () =>{
               <button
                 type="button"
                 onClick={() => setShowCreateWorkspaceModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium"
               >
                 Cancel
               </button>

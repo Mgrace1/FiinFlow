@@ -25,6 +25,7 @@ import FeatureDetail from './pages/FeatureDetail';
 import NotFound from './pages/NotFound';
 import ResearchConsent from './pages/ResearchConsent';
 import { ToastContainer } from 'react-toastify';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -97,25 +98,34 @@ function RouteAwareStarfield() {
   return authPaths.has(location.pathname) ? <Starfield /> : null;
 }
 
+function ThemedToastContainer() {
+  const { resolvedTheme } = useTheme();
+  return (
+    <ToastContainer
+      position="top-right"
+      autoClose={2000}
+      hideProgressBar={false}
+      newestOnTop
+      closeOnClick
+      pauseOnHover
+      draggable
+      theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+      className="fiinflow-toast-container"
+      toastClassName="fiinflow-toast"
+    />
+  );
+}
+
 function App() {
   return (
   <BrowserRouter>
-    <AuthProvider>
-      <AppRoutes />
-      <RouteAwareStarfield />
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="light"
-        className="fiinflow-toast-container"
-        toastClassName="fiinflow-toast"
-      />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+        <RouteAwareStarfield />
+        <ThemedToastContainer />
+      </AuthProvider>
+    </ThemeProvider>
   </BrowserRouter>
   );
 }

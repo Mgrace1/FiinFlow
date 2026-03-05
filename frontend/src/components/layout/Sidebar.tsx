@@ -53,16 +53,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
       <div
         className={`fixed top-0 left-0 h-full ${
           isExpanded ? 'w-30' : 'w-16'
-        } bg-sidebar-dark text-white flex flex-col z-40 transform transition-all duration-300 ease-in-out ${
+        } bg-sidebar-dark text-white border-r border-sidebar-light dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 flex flex-col z-40 transform transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative md:translate-x-0`}
       >
         {/* Logo Section */}
-         <div className="flex items-center justify-between h-20 px-4 border-b border-sidebar-light">
+         <div className="flex items-center justify-between h-20 px-4 border-b border-sidebar-light dark:border-gray-700">
           {isExpanded ? (
             <div className="flex items-center justify-between w-full">
               <div>
-                <h1 className="text-xl font-bold">FiinFlow</h1>
+                <h1 className="text-xl font-bold text-white">FiinFlow</h1>
                 <p className="text-xs text-gray-400">Financial Management</p>
               </div>
               <button 
@@ -74,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
             </div>
           ) : (
             <div className="w-full flex justify-center">
-              <span className="text-sm font-bold tracking-wider">FiinFlow</span>
+              <span className="text-sm font-bold tracking-wider text-white">FiinFlow</span>
             </div>
           )}
         </div>
@@ -92,8 +92,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
                     isExpanded ? 'px-4' : 'justify-center px-0'
                   } py-3 mx-2 rounded-lg transition-colors relative group ${
                     isActive
-                      ? 'bg-primary-500 text-white'
-                      : 'text-gray-300 hover:bg-sidebar-light'
+                      ? 'bg-primary-500 text-white dark:bg-gray-700 dark:text-white'
+                      : 'text-gray-300 hover:bg-sidebar-light dark:text-gray-300 dark:hover:bg-gray-800'
                   }`
                 }
               >
@@ -111,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
           })}
         </nav>
 
-        <div className="py-4 border-t border-sidebar-light">
+        <div className="py-4 border-t border-sidebar-light dark:border-gray-700">
           <button
             onClick={toggleSidebar}
             className={`flex items-center ${

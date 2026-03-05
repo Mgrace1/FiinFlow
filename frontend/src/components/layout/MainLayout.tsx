@@ -7,7 +7,7 @@ const MainLayout: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-950">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setSidebarOpen={setSidebarOpen}
@@ -17,7 +17,7 @@ const MainLayout: React.FC = () => {
           isSidebarOpen={isSidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+        <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-950 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
