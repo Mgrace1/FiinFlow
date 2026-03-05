@@ -10,7 +10,7 @@ const isSameCalendarDate = (a: Date, b: Date): boolean => (
 
 export const createExpense = async (req: AuthRequest, res: Response) =>{
   try {
-    const { clientId, supplier, category, amount, amountPaid, currency, dueDate, description, paymentMethod } = req.body;
+    const { clientId, receiptFileId, supplier, category, amount, amountPaid, currency, dueDate, description, paymentMethod } = req.body;
 
     if (!supplier || !category || !amount || !dueDate || !paymentMethod) {
       return res.status(400).json({
@@ -25,6 +25,7 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
     const expense = await Expense.create({
       companyId: req.companyId,
       clientId,
+      receiptFileId,
       supplier,
       category,
       amount: totalAmount,
@@ -38,6 +39,7 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
     });
 
     await expense.populate('clientId');
+    await expense.populate('receiptFileId');
 
     const expenseObj = expense.toObject() as any;
     expenseObj.remainingAmount = expenseObj.amount - expenseObj.amountPaid;
@@ -82,6 +84,7 @@ export const getExpenses = async (req: AuthRequest, res: Response) =>{
 
     const expenses = await Expense.find(filter)
       .populate('clientId')
+      .populate('receiptFileId')
       .sort({ dueDate: -1 });
 
     const expensesWithRemaining = expenses.map((e) => {
@@ -109,7 +112,8 @@ export const getExpense = async (req: AuthRequest, res: Response) =>{
       _id: req.params.id,
       companyId: req.companyId,
     })
-      .populate('clientId');
+      .populate('clientId')
+      .populate('receiptFileId');
 
     if (!expense) {
       return res.status(404).json({
@@ -146,7 +150,8 @@ export const updateExpense = async (req: AuthRequest, res: Response) =>{
       updates,
       { new: true, runValidators: true }
     )
-      .populate('clientId');
+      .populate('clientId')
+      .populate('receiptFileId');
 
     if (!expense) {
       return res.status(404).json({

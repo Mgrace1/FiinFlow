@@ -122,6 +122,7 @@ export interface IExpense {
   _id: Types.ObjectId;
   companyId: Types.ObjectId;
   clientId?: Types.ObjectId;
+  receiptFileId?: Types.ObjectId;
   supplier: string;
   category: string;
   amount: number;

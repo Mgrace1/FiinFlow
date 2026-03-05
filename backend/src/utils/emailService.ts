@@ -763,15 +763,6 @@ export const sendInvoiceSentEmail = async (data: {
 
     const transporter = createTransporter();
 
-    const lineItems = Array.isArray(data.lineItems) ? data.lineItems : [];
-    const rawDescriptionLines = lineItems
-      .map((item) => String(item.description || item.name || '').trim())
-      .filter(Boolean);
-    const noteLines = String(data.notes || '')
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
-    const descriptionLines = (rawDescriptionLines.length > 0 ? rawDescriptionLines : noteLines).slice(0, 12);
     const invoiceTypeLabels: Record<string, string> = {
       standard: 'Invoice',
       proforma: 'Proforma Invoice',
@@ -783,12 +774,6 @@ export const sendInvoiceSentEmail = async (data: {
     const invoiceTypeKey = String(data.invoiceType || 'standard').trim().toLowerCase();
     const invoiceTypeLabel = invoiceTypeLabels[invoiceTypeKey] || 'Invoice';
     const isUpdated = data.emailMode === 'updated';
-    const descriptionListHtml = descriptionLines.length > 0
-      ? `<ul>${descriptionLines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`
-      : '<p>No description provided.</p>';
-    const descriptionListText = descriptionLines.length > 0
-      ? descriptionLines.map((line) => `- ${line}`).join('\n')
-      : '- No description provided.';
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || '"FinFlow Support" <noreply@finflow.com>',
@@ -799,18 +784,22 @@ export const sendInvoiceSentEmail = async (data: {
       attachments: data.pdfAttachment ? [data.pdfAttachment] : [],
       html: `
       <div style="font-family: Helvetica, Arial, sans-serif; color: #1f2937; font-size: 14px; line-height: 1.55;">
-        <p style="margin: 0 0 12px;">Hello ${escapeHtml(data.clientName || 'Client')},</p>
-        <p style="margin: 0 0 12px;">Please find your ${isUpdated ? `updated ${escapeHtml(invoiceTypeLabel.toLowerCase())}` : escapeHtml(invoiceTypeLabel.toLowerCase())} attached as PDF.</p>
-        <p style="margin: 0 0 8px;"><strong>Description:</strong></p>
-        <div style="margin: 0; padding-left: 2px;">${descriptionListHtml}</div>
+        <p style="margin: 0 0 12px;">Dear ${escapeHtml(data.clientName || 'Client')},</p>
+        <p style="margin: 0 0 12px;">I hope you are doing well.</p>
+        <p style="margin: 0 0 12px;">Please find attached the invoice for the requested service/product.</p>
+        <p style="margin: 0 0 12px;">Kindly review the attached document and let us know if you require any clarification or additional information.</p>
+        <p style="margin: 0;">Best regards,</p>
       </div>
       `,
-      text: `Hello ${data.clientName || 'Client'},
+      text: `Dear ${data.clientName || 'Client'},
 
-Please find your ${isUpdated ? `updated ${invoiceTypeLabel.toLowerCase()}` : invoiceTypeLabel.toLowerCase()} attached as PDF.
+I hope you are doing well.
 
-Description:
-${descriptionListText}`,
+Please find attached the invoice for the requested service/product.
+
+Kindly review the attached document and let us know if you require any clarification or additional information.
+
+Best regards,`,
     };
 
     const info = await transporter.sendMail(mailOptions);

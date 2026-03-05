@@ -15,6 +15,10 @@ const ExpenseSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'Client',
     },
+    receiptFileId: {
+      type: Schema.Types.ObjectId,
+      ref: 'File',
+    },
     supplier: {
       type: String,
       required: [true, 'Supplier is required'],
