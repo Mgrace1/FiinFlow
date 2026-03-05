@@ -37,6 +37,7 @@ interface DashboardStats {
   totalPaid: number;
   totalOverdue: number;
   totalDrafts: number;
+  totalCancelled: number;
   totalRevenue: number;
   pendingAmount: number;
   totalExpenses: number;
@@ -87,9 +88,10 @@ const PIE_COLORS = {
   inProgress: '#0ea5e9', // blue
   overdue: '#f59e0b',    // amber
   draft: '#f97316',      // orange
+  cancelled: '#94a3b8',  // slate
 };
 
-const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#f97316'];
+const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#f97316', '#94a3b8'];
 
 const DASHBOARD_CARD =
   'rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_40px_-24px_rgba(15,23,42,0.35)]';
@@ -152,6 +154,7 @@ const Dashboard: React.FC = () => {
     totalPaid: 0,
     totalOverdue: 0,
     totalDrafts: 0,
+    totalCancelled: 0,
     totalRevenue: 0,
     pendingAmount: 0,
     totalExpenses: 0,
@@ -255,16 +258,18 @@ const Dashboard: React.FC = () => {
     const paid = stats.totalPaid || 0;
     const overdue = stats.totalOverdue || 0;
     const drafts = stats.totalDrafts || 0;
-    const active = Math.max(stats.totalInvoices - paid - overdue - drafts, 0);
+    const cancelled = stats.totalCancelled || 0;
+    const active = Math.max(stats.totalInvoices - paid - overdue - drafts - cancelled, 0);
 
     const data = [];
     if (paid > 0) data.push({ name: 'Paid', value: paid });
     if (active > 0) data.push({ name: 'In progress', value: active });
     if (overdue > 0) data.push({ name: 'Overdue', value: overdue });
     if (drafts > 0) data.push({ name: 'Draft', value: drafts });
+    if (cancelled > 0) data.push({ name: 'Cancelled', value: cancelled });
     
     return data;
-  }, [stats.totalDrafts, stats.totalInvoices, stats.totalOverdue, stats.totalPaid]);
+  }, [stats.totalCancelled, stats.totalDrafts, stats.totalInvoices, stats.totalOverdue, stats.totalPaid]);
 
   const activityFeed = useMemo(() => {
     const invoiceFeed = latestInvoices.map((invoice) => {
@@ -435,7 +440,9 @@ const Dashboard: React.FC = () => {
               <CircleDollarSign className="h-5 w-5" />
             </span>
           </div>
-          <p className="mt-4 text-xs text-slate-500">{stats.totalInvoices} invoices tracked this cycle</p>
+          <p className="mt-4 text-xs text-slate-500">
+            {stats.totalInvoices} invoices tracked this cycle · {stats.totalCancelled || 0} cancelled
+          </p>
         </article>
       </section>
 
@@ -514,6 +521,7 @@ const Dashboard: React.FC = () => {
                     if (entry.name === 'In progress') color = PIE_COLORS.inProgress;
                     if (entry.name === 'Overdue') color = PIE_COLORS.overdue;
                     if (entry.name === 'Draft') color = PIE_COLORS.draft;
+                    if (entry.name === 'Cancelled') color = PIE_COLORS.cancelled;
                     
                     return <Cell key={`cell-${index}`} fill={color} />;
                   })}
@@ -536,6 +544,7 @@ const Dashboard: React.FC = () => {
               if (item.name === 'In progress') color = PIE_COLORS.inProgress;
               if (item.name === 'Overdue') color = PIE_COLORS.overdue;
               if (item.name === 'Draft') color = PIE_COLORS.draft;
+              if (item.name === 'Cancelled') color = PIE_COLORS.cancelled;
               
               return (
                 <div key={item.name} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">

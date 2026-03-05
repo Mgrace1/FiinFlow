@@ -189,6 +189,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) =>{
     const paidInvoices = invoices.filter((inv) =>inv.status === 'paid');
     const overdueInvoices = invoices.filter((inv) =>inv.status === 'overdue');
     const draftInvoices = invoices.filter((inv) =>inv.status === 'draft');
+    const cancelledInvoices = invoices.filter((inv) =>inv.status === 'cancelled');
 
     const totalRevenue = invoices.reduce((sum, inv: any) => {
       const convertedTotal = convert(inv.totalAmount, inv.currency);
@@ -216,7 +217,6 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) =>{
     const latestInvoices = await Invoice.find({
       companyId,
       createdAt: { $gte: sixMonthsAgo },
-      status: { $ne: 'cancelled' },
     })
       .populate('clientId', 'name')
       .sort({ createdAt: -1 })
@@ -238,6 +238,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) =>{
           totalPaid: paidInvoices.length,
           totalOverdue: overdueInvoices.length,
           totalDrafts: draftInvoices.length,
+          totalCancelled: cancelledInvoices.length,
           totalRevenue,
           pendingAmount,
           totalExpenses,

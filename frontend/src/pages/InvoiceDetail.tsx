@@ -16,6 +16,8 @@ interface Invoice {
   clientId: any;
   amount: number;
   totalAmount: number;
+  amountPaid?: number;
+  remainingAmount?: number;
   status: string;
   dueDate: string;
   sentAt?: string;
@@ -100,6 +102,8 @@ const InvoiceDetail: React.FC = () =>{
 
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
+    paymentDate: new Date().toISOString().split('T')[0],
+    amountToPayNow: '',
     paymentMethod: 'Cash',
     paymentReference: '',
     receivedBy: '',
@@ -188,16 +192,34 @@ const InvoiceDetail: React.FC = () =>{
       return;
     }
 
+    const invoiceTotal = Number(invoice?.totalAmount || invoice?.amount || 0);
+    const alreadyPaid = Math.max(0, Number(invoice?.amountPaid || 0));
+    const remaining = Math.max(invoiceTotal - alreadyPaid, 0);
+    const amountToPayNow = Math.max(0, Number(paymentForm.amountToPayNow || 0));
+
+    if (amountToPayNow <= 0) {
+      notifyWarning('Please enter an amount to pay now');
+      return;
+    }
+    if (amountToPayNow > remaining) {
+      notifyWarning('Amount to pay now cannot be greater than remaining balance');
+      return;
+    }
+
     try {
-      await apiClient.patch(`/invoices/${invoiceId}/status`, {
-        status: 'paid',
-        ...paymentForm,
+      await apiClient.put(`/invoices/${invoiceId}/mark-paid`, {
+        paymentDate: paymentForm.paymentDate,
+        amountPaid: Math.min(invoiceTotal, alreadyPaid + amountToPayNow),
+        paymentMethod: paymentForm.paymentMethod,
+        paymentReference: paymentForm.paymentReference,
+        receivedBy: paymentForm.receivedBy,
       });
       window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoice();
       setShowPaymentModal(false);
       setPaymentConfirm(false);
-      notifySuccess('Invoice marked as paid');
+      setPaymentForm((prev) => ({ ...prev, amountToPayNow: '' }));
+      notifySuccess('Payment recorded successfully');
     } catch (error: any) {
       notifyError(getErrorMessage(error, 'Failed to mark as paid'));
     }
@@ -299,7 +321,14 @@ const handleSaveEdit = async () =>{
   const accentColor = String(companyData.brandColor || '#2563EB');
   const numFmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   const invoiceTaxAmt = invoice.taxApplied ? (invoice.totalAmount - invoice.amount) : 0;
-  const effectiveStatus = invoice.status === 'sent' && new Date(invoice.dueDate) < new Date() ? 'overdue' : invoice.status;
+  const dueDateValue = new Date(invoice.dueDate);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const isSentAndPastDue = invoice.status === 'sent' && !Number.isNaN(dueDateValue.getTime()) && dueDateValue.getTime() < startOfToday.getTime();
+  const effectiveStatus = isSentAndPastDue ? 'overdue' : invoice.status;
+  const invoiceTotal = Number(invoice.totalAmount || invoice.amount || 0);
+  const alreadyPaid = Math.max(0, Number(invoice.amountPaid || 0));
+  const remainingBalance = Math.max(invoiceTotal - alreadyPaid, 0);
   const availableStatuses: string[] = invoice.status === 'draft'
     ? ['sent']
     : (invoice.status === 'sent' || invoice.status === 'overdue')
@@ -457,6 +486,14 @@ const handleSaveEdit = async () =>{
                       <span>Total ({invoice.currency})</span>
                       <span>{numFmt(invoice.totalAmount)}</span>
                     </div>
+                    <div className="flex justify-between text-gray-600">
+                      <span>Amount Paid</span>
+                      <span className="font-medium text-gray-900">{numFmt(alreadyPaid)} {invoice.currency}</span>
+                    </div>
+                    <div className="flex justify-between text-amber-700">
+                      <span>Remaining Due</span>
+                      <span className="font-semibold">{numFmt(remainingBalance)} {invoice.currency}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -594,6 +631,41 @@ const handleSaveEdit = async () =>{
           <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
             <h3 className="text-base font-semibold text-gray-900 mb-4">Confirm Payment Details</h3>
             <div className="space-y-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+                <div className="flex justify-between text-slate-600">
+                  <span>Total Invoice</span>
+                  <span className="font-medium text-slate-900">{numFmt(invoiceTotal)} {invoice.currency}</span>
+                </div>
+                <div className="mt-1 flex justify-between text-slate-600">
+                  <span>Already Paid</span>
+                  <span className="font-medium text-slate-900">{numFmt(alreadyPaid)} {invoice.currency}</span>
+                </div>
+                <div className="mt-1 flex justify-between border-t border-slate-200 pt-1 text-amber-700">
+                  <span>Remaining</span>
+                  <span className="font-semibold">{numFmt(remainingBalance)} {invoice.currency}</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Date</label>
+                <input
+                  type="date"
+                  value={paymentForm.paymentDate}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                  className="input text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Amount to Pay Now</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentForm.amountToPayNow}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, amountToPayNow: e.target.value })}
+                  className="input text-sm"
+                  placeholder="0.00"
+                />
+              </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Method</label>
                 <select value={paymentForm.paymentMethod} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })} className="input text-sm">
@@ -614,7 +686,7 @@ const handleSaveEdit = async () =>{
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowPaymentModal(false)} className="btn btn-secondary flex-1 text-sm">Cancel</button>
-              <button onClick={() => setPaymentConfirm(true)} className="btn btn-primary flex-1 text-sm">Confirm Payment</button>
+              <button onClick={() => setPaymentConfirm(true)} className="btn btn-primary flex-1 text-sm">Record Payment</button>
             </div>
           </div>
         </div>
@@ -632,9 +704,9 @@ const handleSaveEdit = async () =>{
       />
       <ConfirmModal
         isOpen={paymentConfirm}
-        title="Confirm Payment"
-        message="Are you sure you want to mark this invoice as paid? This will update the invoice status."
-        confirmText="Mark as Paid"
+        title="Confirm Payment Entry"
+        message="Proceed to record this payment amount for the invoice?"
+        confirmText="Record Payment"
         cancelText="Cancel"
         variant="info"
         onConfirm={handleMarkAsPaid}

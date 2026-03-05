@@ -46,7 +46,6 @@ interface InvoiceSubmitPayload {
   invoiceNumber: string;
   invoiceType: string;
   amount: string;
-  amountPaid: string;
   currency: string;
   taxApplied: boolean;
   taxRate: number;
@@ -107,7 +106,6 @@ const Invoices: React.FC = () => {
     invoiceNumber: '',
     invoiceType: 'standard',
     amount: '',
-    amountPaid: '',
     currency: companyConfig.defaultCurrency,
     taxApplied: true,
     taxRate: companyConfig.taxRate,
@@ -157,9 +155,6 @@ const Invoices: React.FC = () => {
   const subtotal = lineItems.reduce((sum, item) => sum + item.qty * item.rate, 0);
   const taxAmount = formData.taxApplied ? subtotal * (formData.taxRate / 100) : 0;
   const total = subtotal + taxAmount;
-  const paidNow = Math.max(0, Number(formData.amountPaid || 0));
-  const paidNowCapped = Math.min(paidNow, total);
-  const remainingDue = Math.max(total - paidNowCapped, 0);
 
   // Sync total back to formData amount when line items change
   useEffect(() => {
@@ -171,13 +166,6 @@ const Invoices: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (paidNow > total) {
-      const message = 'Amount paid cannot be greater than total invoice amount.';
-      setError(message);
-      notifyError(message);
-      return;
-    }
 
     const resolvedType = formData.invoiceType === 'other'
       ? (customInvoiceType.trim().slice(0, 10) || 'standard')
@@ -193,7 +181,6 @@ const Invoices: React.FC = () => {
         ...formData,
         invoiceType: resolvedType,
         amount: subtotal.toString(),
-        amountPaid: Math.min(Math.max(Number(formData.amountPaid || 0), 0), total).toString(),
         description: itemDescriptions || formData.description,
         items: lineItems
           .filter((item) => item.product.trim())
@@ -204,6 +191,7 @@ const Invoices: React.FC = () => {
             rate: Number(item.rate || 0),
             amount: Number((item.qty || 0) * (item.rate || 0)),
           })),
+        amountPaid: '0',
         status: submitAction === 'send' ? 'sent' : 'draft',
       };
     };
@@ -328,7 +316,6 @@ const Invoices: React.FC = () => {
         invoiceNumber: invoice.invoiceNumber,
         invoiceType: isKnown ? rawType : 'other',
         amount: invoice.amount.toString(),
-        amountPaid: String((invoice as any).amountPaid ?? 0),
         currency: (String(invoice.currency || getCurrencyConfig().defaultCurrency).toUpperCase() === 'USD' ? 'USD' : 'RWF') as AppCurrency,
         taxApplied: (invoice as any).taxApplied ?? true,
         taxRate: (invoice as any).taxRate ?? getCurrencyConfig().taxRate,
@@ -377,7 +364,6 @@ const Invoices: React.FC = () => {
       invoiceNumber: '',
       invoiceType: 'standard',
       amount: '',
-      amountPaid: '',
       currency: cfg.defaultCurrency,
       taxApplied: true,
       taxRate: cfg.taxRate,
@@ -434,6 +420,15 @@ const Invoices: React.FC = () => {
     return statusMap[status] || 'default';
   };
 
+  const getEffectiveStatus = (invoice: Invoice): string => {
+    if (invoice.status !== 'sent') return invoice.status;
+    const due = new Date(invoice.dueDate);
+    if (Number.isNaN(due.getTime())) return invoice.status;
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return due.getTime() < startOfToday.getTime() ? 'overdue' : invoice.status;
+  };
+
   const selectedClient = clients.find((c) => c._id === formData.clientId);
 
   if (loading) return <LoadingOverlay message="Loading invoices..." />;
@@ -472,7 +467,9 @@ const Invoices: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {invoices.map((invoice) => (
+                {invoices.map((invoice) => {
+                  const effectiveStatus = getEffectiveStatus(invoice);
+                  return (
                   <tr key={invoice._id} className="align-middle">
                     <td className="px-4 py-3 text-sm text-gray-900">
                       <div>{invoice.invoiceNumber}</div>
@@ -481,7 +478,7 @@ const Invoices: React.FC = () => {
                     <td className="px-4 py-3 text-sm text-gray-900">{invoice.clientId?.name || 'N/A'}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(invoice.totalAmount, (invoice as any).currency)}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={getStatusVariant(invoice.status)}>{invoice.status}</Badge>
+                      <Badge variant={getStatusVariant(effectiveStatus)}>{effectiveStatus}</Badge>
                     </td>
                     <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{formatDateDMY(invoice.createdAt)}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{formatDateDMY(invoice.dueDate)}</td>
@@ -516,7 +513,7 @@ const Invoices: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
@@ -585,9 +582,9 @@ const Invoices: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-left sm:text-right bg-gray-50 rounded-lg p-4 w-full sm:w-auto">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Balance Due</p>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice Total</p>
                     <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {new Intl.NumberFormat('en-RW', { minimumFractionDigits: 0 }).format(remainingDue)} <span className="text-lg font-normal text-gray-500">{formData.currency}</span>
+                      {new Intl.NumberFormat('en-RW', { minimumFractionDigits: 0 }).format(total)} <span className="text-lg font-normal text-gray-500">{formData.currency}</span>
                     </p>
                   </div>
                 </div>
@@ -818,28 +815,8 @@ const Invoices: React.FC = () => {
                       <span className="text-gray-900 font-bold">Total</span>
                       <span className="text-gray-900 font-bold text-lg">{new Intl.NumberFormat('en-RW').format(total)} {formData.currency}</span>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount to be Paid</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.amountPaid}
-                        onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Amount Paid</span>
-                      <span className="text-gray-900 font-medium">{new Intl.NumberFormat('en-RW').format(paidNowCapped)} {formData.currency}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Remaining Due</span>
-                      <span className="text-amber-700 font-semibold">{new Intl.NumberFormat('en-RW').format(remainingDue)} {formData.currency}</span>
-                    </div>
                     <p className="text-xs text-gray-500">
-                      Remaining balance will be due on the selected due date.
+                      Payment collection is handled on Invoice Details under "Mark as Paid".
                     </p>
                   </div>
                 </div>
@@ -899,8 +876,6 @@ const Invoices: React.FC = () => {
         const previewSubtotal = previewData.items.reduce((s, i) => s + i.amount, 0) || Number(previewData.amount) || 0;
         const previewTax = previewData.taxApplied ? previewSubtotal * ((previewData.taxRate || 0) / 100) : 0;
         const previewTotal = previewSubtotal + previewTax;
-        const previewAmountPaid = Math.min(Math.max(Number(previewData.amountPaid || 0), 0), previewTotal);
-        const previewRemaining = Math.max(previewTotal - previewAmountPaid, 0);
         const numFmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
         const displayItems = previewData.items.length > 0 ? previewData.items : [{
           name: 'Invoice item', description: previewData.description || '', quantity: 1,
@@ -996,14 +971,6 @@ const Invoices: React.FC = () => {
                       <div className="border-t pt-1 flex justify-between font-bold" style={{ color: accentColor }}>
                         <span>Total ({previewData.currency})</span>
                         <span>{numFmt(previewTotal)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Amount Paid</span>
-                        <span className="text-gray-900 font-medium">{numFmt(previewAmountPaid)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Remaining Due</span>
-                        <span className="text-gray-900 font-medium">{numFmt(previewRemaining)}</span>
                       </div>
                     </div>
                   </div>
