@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ChangePassword from './ChangePassword';
@@ -72,6 +73,7 @@ interface IngestionFormData {
 
 
 const Settings: React.FC = () =>{
+  const navigate = useNavigate();
   const { setAuth, companyId: activeCompanyId } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -210,7 +212,7 @@ const Settings: React.FC = () =>{
         localStorage.setItem('finflow_company', JSON.stringify(selectedCompany));
         setAuth(token, String(user.companyId));
         notifySuccess(`Switched to ${selectedCompany.name}`);
-        window.location.href = '/dashboard';
+        navigate('/dashboard', { replace: true });
       }
     } catch (error) {
       notifyError(getErrorMessage(error, 'Failed to switch company'));
