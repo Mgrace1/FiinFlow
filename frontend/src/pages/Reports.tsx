@@ -4,7 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ForecastChart from '../components/forecasting/ForecastChart';
 import LoadingOverlay from '../components/common/LoadingOverlay';
-import { notifyError } from '../utils/toast';
+import { getErrorMessage, notifyError } from '../utils/toast';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
 interface ClientPerformance {
@@ -106,7 +106,7 @@ const Reports: React.FC = () =>{
       setForecastData(response.forecast_data);
     } catch (error) {
       console.error('Failed to generate forecast:', error);
-      notifyError('Failed to generate forecast. Please ensure the forecasting service is running.');
+      notifyError(getErrorMessage(error, 'Failed to generate forecast. Check forecasting service logs.'));
     } finally {
       setIsForecastLoading(false);
     }

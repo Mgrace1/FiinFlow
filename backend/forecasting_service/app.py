@@ -62,15 +62,27 @@ def forecast():
 
         # Combine income and expenses into a single cash flow dataframe
         if not df_income.empty:
-            df_income = df_income.rename(columns={'createdAt': 'ds', 'totalAmount': 'y'})
-            df_income['ds'] = pd.to_datetime(df_income['ds'])
+            income_date_col = 'createdAt' if 'createdAt' in df_income.columns else ('dueDate' if 'dueDate' in df_income.columns else None)
+            if income_date_col:
+                df_income = df_income.rename(columns={income_date_col: 'ds', 'totalAmount': 'y'})
+                df_income['ds'] = pd.to_datetime(df_income['ds'], errors='coerce')
+                df_income['y'] = pd.to_numeric(df_income['y'], errors='coerce').fillna(0)
+                df_income = df_income.dropna(subset=['ds'])
+            else:
+                df_income = pd.DataFrame(columns=['ds', 'y'])
         else:
             df_income = pd.DataFrame(columns=['ds', 'y'])
 
         if not df_expenses.empty:
-            df_expenses = df_expenses.rename(columns={'date': 'ds', 'amount': 'y'})
-            df_expenses['ds'] = pd.to_datetime(df_expenses['ds'])
-            df_expenses['y'] = -df_expenses['y'] # Make expenses negative
+            expense_date_col = 'dueDate' if 'dueDate' in df_expenses.columns else ('createdAt' if 'createdAt' in df_expenses.columns else None)
+            if expense_date_col:
+                df_expenses = df_expenses.rename(columns={expense_date_col: 'ds', 'amount': 'y'})
+                df_expenses['ds'] = pd.to_datetime(df_expenses['ds'], errors='coerce')
+                df_expenses['y'] = pd.to_numeric(df_expenses['y'], errors='coerce').fillna(0)
+                df_expenses = df_expenses.dropna(subset=['ds'])
+                df_expenses['y'] = -df_expenses['y'] # Make expenses negative
+            else:
+                df_expenses = pd.DataFrame(columns=['ds', 'y'])
         else:
             df_expenses = pd.DataFrame(columns=['ds', 'y'])
 
@@ -87,6 +99,7 @@ def forecast():
         forecast_result = model.predict(future)
         
         # --- Format Response ---
+        forecast_result['ds'] = pd.to_datetime(forecast_result['ds'], errors='coerce').dt.strftime('%Y-%m-%d')
         forecast_data = forecast_result[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
         
         return jsonify({"forecast_data": forecast_data})
