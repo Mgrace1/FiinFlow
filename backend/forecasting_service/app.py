@@ -5,7 +5,7 @@ import pymongo
 import pandas as pd
 from prophet import Prophet
 from bson import ObjectId
-from datetime import datetime
+from pymongo.uri_parser import parse_uri
 
 load_dotenv()
 
@@ -17,13 +17,21 @@ try:
     if not mongo_uri:
         raise ValueError("MONGODB_URI not found in environment variables")
     client = pymongo.MongoClient(mongo_uri)
-    db = client.get_database() 
+    parsed = parse_uri(mongo_uri)
+    db_name = os.environ.get("MONGODB_DB_NAME") or parsed.get("database")
+    if not db_name:
+        raise ValueError("No default database defined. Set MONGODB_DB_NAME or include DB in MONGODB_URI")
+    db = client[db_name]
     # Test connection
     client.admin.command('ping')
     print("MongoDB connection successful.")
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
     client = None
+
+@app.route('/', methods=['GET', 'HEAD'])
+def root():
+    return jsonify({"status": "ok", "service": "FinFlow-Forecasting"}), 200
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -86,11 +94,44 @@ def forecast():
         else:
             df_expenses = pd.DataFrame(columns=['ds', 'y'])
 
-        df_cash_flow = pd.concat([df_income[['ds', 'y']], df_expenses[['ds', 'y']]])
-        df_cash_flow = df_cash_flow.groupby(pd.Grouper(key='ds', freq='D')).sum().reset_index()
+        df_cash_flow = pd.concat([df_income[['ds', 'y']], df_expenses[['ds', 'y']]], ignore_index=True)
+        if df_cash_flow.empty:
+            return jsonify({"error": "Not enough data to create a forecast."}), 400
+
+        # Force a real datetime column for daily aggregation.
+        df_cash_flow['ds'] = pd.to_datetime(df_cash_flow['ds'], errors='coerce', utc=True).dt.tz_convert(None)
+        df_cash_flow['y'] = pd.to_numeric(df_cash_flow['y'], errors='coerce').fillna(0)
+        df_cash_flow = df_cash_flow.dropna(subset=['ds']).sort_values('ds')
+
+        if df_cash_flow.empty:
+            return jsonify({"error": "Not enough valid date points to create a forecast."}), 400
+
+        df_cash_flow = (
+            df_cash_flow
+            .set_index('ds')
+            .resample('D')['y']
+            .sum()
+            .reset_index()
+        )
         
         if len(df_cash_flow) < 2:
-            return jsonify({"error": "Not enough data points to create a forecast."}), 400
+            # Graceful fallback for sparse history: flat projection from last known value.
+            base_date = df_cash_flow['ds'].max() if not df_cash_flow.empty else pd.Timestamp.utcnow().normalize()
+            base_value = float(df_cash_flow['y'].iloc[-1]) if not df_cash_flow.empty else 0.0
+            fallback_dates = pd.date_range(start=base_date, periods=91, freq='D')
+            forecast_data = [
+                {
+                    "ds": d.strftime('%Y-%m-%d'),
+                    "yhat": base_value,
+                    "yhat_lower": base_value,
+                    "yhat_upper": base_value,
+                }
+                for d in fallback_dates
+            ]
+            return jsonify({
+                "forecast_data": forecast_data,
+                "warning": "Insufficient historical points; returned flat fallback forecast."
+            }), 200
 
         # --- Forecasting with Prophet ---
         model = Prophet()

@@ -3,3 +3,4 @@ pandas
 prophet
 pymongo
 python-dotenv
+gunicorn
