@@ -300,31 +300,6 @@ const Landing = () => {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
-          <div className="rounded-2xl border border-slate-200 bg-white p-7 md:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Get Started</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-950" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
-              Ready to simplify your financial operations?
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-              Create your workspace, invite your team, and start managing invoices, expenses, and reports in one place.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                to="/setup/company"
-                className="rounded-lg bg-[#4B5320] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#3A401F]"
-              >
-                Create account
-              </Link>
-              <Link
-                to="/login"
-                className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400"
-              >
-                Log in
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t border-slate-200 bg-white">
