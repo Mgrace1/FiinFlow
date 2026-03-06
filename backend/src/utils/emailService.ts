@@ -1,9 +1,11 @@
 import nodemailer from 'nodemailer';
+import axios from 'axios';
 
 // Create Gmail SMTP transporter for real email sending
 const createTransporter = () =>{
   const sanitize = (value?: string) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
   const smtpHost = sanitize(process.env.EMAIL_HOST) || 'smtp.gmail.com';
+  const smtpHostFallback = sanitize(process.env.EMAIL_HOST_FALLBACK);
   const smtpPort = parseInt(sanitize(process.env.EMAIL_PORT) || '587', 10);
   const emailUser = sanitize(process.env.EMAIL_USER);
   const emailPass = sanitize(process.env.EMAIL_PASS);
@@ -44,28 +46,115 @@ const createTransporter = () =>{
   const primaryConfig = toConfig(smtpPort);
   const fallbackPort = smtpPort === 465 ? 587 : 465;
   const fallbackConfig = toConfig(fallbackPort);
+  const candidateHosts = [smtpHost, smtpHostFallback].filter(Boolean);
+  const resendApiKey = sanitize(process.env.RESEND_API_KEY);
+  const resendApiUrl = sanitize(process.env.RESEND_API_URL) || 'https://api.resend.com/emails';
+  const resendReplyTo = sanitize(process.env.EMAIL_REPLY_TO);
+
+  const normalizeRecipients = (value: any): string[] =>{
+    if (!value) return [];
+    if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
+    return String(value)
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  };
+
+  const toBase64Content = (value: any) =>{
+    if (!value) return '';
+    if (Buffer.isBuffer(value)) return value.toString('base64');
+    if (value instanceof Uint8Array) return Buffer.from(value).toString('base64');
+    return Buffer.from(String(value)).toString('base64');
+  };
+
+  const sendViaResend = async (mailOptions: any) =>{
+    const payload: any = {
+      from: mailOptions.from || process.env.EMAIL_FROM,
+      to: normalizeRecipients(mailOptions.to),
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+      text: mailOptions.text,
+    };
+
+    if (resendReplyTo) {
+      payload.reply_to = resendReplyTo;
+    }
+
+    if (Array.isArray(mailOptions.attachments) && mailOptions.attachments.length > 0) {
+      payload.attachments = mailOptions.attachments.map((attachment: any) =>({
+        filename: attachment.filename || attachment.name || 'attachment',
+        content: toBase64Content(attachment.content),
+      }));
+    }
+
+    const response = await axios.post(resendApiUrl, payload, {
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      timeout: socketTimeout,
+    });
+
+    return {
+      messageId: response?.data?.id || undefined,
+      accepted: payload.to,
+      response: 'Resend API accepted',
+    };
+  };
 
   console.log('Email transporter created');
-  console.log(`SMTP host: ${smtpHost}`);
+  console.log(`SMTP host(s): ${candidateHosts.join(', ')}`);
   console.log(`SMTP primary port: ${smtpPort}`);
   console.log(`SMTP fallback port: ${fallbackPort}`);
   console.log(`Sender: ${emailUser}`);
+  console.log(`Email provider: ${resendApiKey ? 'resend+smtp-fallback' : 'smtp-only'}`);
 
   return {
     sendMail: async (mailOptions: any) =>{
-      try {
-        return await nodemailer.createTransport(primaryConfig).sendMail(mailOptions);
-      } catch (primaryError: any) {
-        if (!isConnectionError(primaryError)) {
-          throw primaryError;
+      if (resendApiKey) {
+        try {
+          console.log('[EMAIL] Attempting Resend API delivery...');
+          return await sendViaResend(mailOptions);
+        } catch (resendError: any) {
+          console.warn(`[EMAIL] Resend API failed (${resendError?.response?.status || resendError?.code || 'UNKNOWN'}). Falling back to SMTP...`);
+        }
+      }
+
+      let lastError: any = null;
+
+      for (const host of candidateHosts) {
+        const withHost = (config: any) => ({ ...config, host });
+
+        try {
+          console.log(`[EMAIL] Attempting SMTP ${host}:${smtpPort} (secure=${smtpPort === 465})`);
+          return await nodemailer.createTransport(withHost(primaryConfig)).sendMail(mailOptions);
+        } catch (primaryError: any) {
+          lastError = primaryError;
+          if (!isConnectionError(primaryError)) {
+            throw primaryError;
+          }
+
+          console.warn(
+            `[EMAIL] Primary SMTP connection failed on ${host}:${smtpPort} (${primaryError?.code || 'UNKNOWN'}). Retrying ${host}:${fallbackPort}...`
+          );
         }
 
-        console.warn(
-          `[EMAIL] Primary SMTP connection failed on port ${smtpPort} (${primaryError?.code || 'UNKNOWN'}). Retrying on ${fallbackPort}...`
-        );
+        try {
+          console.log(`[EMAIL] Attempting SMTP ${host}:${fallbackPort} (secure=${fallbackPort === 465})`);
+          return await nodemailer.createTransport(withHost(fallbackConfig)).sendMail(mailOptions);
+        } catch (fallbackError: any) {
+          lastError = fallbackError;
+          if (!isConnectionError(fallbackError)) {
+            throw fallbackError;
+          }
 
-        return nodemailer.createTransport(fallbackConfig).sendMail(mailOptions);
+          console.warn(
+            `[EMAIL] Fallback SMTP connection failed on ${host}:${fallbackPort} (${fallbackError?.code || 'UNKNOWN'}).`
+          );
+        }
       }
+
+      throw lastError || new Error('SMTP send failed');
     },
   };
 };
