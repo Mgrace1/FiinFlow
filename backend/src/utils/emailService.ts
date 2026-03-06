@@ -2,20 +2,72 @@ import nodemailer from 'nodemailer';
 
 // Create Gmail SMTP transporter for real email sending
 const createTransporter = () =>{
-  const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: false, // true for 465, false for other ports (587 uses STARTTLS)
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+  const sanitize = (value?: string) => String(value || '').trim().replace(/^['"]|['"]$/g, '');
+  const smtpHost = sanitize(process.env.EMAIL_HOST) || 'smtp.gmail.com';
+  const smtpPort = parseInt(sanitize(process.env.EMAIL_PORT) || '587', 10);
+  const emailUser = sanitize(process.env.EMAIL_USER);
+  const emailPass = sanitize(process.env.EMAIL_PASS);
+  const connectionTimeout = parseInt(sanitize(process.env.EMAIL_CONNECTION_TIMEOUT) || '10000', 10);
+  const greetingTimeout = parseInt(sanitize(process.env.EMAIL_GREETING_TIMEOUT) || '10000', 10);
+  const socketTimeout = parseInt(sanitize(process.env.EMAIL_SOCKET_TIMEOUT) || '20000', 10);
+
+  const toConfig = (port: number) =>{
+    const isSecure = port === 465;
+    return {
+      host: smtpHost,
+      port,
+      secure: isSecure,
+      // For 587 enforce STARTTLS negotiation when available.
+      requireTLS: !isSecure,
+      auth: {
+        user: emailUser,
+        pass: emailPass,
+      },
+      connectionTimeout,
+      greetingTimeout,
+      socketTimeout,
+    };
+  };
+
+  const isConnectionError = (error: any) =>{
+    const code = String(error?.code || '').toUpperCase();
+    const command = String(error?.command || '').toUpperCase();
+    return (
+      code === 'ETIMEDOUT'
+      || code === 'ECONNECTION'
+      || code === 'ECONNRESET'
+      || code === 'ESOCKET'
+      || command === 'CONN'
+    );
+  };
+
+  const primaryConfig = toConfig(smtpPort);
+  const fallbackPort = smtpPort === 465 ? 587 : 465;
+  const fallbackConfig = toConfig(fallbackPort);
+
+  console.log('Email transporter created');
+  console.log(`SMTP host: ${smtpHost}`);
+  console.log(`SMTP primary port: ${smtpPort}`);
+  console.log(`SMTP fallback port: ${fallbackPort}`);
+  console.log(`Sender: ${emailUser}`);
+
+  return {
+    sendMail: async (mailOptions: any) =>{
+      try {
+        return await nodemailer.createTransport(primaryConfig).sendMail(mailOptions);
+      } catch (primaryError: any) {
+        if (!isConnectionError(primaryError)) {
+          throw primaryError;
+        }
+
+        console.warn(
+          `[EMAIL] Primary SMTP connection failed on port ${smtpPort} (${primaryError?.code || 'UNKNOWN'}). Retrying on ${fallbackPort}...`
+        );
+
+        return nodemailer.createTransport(fallbackConfig).sendMail(mailOptions);
+      }
     },
-  });
-
-  console.log('Email transporter created with Gmail SMTP');
-  console.log(`Sender: ${process.env.EMAIL_USER}`);
-
-  return transporter;
+  };
 };
 
 /**

@@ -271,7 +271,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       status,
     } = req.body;
 
-    if (!clientId || !invoiceNumber || !amount || !dueDate) {
+    if (!clientId || !invoiceNumber || amount === undefined || amount === null || !dueDate) {
       return res.status(400).json({
         success: false,
         error: 'Please provide all required fields',
@@ -288,6 +288,13 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
     const computedTotalAmount = Boolean(taxApplied) && safeTaxRate > 0
       ? safeAmount + (safeAmount * safeTaxRate / 100)
       : safeAmount;
+
+    if (computedTotalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice total amount must be greater than 0',
+      });
+    }
     const safeAmountPaid = Math.max(0, toSafeNumber(amountPaid, 0));
     const parsedDueDate = parseValidDate(dueDate);
     if (!parsedDueDate) {
@@ -489,6 +496,13 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     const nextTotalAmount = nextTaxApplied && nextTaxRate > 0
       ? nextAmount + (nextAmount * nextTaxRate / 100)
       : nextAmount;
+
+    if (nextTotalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invoice total amount must be greater than 0',
+      });
+    }
 
     const requestedAmountPaid = updates.amountPaid !== undefined
       ? Math.max(0, toSafeNumber(updates.amountPaid, 0))
