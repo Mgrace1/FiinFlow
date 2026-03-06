@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { Types } from 'mongoose';
 import { User } from '../models';
-import { sendPasswordResetEmail } from '../utils/emailService';
+import { sendPasswordResetEmail, sendWelcomeEmail } from '../utils/emailService';
 import Company from '../models/Company';
 import { AuthRequest } from '../middleware/auth';
 import { isStrongPassword, strongPasswordError } from '../utils/passwordUtils';
@@ -379,6 +379,21 @@ export const createWorkspace = async (req: AuthRequest, res: Response) => {
       isActive: true,
     });
 
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const loginUrl = `${frontendUrl}/company/${company._id}/login`;
+
+    // Fire-and-forget welcome email for new workspace admin credentials.
+    sendWelcomeEmail({
+      companyName: company.name,
+      adminEmail: currentUser.email.toLowerCase(),
+      loginUrl,
+      temporaryPassword,
+    }).then((result) =>{
+      if (!result.success) {
+        console.error(`Failed to send workspace welcome email: ${result.error}`);
+      }
+    });
+
     res.status(201).json({
       success: true,
       message: 'Workspace created successfully',
@@ -386,6 +401,7 @@ export const createWorkspace = async (req: AuthRequest, res: Response) => {
         companyId: company._id,
         companyName: company.name,
         userId: adminUser._id,
+        loginUrl,
       },
     });
   } catch (error: any) {
