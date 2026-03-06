@@ -69,7 +69,7 @@ const createTransporter = () =>{
   };
 
   const sendViaResend = async (mailOptions: any) =>{
-    const fromAddress = sanitize(mailOptions.from) || resendFrom || sanitize(process.env.EMAIL_FROM);
+    const fromAddress = resendFrom || sanitize(mailOptions.from) || sanitize(process.env.EMAIL_FROM);
     const payload: any = {
       from: fromAddress,
       to: normalizeRecipients(mailOptions.to),
