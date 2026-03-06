@@ -50,6 +50,7 @@ const createTransporter = () =>{
   const resendApiKey = sanitize(process.env.RESEND_API_KEY);
   const resendApiUrl = sanitize(process.env.RESEND_API_URL) || 'https://api.resend.com/emails';
   const resendReplyTo = sanitize(process.env.EMAIL_REPLY_TO);
+  const resendFrom = sanitize(process.env.RESEND_FROM);
 
   const normalizeRecipients = (value: any): string[] =>{
     if (!value) return [];
@@ -68,8 +69,9 @@ const createTransporter = () =>{
   };
 
   const sendViaResend = async (mailOptions: any) =>{
+    const fromAddress = sanitize(mailOptions.from) || resendFrom || sanitize(process.env.EMAIL_FROM);
     const payload: any = {
-      from: mailOptions.from || process.env.EMAIL_FROM,
+      from: fromAddress,
       to: normalizeRecipients(mailOptions.to),
       subject: mailOptions.subject,
       html: mailOptions.html,
@@ -116,7 +118,11 @@ const createTransporter = () =>{
           console.log('[EMAIL] Attempting Resend API delivery...');
           return await sendViaResend(mailOptions);
         } catch (resendError: any) {
-          console.warn(`[EMAIL] Resend API failed (${resendError?.response?.status || resendError?.code || 'UNKNOWN'}). Falling back to SMTP...`);
+          const status = resendError?.response?.status || resendError?.code || 'UNKNOWN';
+          const details = resendError?.response?.data
+            ? JSON.stringify(resendError.response.data)
+            : resendError?.message || 'No details';
+          console.warn(`[EMAIL] Resend API failed (${status}). Details: ${details}. Falling back to SMTP...`);
         }
       }
 
