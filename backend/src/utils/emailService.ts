@@ -7,6 +7,7 @@ const createTransporter = () =>{
   const smtpHost = sanitize(process.env.EMAIL_HOST) || 'smtp.gmail.com';
   const smtpHostFallback = sanitize(process.env.EMAIL_HOST_FALLBACK);
   const smtpPort = parseInt(sanitize(process.env.EMAIL_PORT) || '587', 10);
+  const disableSmtpFallback = sanitize(process.env.EMAIL_DISABLE_SMTP_FALLBACK).toLowerCase() === 'true';
   const emailUser = sanitize(process.env.EMAIL_USER);
   const emailPass = sanitize(process.env.EMAIL_PASS);
   const connectionTimeout = parseInt(sanitize(process.env.EMAIL_CONNECTION_TIMEOUT) || '10000', 10);
@@ -122,6 +123,9 @@ const createTransporter = () =>{
           const details = resendError?.response?.data
             ? JSON.stringify(resendError.response.data)
             : resendError?.message || 'No details';
+          if (disableSmtpFallback) {
+            throw new Error(`Resend API failed (${status}): ${details}`);
+          }
           console.warn(`[EMAIL] Resend API failed (${status}). Details: ${details}. Falling back to SMTP...`);
         }
       }
