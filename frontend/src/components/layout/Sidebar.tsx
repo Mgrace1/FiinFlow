@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -20,16 +21,17 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
-  const [isExpanded, setIsExpanded] = useState(true); 
+  const [isExpanded, setIsExpanded] = useState(true);
+  const { t } = useLanguage();
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Clients', path: '/clients', icon: Users },
-    { name: 'Invoices', path: '/invoices', icon: FileText },
-    { name: 'Transactions', path: '/transactions', icon: ArrowLeftRight },
-    { name: 'Expenses', path: '/expenses', icon: Receipt },
-    { name: 'Reports', path: '/reports', icon: BarChart3 },
-    { name: 'Team', path: '/team', icon: UserCog },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: t('nav.dashboard'), path: '/dashboard', icon: LayoutDashboard },
+    { name: t('nav.clients'), path: '/clients', icon: Users },
+    { name: t('nav.invoices'), path: '/invoices', icon: FileText },
+    { name: t('nav.transactions'), path: '/transactions', icon: ArrowLeftRight },
+    { name: t('nav.expenses'), path: '/expenses', icon: Receipt },
+    { name: t('nav.reports'), path: '/reports', icon: BarChart3 },
+    { name: t('nav.team'), path: '/team', icon: UserCog },
+    { name: t('nav.settings'), path: '/settings', icon: Settings },
   ];
 
   const handleLinkClick = () => {

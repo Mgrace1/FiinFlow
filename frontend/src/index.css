@@ -13,8 +13,8 @@
   }
 
   body {
-    @apply bg-white text-gray-900 m-0 dark:bg-gray-950 dark:text-gray-100;
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  @apply bg-white text-gray-900 m-0 dark:bg-gray-950 dark:text-gray-100;
+  font-family: 'Sora', system-ui, Avenir, Helvetica, Arial, sans-serif;
     min-height: 100vh;
   }
 }
@@ -160,6 +160,16 @@
   }
 }
 
+/* Footer dark theme matching brand green */
+.site-footer-dark {
+  background-color: #374631; /* slightly muted dark green */
+  color: #e9efe6;
+}
+.site-footer-dark a { color: #e6f0e4; }
+.site-footer-dark .footer-lead { color: #dfe8dc; }
+.site-footer-dark .footer-small { color: #c8d4c6; }
+
+
 /* Global blue-to-primary overrides for existing hardcoded utility classes */
 .bg-blue-600 { background-color: #5f6f52 !important; }
 .hover\:bg-blue-700:hover { background-color: #4f5e45 !important; }
@@ -262,3 +272,35 @@
     transform: translateY(0);
   }
 }
+
+/* Landing specific utilities */
+.kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  border: 1px solid rgba(15,23,42,0.06);
+  box-shadow: 0 6px 18px rgba(31,41,55,0.06);
+}
+.kpi-badge .kpi-value { font-weight: 700; color: #111827; }
+.kpi-badge .kpi-label { font-size: 0.75rem; color: #6b7280; }
+
+.pill-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.hero-cta-primary {
+  background-color: #4B5320; /* army green */
+  color: white;
+  border: none;
+}
+.hero-cta-primary:hover { background-color: #3A401F; }
+
+.feature-card-shadow { box-shadow: 0 18px 40px rgba(15,23,42,0.06); }
+
+/* FAQ focus and accessibility */
+.faq-button:focus { outline: 3px solid rgba(139,154,114,0.18); outline-offset: 3px; }

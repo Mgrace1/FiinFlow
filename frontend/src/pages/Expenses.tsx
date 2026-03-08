@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../api/client';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/common/ConfirmModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
@@ -34,11 +34,23 @@ interface Client {
   phone?: string;
 }
 
+const getLinkedIds = (): Set<string> => {
+  try { return new Set(JSON.parse(localStorage.getItem('finflow_linked_ids') || '[]')); }
+  catch { return new Set(); }
+};
+
 const Expenses: React.FC = () =>{
   const isAdmin = getUserRole() === 'admin';
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const urlStatusFilter = searchParams.get('status');
+  const highlightId = searchParams.get('highlight');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [linkedIds, setLinkedIds] = useState<Set<string>>(getLinkedIds);
+  const [linkConfirm, setLinkConfirm] = useState<{ show: boolean; expense: Expense | null }>({ show: false, expense: null });
+  const highlightRef = useRef<HTMLTableRowElement>(null);
   const [showModal, setShowModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; expenseId: string | null }> ({
     show: false,
@@ -64,6 +76,34 @@ const Expenses: React.FC = () =>{
     fetchExpenses();
     fetchClients();
   }, []);
+
+  useEffect(() => {
+    if (highlightId && highlightRef.current) {
+      setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    }
+  }, [highlightId, expenses]);
+
+  const handleLinkConfirm = async () => {
+    if (!linkConfirm.expense) return;
+    const expense = linkConfirm.expense;
+    const ids = getLinkedIds();
+    ids.add(expense._id);
+    localStorage.setItem('finflow_linked_ids', JSON.stringify([...ids]));
+    setLinkedIds(new Set([...ids]));
+    setLinkConfirm({ show: false, expense: null });
+
+    if (expense.remainingAmount === 0 && expense.paymentStatus !== 'paid') {
+      try {
+        await apiClient.patch(`/expenses/${expense._id}`, { paymentStatus: 'paid' });
+        setExpenses((prev) => prev.filter((exp) => exp._id !== expense._id));
+        notifySuccess('Expense linked and marked as paid');
+      } catch {
+        notifySuccess('Expense linked successfully');
+      }
+    } else {
+      notifySuccess('Expense linked successfully');
+    }
+  };
 
   const fetchExpenses = async () =>{
     try {
@@ -262,10 +302,25 @@ const Expenses: React.FC = () =>{
 
   if (loading) return <LoadingOverlay message="Loading expenses..." />;
 
+  const allowedStatuses = urlStatusFilter
+    ? urlStatusFilter.split(',').map((s) => s.trim().toLowerCase())
+    : null;
+  const displayedExpenses = allowedStatuses
+    ? expenses.filter((exp) => allowedStatuses.includes(exp.paymentStatus.toLowerCase()))
+    : expenses;
+
   return (
   <div>
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-      <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
+        {allowedStatuses && (
+          <p className="text-sm text-gray-500 mt-1">
+            Filtered: showing <span className="font-medium">{allowedStatuses.join(', ')}</span> expenses
+            <button onClick={() => navigate('/expenses')} className="ml-2 text-blue-600 hover:underline text-xs">Clear filter</button>
+          </p>
+        )}
+      </div>
       {expenses.length > 0 && (
         <div className="flex gap-3 w-full md:w-auto">
           <button onClick={() =>setShowPDFConfirm(true)} className="btn btn-secondary w-full text-xs px-3 py-2">
@@ -289,12 +344,29 @@ const Expenses: React.FC = () =>{
       <>
         {/* Expenses Cards for mobile */}
         <div className="md:hidden space-y-4">
-          {[...expenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) => (
-            <div key={expense._id} className="bg-white rounded-lg shadow p-4">
+          {[...displayedExpenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) => {
+            const isHighlightedCard = expense._id === highlightId;
+            const isLinkedCard = linkedIds.has(expense._id);
+            const isClickableCard = !!urlStatusFilter && !isLinkedCard;
+            return (
+            <div
+              key={expense._id}
+              className={`rounded-lg shadow p-4 ${
+                isLinkedCard
+                  ? 'bg-green-50'
+                  : isHighlightedCard
+                    ? 'bg-yellow-50 ring-2 ring-yellow-400 cursor-pointer'
+                    : isClickableCard
+                      ? 'bg-white cursor-pointer hover:bg-blue-50 transition-colors'
+                      : 'bg-white'
+              }`}
+              onClick={isClickableCard ? () => setLinkConfirm({ show: true, expense }) : undefined}
+            >
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-bold text-lg">{expense.supplier}</p>
                   <p className="text-gray-600">{expense.category}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{formatDateDMY(expense.createdAt)}</p>
                 </div>
                 <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>
               </div>
@@ -337,14 +409,18 @@ const Expenses: React.FC = () =>{
                     <FaFileAlt className="text-sm" />
                   </button>
                 )}
-                <Link
-                  to={`/expenses/${expense._id}`}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
-                  title="View Expense"
-                  aria-label="View expense details"
-                >
-                  <FaEye className="text-sm" />
-                </Link>
+                {isLinkedCard ? (
+                  <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">Linked</span>
+                ) : (
+                  <Link
+                    to={`/expenses/${expense._id}`}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
+                    title="View Expense"
+                    aria-label="View expense details"
+                  >
+                    <FaEye className="text-sm" />
+                  </Link>
+                )}
                 {isAdmin && (
                   <button
                     onClick={(e) =>{
@@ -360,7 +436,8 @@ const Expenses: React.FC = () =>{
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Expenses Table for desktop */}
@@ -370,6 +447,7 @@ const Expenses: React.FC = () =>{
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Paid</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remaining</th>
@@ -379,10 +457,24 @@ const Expenses: React.FC = () =>{
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {[...expenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) =>(
+              {[...displayedExpenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) =>{
+                const isHighlighted = expense._id === highlightId;
+                const isLinked = linkedIds.has(expense._id);
+                const isClickable = !!urlStatusFilter && !isLinked;
+                return (
                 <tr
                   key={expense._id}
-                  className="hover:bg-gray-50"
+                  ref={isHighlighted ? highlightRef : undefined}
+                  className={`transition-colors ${
+                    isLinked
+                      ? 'bg-green-50'
+                      : isHighlighted
+                        ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
+                        : isClickable
+                          ? 'hover:bg-blue-50 cursor-pointer'
+                          : 'hover:bg-gray-50'
+                  }`}
+                  onClick={isClickable ? () => setLinkConfirm({ show: true, expense }) : undefined}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 relative group">
                     {expense.supplier}
@@ -393,6 +485,7 @@ const Expenses: React.FC = () =>{
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{expense.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDateDMY(expense.createdAt)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCompanyMoney(expense.amount, expense.currency)}
                   </td>
@@ -408,13 +501,10 @@ const Expenses: React.FC = () =>{
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right" onClick={(e) => e.stopPropagation()}>
                     {getReceiptId(expense) && (
                       <button
-                        onClick={(e) =>{
-                          e.stopPropagation();
-                          handleViewReceipt(expense);
-                        }}
+                        onClick={(e) =>{ e.stopPropagation(); handleViewReceipt(expense); }}
                         className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
                         title="View Receipt"
                         aria-label="View receipt"
@@ -422,20 +512,21 @@ const Expenses: React.FC = () =>{
                         <FaFileAlt className="text-sm" />
                       </button>
                     )}
-                    <Link
-                      to={`/expenses/${expense._id}`}
-                      className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
-                      title="View Expense"
-                      aria-label="View expense details"
-                    >
-                      <FaEye className="text-sm" />
-                    </Link>
+                    {isLinked ? (
+                      <span className="mr-2 text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">Linked</span>
+                    ) : (
+                      <Link
+                        to={`/expenses/${expense._id}`}
+                        className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
+                        title="View Expense"
+                        aria-label="View expense details"
+                      >
+                        <FaEye className="text-sm" />
+                      </Link>
+                    )}
                     {isAdmin && (
                       <button
-                        onClick={(e) =>{
-                          e.stopPropagation();
-                          setDeleteConfirm({ show: true, expenseId: expense._id });
-                        }}
+                        onClick={(e) =>{ e.stopPropagation(); setDeleteConfirm({ show: true, expenseId: expense._id }); }}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
                         title="Delete"
                         aria-label="Delete expense"
@@ -445,7 +536,7 @@ const Expenses: React.FC = () =>{
                     )}
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -735,6 +826,18 @@ const Expenses: React.FC = () =>{
         variant="primary"
         onConfirm={handleDownloadExpensesPDF}
         onCancel={() =>setShowPDFConfirm(false)}
+      />
+
+      {/* Link Confirmation Modal */}
+      <ConfirmModal
+        isOpen={linkConfirm.show}
+        title="Link Expense"
+        message={`Are you sure you want to link this expense from "${linkConfirm.expense?.supplier || 'this supplier'}" to this client?`}
+        confirmText="Link"
+        cancelText="Cancel"
+        variant="primary"
+        onConfirm={handleLinkConfirm}
+        onCancel={() => setLinkConfirm({ show: false, expense: null })}
       />
   </div>
   );

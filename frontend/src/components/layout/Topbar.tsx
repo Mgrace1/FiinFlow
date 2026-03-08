@@ -5,6 +5,28 @@ import ConfirmModal from '../common/ConfirmModal';
 import { Menu, Search, Bell, User, LogOut, ChevronDown, Loader2, Sun, Moon, Monitor } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+
+const USFlag = () => (
+  <svg width="22" height="16" viewBox="0 0 7.41 4" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: 2, display: 'block' }}>
+    <rect width="7.41" height="4" fill="#B22234"/>
+    <rect y="0.308" width="7.41" height="0.308" fill="white"/>
+    <rect y="0.923" width="7.41" height="0.308" fill="white"/>
+    <rect y="1.538" width="7.41" height="0.308" fill="white"/>
+    <rect y="2.154" width="7.41" height="0.308" fill="white"/>
+    <rect y="2.769" width="7.41" height="0.308" fill="white"/>
+    <rect y="3.384" width="7.41" height="0.308" fill="white"/>
+    <rect width="2.97" height="2.154" fill="#3C3B6E"/>
+  </svg>
+);
+
+const FRFlag = () => (
+  <svg width="22" height="16" viewBox="0 0 3 2" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: 2, display: 'block' }}>
+    <rect width="1" height="2" fill="#002395"/>
+    <rect x="1" width="1" height="2" fill="#EDEDED"/>
+    <rect x="2" width="1" height="2" fill="#ED2939"/>
+  </svg>
+);
 
 interface AppNotification {
   _id: string;
@@ -21,11 +43,18 @@ interface TopbarProps {
   setSidebarOpen: (isOpen: boolean) => void;
 }
 
+const LANGUAGES = [
+  { code: 'en' as const, label: 'English', flag: <USFlag /> },
+  { code: 'fr' as const, label: 'Français', flag: <FRFlag /> },
+];
+
 const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
   const { mode, resolvedTheme, setMode } = useTheme();
+  const { lang, setLang, t } = useLanguage();
+  const selectedLang = LANGUAGES.find((l) => l.code === lang) ?? LANGUAGES[0];
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
@@ -37,6 +66,8 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     setNotificationsLoading(true);
@@ -111,6 +142,9 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
       }
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
+      }
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setShowLangMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -226,10 +260,10 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
           </button>
           <div className="hidden sm:block">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              Welcome back{userName ? `, ${userName}` : ''}!
+              {t('topbar.welcome')}{userName ? `, ${userName}` : ''}!
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {companyName ? `Managing ${companyName}` : 'Manage your finances efficiently'}
+              {companyName ? `${t('topbar.managing')} ${companyName}` : t('topbar.default_subtitle')}
             </p>
           </div>
         </div>
@@ -245,7 +279,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search pages, features, or records..."
+                placeholder={t('topbar.search_placeholder')}
                 className="w-full pl-10 pr-10 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
@@ -259,6 +293,38 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
           >
             <ThemeIcon size={20} />
           </button>
+
+          <div className="relative" ref={langRef}>
+            <button
+              onClick={() => setShowLangMenu(!showLangMenu)}
+              className="p-2 text-lg hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors leading-none"
+              title={`Language: ${selectedLang.label}`}
+              aria-label={`Language: ${selectedLang.label}`}
+            >
+              {selectedLang.flag}
+            </button>
+            {showLangMenu && (
+              <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 py-1">
+                {LANGUAGES.map((langOption) => (
+                  <button
+                    key={langOption.code}
+                    onClick={() => {
+                      setLang(langOption.code);
+                      setShowLangMenu(false);
+                    }}
+                    className={`flex items-center gap-2.5 w-full px-3 py-2 text-sm transition-colors ${
+                      selectedLang.code === langOption.code
+                        ? 'bg-primary-50 dark:bg-gray-800 text-primary-600 dark:text-primary-400 font-medium'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <span className="text-base leading-none">{langOption.flag}</span>
+                    <span>{langOption.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="relative" ref={notifRef}>
             <button
@@ -276,23 +342,23 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
             {showNotifications && (
               <div className="fixed left-2 right-2 top-16 w-auto sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-96 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                 <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Notifications</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{t('topbar.notifications')}</h3>
                   {notifications.length > 0 && (
                     <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">
-                      {notifications.length} unread
+                      {notifications.length} {t('topbar.unread')}
                     </span>
                   )}
                 </div>
 
                 {notificationsLoading ? (
                   <div className="p-4 sm:p-6 text-center">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading notifications...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('topbar.loading_notifications')}</p>
                   </div>
                 ) : notifications.length === 0 ? (
                   <div className="p-4 sm:p-6 text-center">
                     <Bell className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No unread notifications</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">You're all caught up</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('topbar.no_notifications')}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('topbar.caught_up')}</p>
                   </div>
                 ) : (
                   <div className="max-h-[42vh] sm:max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
@@ -337,41 +403,6 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                   <p className="text-xs text-gray-500 dark:text-gray-400">{companyName || ''}</p>
                 </div>
                 <div className="p-1">
-                  <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800">
-                    <p className="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Theme</p>
-                    <div className="grid grid-cols-3 gap-1">
-                      <button
-                        onClick={() => setMode('light')}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                          mode === 'light'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        Light
-                      </button>
-                      <button
-                        onClick={() => setMode('dark')}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                          mode === 'dark'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        Dark
-                      </button>
-                      <button
-                        onClick={() => setMode('system')}
-                        className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                          mode === 'system'
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        System
-                      </button>
-                    </div>
-                  </div>
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
@@ -380,7 +411,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                     className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
                   >
                     <User size={16} />
-                    <span>Profile & Settings</span>
+                    <span>{t('topbar.profile')}</span>
                   </button>
                   <button
                     onClick={() => {
@@ -390,7 +421,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                     className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
                   >
                     <LogOut size={16} />
-                    <span>Sign Out</span>
+                    <span>{t('topbar.signout')}</span>
                   </button>
                 </div>
               </div>

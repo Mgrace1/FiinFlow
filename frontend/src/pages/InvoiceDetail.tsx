@@ -109,13 +109,13 @@ const InvoiceDetail: React.FC = () =>{
     receivedBy: '',
   });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [installmentPrompt, setInstallmentPrompt] = useState<{ show: boolean; remaining: number }>({ show: false, remaining: 0 });
 
   // Confirm modals
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; fileId: string | null }>({
     show: false,
     fileId: null,
   });
-  const [paymentConfirm, setPaymentConfirm] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<{ show: boolean; status: string | null }>({
     show: false,
     status: null,
@@ -207,9 +207,10 @@ const InvoiceDetail: React.FC = () =>{
     }
 
     try {
+      const newAmountPaid = Math.min(invoiceTotal, alreadyPaid + amountToPayNow);
       await apiClient.put(`/invoices/${invoiceId}/mark-paid`, {
         paymentDate: paymentForm.paymentDate,
-        amountPaid: Math.min(invoiceTotal, alreadyPaid + amountToPayNow),
+        amountPaid: newAmountPaid,
         paymentMethod: paymentForm.paymentMethod,
         paymentReference: paymentForm.paymentReference,
         receivedBy: paymentForm.receivedBy,
@@ -217,9 +218,12 @@ const InvoiceDetail: React.FC = () =>{
       window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoice();
       setShowPaymentModal(false);
-      setPaymentConfirm(false);
       setPaymentForm((prev) => ({ ...prev, amountToPayNow: '' }));
       notifySuccess('Payment recorded successfully');
+      const newRemaining = invoiceTotal - newAmountPaid;
+      if (newRemaining > 0) {
+        setInstallmentPrompt({ show: true, remaining: newRemaining });
+      }
     } catch (error: any) {
       notifyError(getErrorMessage(error, 'Failed to mark as paid'));
     }
@@ -683,10 +687,27 @@ const handleSaveEdit = async () =>{
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Received By</label>
                 <input type="text" value={paymentForm.receivedBy} onChange={(e) => setPaymentForm({ ...paymentForm, receivedBy: e.target.value })} className="input text-sm" placeholder="Name of person who received payment" />
               </div>
+              <div className="border-t border-gray-100 pt-3">
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Payment Receipt</label>
+                {invoice.attachments?.some(a => a.type === 'payment_receipt') && (
+                  <p className="text-xs text-green-600 font-medium mb-2">✓ Previous receipt on file — upload a new one for this payment</p>
+                )}
+                <label className={`cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    disabled={uploading}
+                    onChange={(e) => handleFileUpload(e, 'payment_receipt')}
+                  />
+                  {uploading ? 'Uploading…' : '+ Upload Receipt'}
+                </label>
+                <p className="mt-1 text-xs text-gray-400">A receipt is required to record payment</p>
+              </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowPaymentModal(false)} className="btn btn-secondary flex-1 text-sm">Cancel</button>
-              <button onClick={() => setPaymentConfirm(true)} className="btn btn-primary flex-1 text-sm">Record Payment</button>
+              <button onClick={handleMarkAsPaid} className="btn btn-primary flex-1 text-sm">Record Payment</button>
             </div>
           </div>
         </div>
@@ -701,16 +722,6 @@ const handleSaveEdit = async () =>{
         variant="danger"
         onConfirm={handleDeleteAttachment}
         onCancel={() => setDeleteConfirm({ show: false, fileId: null })}
-      />
-      <ConfirmModal
-        isOpen={paymentConfirm}
-        title="Confirm Payment Entry"
-        message="Proceed to record this payment amount for the invoice?"
-        confirmText="Record Payment"
-        cancelText="Cancel"
-        variant="info"
-        onConfirm={handleMarkAsPaid}
-        onCancel={() => setPaymentConfirm(false)}
       />
       <ConfirmModal
         isOpen={statusConfirm.show}
@@ -741,6 +752,16 @@ const handleSaveEdit = async () =>{
         variant="info"
         onConfirm={handleDownloadPDF}
         onCancel={() => setShowPDFConfirm(false)}
+      />
+      <ConfirmModal
+        isOpen={installmentPrompt.show}
+        title="Partial Payment Recorded"
+        message={`There is still a remaining balance of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice?.currency || 'RWF', maximumFractionDigits: invoice?.currency === 'RWF' ? 0 : 2 }).format(installmentPrompt.remaining)}. Would you like to create a new invoice for the remaining installment?`}
+        confirmText="Create Invoice"
+        cancelText="Not Now"
+        variant="info"
+        onConfirm={() => { setInstallmentPrompt({ show: false, remaining: 0 }); navigate('/invoices'); }}
+        onCancel={() => setInstallmentPrompt({ show: false, remaining: 0 })}
       />
     </div>
   );

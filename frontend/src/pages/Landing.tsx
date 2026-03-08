@@ -71,6 +71,7 @@ const armyGreenHover = '#3A401F';
 const Landing = () => {
   const featuresRef = useRef<HTMLElement | null>(null);
   const [featuresVisible, setFeaturesVisible] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     const node = featuresRef.current;
@@ -137,16 +138,18 @@ const Landing = () => {
           
             <div className="mt-7 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {kpis.map((item) => (
-                <div key={item.label} className="rounded-lg border border-slate-200 bg-white px-3 py-3">
-                  <p className="text-lg font-bold text-slate-900">{item.value}</p>
-                  <p className="text-xs text-slate-500">{item.label}</p>
+                <div key={item.label} className="kpi-badge">
+                  <div>
+                    <p className="kpi-value">{item.value}</p>
+                    <p className="kpi-label">{item.label}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm 2xl:rounded-2xl">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 feature-card-shadow 2xl:rounded-2xl">
               <img
                 src="/landing/finflow-dashboard.png"
                 alt="FinFlow dashboard preview"
@@ -161,9 +164,9 @@ const Landing = () => {
         </section>
 
         <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {pillars.map((item) => (
-              <article key={item.title} className="rounded-xl border border-slate-200 bg-white p-6">
+              <article key={item.title} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-slate-900">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
               </article>
@@ -180,34 +183,33 @@ const Landing = () => {
               Click any feature to open a detailed page with full workflow context, use cases, and implementation highlights.
             </p>
           </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
+          <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {landingFeatures.map((item, index) => (
               <Link
                 key={item.title}
                 to={`/features/${item.slug}`}
                 style={{ transitionDelay: `${index * 80}ms` }}
-                className={`group relative block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-700 ease-out hover:-translate-y-1 hover:shadow-xl ${
-                  featuresVisible
-                    ? 'translate-x-0 opacity-100'
-                    : `${index % 2 === 0 ? '-translate-x-10' : 'translate-x-10'} opacity-0`
+                className={`group relative block rounded-3xl border border-slate-100 bg-white p-0 shadow-md transition-transform duration-500 hover:-translate-y-2 ${
+                  featuresVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
                 }`}
               >
-                <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{item.desc}</p>
-
-                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="overflow-hidden rounded-t-3xl bg-slate-100">
                   <img
                     src={item.image}
                     alt={`${item.title} visual`}
-                    className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-[1.04] md:h-56 2xl:h-60"
+                    className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                     onError={(e) => {
                       e.currentTarget.src = 'https://placehold.co/600x400/f3f4f6/9ca3af?text=' + item.title;
                     }}
                   />
                 </div>
-                <div className="mt-4 inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em] text-[#4B5320]">
-                  Explore feature
+                <div className="p-5">
+                  <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.desc}</p>
+                  <div className="mt-4 inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em] text-[#4B5320]">
+                    Explore feature
+                  </div>
                 </div>
               </Link>
             ))}
@@ -266,10 +268,10 @@ const Landing = () => {
           <h2 className="mt-2 text-3xl font-bold text-slate-950" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>
             Built for service businesses
           </h2>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 2xl:gap-4">
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 2xl:gap-6">
             {industries.map((item) => (
-              <div key={item.name} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div className="aspect-video overflow-hidden bg-slate-100">
+              <div key={item.name} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                <div className="aspect-[3/2] overflow-hidden bg-slate-100 rounded-t-2xl">
                   <img
                     src={item.image}
                     alt={item.name}
@@ -290,54 +292,82 @@ const Landing = () => {
 
         <section id="faq" className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">FAQ</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {faqs.map((item) => (
-              <article key={item.q} className="rounded-xl border border-slate-200 bg-white p-5">
-                <h3 className="text-sm font-semibold text-slate-900">{item.q}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{item.a}</p>
-              </article>
+          <div className="mt-6 space-y-4">
+            {faqs.map((item, idx) => (
+              <div key={item.q} className="rounded-2xl border border-slate-100 bg-white">
+                <button
+                  type="button"
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenFaq(openFaq === idx ? null : idx); } }}
+                  aria-expanded={openFaq === idx}
+                  aria-controls={`faq-panel-${idx}`}
+                  id={`faq-${idx}`}
+                  className="faq-button w-full flex items-center justify-between px-5 py-4 text-left"
+                >
+                  <span className="text-sm font-semibold text-slate-900">{item.q}</span>
+                  <span className="text-slate-500" aria-hidden>{openFaq === idx ? '−' : '+'}</span>
+                </button>
+                {openFaq === idx && (
+                  <div id={`faq-panel-${idx}`} role="region" aria-labelledby={`faq-${idx}`} className="px-5 pb-5 pt-0 text-sm leading-6 text-slate-600">{item.a}</div>
+                )}
+              </div>
             ))}
+          </div>
+        </section>
+
+        {/* CTA box */}
+        <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Ready to simplify your financial operations?</h3>
+                <p className="mt-2 text-sm text-slate-600">Create your workspace, invite your team, and start managing invoices, expenses, and reports in one place.</p>
+              </div>
+              <div className="mt-4 flex gap-3 sm:mt-0">
+                <Link
+                  to="/setup/company"
+                  className="pill-btn hero-cta-primary"
+                >
+                  Create Account
+                </Link>
+                <Link to="/login" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+                  Login
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
 
       </main>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto grid w-full max-w-[108rem] gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8 xl:px-10 2xl:px-12">
+      <footer className="site-footer-dark">
+        <div className="mx-auto grid w-full max-w-[108rem] gap-8 px-4 py-12 sm:px-6 md:grid-cols-3 lg:px-8 xl:px-10 2xl:px-12">
           <div>
-            <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>FiinFlow</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
+            <h3 className="text-2xl font-bold footer-lead" style={{ fontFamily: "'Sora', 'Segoe UI', sans-serif" }}>FiinFlow</h3>
+            <p className="mt-3 text-sm footer-small">
               Financial operations workspace for growing businesses.
             </p>
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-900">Product</p>
-            <div className="mt-3 space-y-2 text-sm text-slate-600">
-              <a href="#features" className="block hover:text-slate-900">Features</a>
-              <a href="#workflow" className="block hover:text-slate-900">How it works</a>
-              <a href="#faq" className="block hover:text-slate-900">FAQ</a>
+            <p className="text-sm font-semibold footer-lead">Quick Links</p>
+            <div className="mt-3 space-y-2 text-sm footer-small">
+              <a href="#features" className="block hover:underline">Features</a>
+              <a href="#workflow" className="block hover:underline">How it works</a>
+              <a href="#industries" className="block hover:underline">Industries</a>
+              <a href="#faq" className="block hover:underline">FAQ</a>
             </div>
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-900">Start</p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Link 
-                to="/setup/company" 
-                className="rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors" 
-                style={{ backgroundColor: armyGreen }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = armyGreenHover}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = armyGreen}
-              >
-                Create account
-              </Link>
-              <Link to="/login" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
-                Log in
-              </Link>
+            <p className="text-sm font-semibold footer-lead">Contact Us</p>
+            <div className="mt-3 space-y-2 text-sm footer-small">
+              <div>Email: fiinflow@gmail.com</div>
+              <div>Phone: +250 788 123 456</div>
+              <div>Kigali, Rwanda</div>
             </div>
           </div>
         </div>
         <div className="border-t border-slate-200">
-          <div className="mx-auto w-full max-w-[108rem] px-4 py-4 text-xs text-slate-500 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+          <div className="mx-auto w-full max-w-[108rem] px-4 py-4 text-xs footer-small sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
             (c) {new Date().getFullYear()} FiinFlow. All rights reserved.
           </div>
         </div>

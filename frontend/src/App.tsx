@@ -26,6 +26,7 @@ import NotFound from './pages/NotFound';
 import ResearchConsent from './pages/ResearchConsent';
 import { ToastContainer } from 'react-toastify';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -120,11 +121,13 @@ function App() {
   return (
   <BrowserRouter>
     <ThemeProvider>
-      <AuthProvider>
-        <AppRoutes />
-        <RouteAwareStarfield />
-        <ThemedToastContainer />
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <AppRoutes />
+          <RouteAwareStarfield />
+          <ThemedToastContainer />
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   </BrowserRouter>
   );

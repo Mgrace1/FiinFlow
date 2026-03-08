@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import ConfirmModal from '../components/common/ConfirmModal';
 import Badge from '../components/common/Badge';
@@ -83,8 +83,16 @@ const parseLineItemsFromDescription = (description?: string): LineItem[] => {
     });
 };
 
+const getLinkedIds = (): Set<string> => {
+  try { return new Set(JSON.parse(localStorage.getItem('finflow_linked_ids') || '[]')); }
+  catch { return new Set(); }
+};
+
 const Invoices: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlStatusFilter = searchParams.get('status'); // e.g. "sent,overdue"
+  const highlightId = searchParams.get('highlight');
   const companyConfig = getCurrencyConfig();
   const isAdmin = getUserRole() === 'admin';
 
@@ -93,6 +101,9 @@ const Invoices: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [linkedIds, setLinkedIds] = useState<Set<string>>(getLinkedIds);
+  const [linkConfirm, setLinkConfirm] = useState<{ show: boolean; invoice: Invoice | null }>({ show: false, invoice: null });
+  const highlightRef = useRef<HTMLTableRowElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; invoiceId: string | null }>({
     show: false,
     invoiceId: null,
@@ -127,6 +138,35 @@ const Invoices: React.FC = () => {
     const cfg = getCurrencyConfig();
     setFormData((prev) => ({ ...prev, currency: cfg.defaultCurrency, taxRate: cfg.taxRate }));
   }, []);
+
+  useEffect(() => {
+    if (highlightId && highlightRef.current) {
+      setTimeout(() => highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    }
+  }, [highlightId, invoices]);
+
+  const handleLinkConfirm = async () => {
+    if (!linkConfirm.invoice) return;
+    const invoice = linkConfirm.invoice;
+    const ids = getLinkedIds();
+    ids.add(invoice._id);
+    localStorage.setItem('finflow_linked_ids', JSON.stringify([...ids]));
+    setLinkedIds(new Set([...ids]));
+    setLinkConfirm({ show: false, invoice: null });
+
+    const remaining = Math.max(0, invoice.remainingAmount ?? (invoice.totalAmount - (invoice.amountPaid ?? 0)));
+    if (remaining === 0 && invoice.status !== 'paid') {
+      try {
+        await apiClient.patch(`/invoices/${invoice._id}/status`, { status: 'paid' });
+        setInvoices((prev) => prev.filter((inv) => inv._id !== invoice._id));
+        notifySuccess('Invoice linked and marked as paid');
+      } catch {
+        notifySuccess('Invoice linked successfully');
+      }
+    } else {
+      notifySuccess('Invoice linked successfully');
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -434,10 +474,26 @@ const Invoices: React.FC = () => {
 
   if (loading) return <LoadingOverlay message="Loading invoices..." />;
 
+  // Filter by URL ?status= param (e.g. from Transactions page deep link)
+  const allowedStatuses = urlStatusFilter
+    ? urlStatusFilter.split(',').map((s) => s.trim().toLowerCase())
+    : null;
+  const displayedInvoices = allowedStatuses
+    ? invoices.filter((inv) => allowedStatuses.includes(getEffectiveStatus(inv).toLowerCase()))
+    : invoices;
+
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
+          {allowedStatuses && (
+            <p className="text-sm text-gray-500 mt-1">
+              Filtered: showing <span className="font-medium">{allowedStatuses.join(', ')}</span> invoices
+              <button onClick={() => navigate('/invoices')} className="ml-2 text-blue-600 hover:underline text-xs">Clear filter</button>
+            </p>
+          )}
+        </div>
         {invoices.length > 0 && (
           <button onClick={() => openModal()} className="btn btn-primary w-full md:w-auto">
             + Create Invoice
@@ -468,10 +524,26 @@ const Invoices: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {invoices.map((invoice) => {
+                {displayedInvoices.map((invoice) => {
                   const effectiveStatus = getEffectiveStatus(invoice);
+                  const isHighlighted = invoice._id === highlightId;
+                  const isLinked = linkedIds.has(invoice._id);
+                  const isClickable = !!urlStatusFilter && !isLinked;
                   return (
-                  <tr key={invoice._id} className="align-middle">
+                  <tr
+                    key={invoice._id}
+                    ref={isHighlighted ? highlightRef : undefined}
+                    className={`align-middle transition-colors ${
+                      isLinked
+                        ? 'bg-green-50'
+                        : isHighlighted
+                          ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
+                          : isClickable
+                            ? 'hover:bg-blue-50 cursor-pointer'
+                            : 'hover:bg-gray-50'
+                    }`}
+                    onClick={isClickable ? () => setLinkConfirm({ show: true, invoice }) : undefined}
+                  >
                     <td className="px-4 py-3 text-sm text-gray-900">
                       <div>{invoice.invoiceNumber}</div>
                       <div className="text-xs text-gray-500">{formatInvoiceType(invoice.invoiceType)}</div>
@@ -483,16 +555,20 @@ const Invoices: React.FC = () => {
                     </td>
                     <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-500">{formatDateDMY(invoice.createdAt)}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{formatDateDMY(invoice.dueDate)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
-                        <button
-                          onClick={() => navigate(`/invoices/${invoice._id}`)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
-                          title="View"
-                          aria-label="View invoice"
-                        >
-                          <FaEye className="text-sm" />
-                        </button>
+                        {isLinked ? (
+                          <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">Linked</span>
+                        ) : (
+                          <button
+                            onClick={() => navigate(`/invoices/${invoice._id}`)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                            title="View"
+                            aria-label="View invoice"
+                          >
+                            <FaEye className="text-sm" />
+                          </button>
+                        )}
                         <button
                           onClick={() => openModal(invoice)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
@@ -1022,6 +1098,18 @@ const Invoices: React.FC = () => {
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm({ show: false, invoiceId: null })}
+      />
+
+      {/* Link Confirmation Modal */}
+      <ConfirmModal
+        isOpen={linkConfirm.show}
+        title="Link Invoice"
+        message={`Are you sure you want to link invoice ${linkConfirm.invoice?.invoiceNumber || ''} to ${linkConfirm.invoice?.clientId?.name || 'this client'}?`}
+        confirmText="Link"
+        cancelText="Cancel"
+        variant="primary"
+        onConfirm={handleLinkConfirm}
+        onCancel={() => setLinkConfirm({ show: false, invoice: null })}
       />
     </div>
   );
