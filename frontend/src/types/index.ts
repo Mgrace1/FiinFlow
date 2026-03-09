@@ -1,5 +1,5 @@
 export type Currency = 'RWF' | 'USD';
-export type UserRole = 'admin' | 'finance' | 'staff';
+export type UserRole = 'super_admin' | 'admin' | 'finance_manager' | 'staff';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type InvoiceType = 'standard' | 'proforma' | 'tax' | 'commercial' | 'credit_note' | 'debit_note';
 export type FileType = 'proforma' | 'invoice' | 'receipt';

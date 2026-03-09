@@ -17,7 +17,8 @@ interface PaymentReceiptProps {
   }>;
   onDelete: (fileId: string) => void;
   uploading: boolean;
-  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  showUpload?: boolean;
 }
 
 const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
@@ -25,9 +26,10 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
   onDelete,
   uploading,
   onUpload,
+  showUpload = true,
 }) => {
   const userRole = getUserRole();
-  const canDelete = userRole === 'admin';
+  const canDelete = userRole === 'admin' || userRole === 'super_admin';
 
   const paymentReceipts = receipts.filter(r => r.type === 'payment_receipt');
 
@@ -138,19 +140,20 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-4">Payment Receipts</h2>
 
-      {/* Upload Button */}
-      <div className="mb-4">
-        <label className="btn btn-primary cursor-pointer">
-          <input
-            type="file"
-            className="hidden"
-            onChange={onUpload}
-            disabled={uploading}
-            accept=".pdf,.jpg,.jpeg,.png"
-          />
-          {uploading ? 'Uploading...' : '+ Upload Payment Receipt'}
-        </label>
-      </div>
+      {showUpload && onUpload && (
+        <div className="mb-4">
+          <label className="btn btn-primary cursor-pointer">
+            <input
+              type="file"
+              className="hidden"
+              onChange={onUpload}
+              disabled={uploading}
+              accept=".pdf,.jpg,.jpeg,.png"
+            />
+            {uploading ? 'Uploading...' : '+ Upload Payment Receipt'}
+          </label>
+        </div>
+      )}
 
       {/* Receipts List */}
       {paymentReceipts.length > 0 ? (
@@ -245,9 +248,11 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
           <p className="text-sm text-yellow-700">
             A payment receipt is required before marking this invoice as paid.
           </p>
-          <p className="text-xs text-yellow-600 mt-2">
-            Please upload proof of payment to proceed.
-          </p>
+          {!showUpload && (
+            <p className="text-xs text-yellow-600 mt-2">
+              Upload receipt in the Confirm Payment Details modal.
+            </p>
+          )}
         </div>
       )}
 

@@ -168,18 +168,18 @@ export const updateUser = async (req: AuthRequest, res: Response) =>{
     }
 
     // Rule 1: Admin users are immutable via update endpoint
-    if (targetUser.role === 'admin') {
+    if (targetUser.role === 'admin' || targetUser.role === 'super_admin') {
       return res.status(403).json({
         success: false,
-        error: 'Admin users cannot be updated',
+        error: 'Admin and super admin users cannot be updated',
       });
     }
 
-    // Rule 2: No user can be promoted to admin via update endpoint
-    if (role === 'admin') {
+    // Rule 2: No user can be promoted to admin/super_admin via update endpoint
+    if (role === 'admin' || role === 'super_admin') {
       return res.status(403).json({
         success: false,
-        error: 'Updating a user to admin is not allowed',
+        error: 'Updating a user to admin or super admin is not allowed',
       });
     }
 

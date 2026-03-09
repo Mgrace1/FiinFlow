@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'finance_manager' | 'staff';
+export type UserRole = 'super_admin' | 'admin' | 'finance_manager' | 'staff';
 
 export interface DecodedToken {
   userId: string;
@@ -38,7 +38,7 @@ export const getUserRole = (): UserRole | null =>{
  */
 export const isAdmin = (): boolean =>{
   const role = getUserRole();
-  return role === 'admin';
+  return role === 'admin' || role === 'super_admin';
 };
 
 /**
@@ -62,7 +62,7 @@ export const isStaff = (): boolean =>{
  */
 export const hasFinanceAccess = (): boolean =>{
   const role = getUserRole();
-  return role === 'admin' || role === 'finance_manager';
+  return role === 'admin' || role === 'finance_manager' || role === 'super_admin';
 };
 
 /**
@@ -73,6 +73,9 @@ export const hasPermission = (action: string): boolean =>{
   if (!role) return false;
 
   const permissions: Record<UserRole, string[]>= {
+    super_admin: [
+      '*',
+    ],
     admin: [
       // Full access to everything
       'view:users',
@@ -129,7 +132,8 @@ export const hasPermission = (action: string): boolean =>{
     ],
   };
 
-  return permissions[role]?.includes(action) || false;
+  const rolePermissions = permissions[role] || [];
+  return rolePermissions.includes('*') || rolePermissions.includes(action);
 };
 
 /**
@@ -137,6 +141,7 @@ export const hasPermission = (action: string): boolean =>{
  */
 export const getRoleLabel = (role: UserRole): string =>{
   const labels: Record<UserRole, string>= {
+    super_admin: 'Super Admin',
     admin: 'Admin',
     finance_manager: 'Finance Manager',
     staff: 'Staff',
@@ -149,6 +154,7 @@ export const getRoleLabel = (role: UserRole): string =>{
  */
 export const getRoleBadgeColor = (role: UserRole): string =>{
   const colors: Record<UserRole, string>= {
+    super_admin: 'bg-black text-white',
     admin: 'bg-danger-100 text-danger-800',
     finance_manager: 'bg-primary-100 text-primary-800',
     staff: 'bg-gray-100 text-gray-800',

@@ -15,7 +15,7 @@ interface TeamMember {
   name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'finance_manager' | 'staff';
+  role: 'super_admin' | 'admin' | 'finance_manager' | 'staff';
   status: 'pending' | 'active' | 'suspended';
   invitedAt?: string;
   invitedBy?: string;
@@ -23,7 +23,8 @@ interface TeamMember {
 }
 
 const TeamMembers: React.FC = () =>{
-  const isAdmin = getUserRole() === 'admin';
+  const currentRole = getUserRole();
+  const isAdmin = currentRole === 'admin' || currentRole === 'super_admin';
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -40,12 +41,12 @@ const TeamMembers: React.FC = () =>{
     email: '',
     password: '',
     phone: '',
-    role: 'staff' as 'admin' | 'finance_manager' | 'staff',
+    role: 'staff' as 'super_admin' | 'admin' | 'finance_manager' | 'staff',
   });
   const [inviteFormData, setInviteFormData] = useState({
     name: '',
     email: '',
-    role: 'staff' as 'admin' | 'finance_manager' | 'staff',
+    role: 'staff' as 'super_admin' | 'admin' | 'finance_manager' | 'staff',
   });
   const passwordValidation = validateStrongPassword(formData.password);
 
@@ -202,6 +203,7 @@ const TeamMembers: React.FC = () =>{
 
   const getRoleLabel = (role: string) =>{
     const labels: any = {
+      super_admin: 'Super Admin',
       admin: 'Admin',
       finance_manager: 'Finance Manager',
       staff: 'Staff',
@@ -509,6 +511,9 @@ const TeamMembers: React.FC = () =>{
                 <option value="staff">Staff - Can create drafts only</option>
                 <option value="finance_manager">Finance Manager - Full access to invoices/expenses</option>
                 <option value="admin">Admin - Full system access</option>
+                {currentRole === 'super_admin' && (
+                  <option value="super_admin">Super Admin - Global system access</option>
+                )}
               </select>
             </div>
             <div className="flex space-x-3">
@@ -570,6 +575,9 @@ const TeamMembers: React.FC = () =>{
                 <option value="staff">Staff - Can create drafts only</option>
                 <option value="finance_manager">Finance Manager - Full access to invoices/expenses</option>
                 <option value="admin">Admin - Full system access</option>
+                {currentRole === 'super_admin' && (
+                  <option value="super_admin">Super Admin - Global system access</option>
+                )}
               </select>
             </div>
             <div className="bg-primary-50 border border-primary-200 rounded p-3">

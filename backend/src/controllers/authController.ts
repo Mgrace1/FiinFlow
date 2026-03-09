@@ -294,7 +294,7 @@ export const createWorkspace = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (req.userRole !== 'admin') {
+    if (req.userRole !== 'admin' && req.userRole !== 'super_admin') {
       return res.status(403).json({
         success: false,
         error: 'Only admins can create a new workspace',

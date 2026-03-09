@@ -94,7 +94,8 @@ const Invoices: React.FC = () => {
   const urlStatusFilter = searchParams.get('status'); // e.g. "sent,overdue"
   const highlightId = searchParams.get('highlight');
   const companyConfig = getCurrencyConfig();
-  const isAdmin = getUserRole() === 'admin';
+  const role = getUserRole();
+  const isAdmin = role === 'admin' || role === 'super_admin';
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -506,6 +507,7 @@ const Invoices: React.FC = () => {
           title="No invoices yet"
           subtitle="Create your first invoice to start billing your clients"
           buttonLabel="+ Create Invoice"
+          variant="compact"
           onAction={() => openModal()}
         />
       ) : (
@@ -557,18 +559,14 @@ const Invoices: React.FC = () => {
                     <td className="px-4 py-3 text-sm text-gray-900">{formatDateDMY(invoice.dueDate)}</td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:justify-end">
-                        {isLinked ? (
-                          <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">Linked</span>
-                        ) : (
-                          <button
-                            onClick={() => navigate(`/invoices/${invoice._id}`)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
-                            title="View"
-                            aria-label="View invoice"
-                          >
-                            <FaEye className="text-sm" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => navigate(`/invoices/${invoice._id}`)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                          title="View"
+                          aria-label="View invoice"
+                        >
+                          <FaEye className="text-sm" />
+                        </button>
                         <button
                           onClick={() => openModal(invoice)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"

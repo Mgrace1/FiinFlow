@@ -40,7 +40,8 @@ const getLinkedIds = (): Set<string> => {
 };
 
 const Expenses: React.FC = () =>{
-  const isAdmin = getUserRole() === 'admin';
+  const role = getUserRole();
+  const isAdmin = role === 'admin' || role === 'super_admin';
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const urlStatusFilter = searchParams.get('status');
@@ -338,6 +339,7 @@ const Expenses: React.FC = () =>{
         title="No expenses yet"
         subtitle="Add your first expense to start tracking your spending"
         buttonLabel="+ Add Expense"
+        variant="compact"
         onAction={() => { resetForm(); setShowModal(true); }}
       />
     ) : (
@@ -409,18 +411,14 @@ const Expenses: React.FC = () =>{
                     <FaFileAlt className="text-sm" />
                   </button>
                 )}
-                {isLinkedCard ? (
-                  <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">Linked</span>
-                ) : (
-                  <Link
-                    to={`/expenses/${expense._id}`}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
-                    title="View Expense"
-                    aria-label="View expense details"
-                  >
-                    <FaEye className="text-sm" />
-                  </Link>
-                )}
+                <Link
+                  to={`/expenses/${expense._id}`}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
+                  title="View Expense"
+                  aria-label="View expense details"
+                >
+                  <FaEye className="text-sm" />
+                </Link>
                 {isAdmin && (
                   <button
                     onClick={(e) =>{
@@ -512,18 +510,14 @@ const Expenses: React.FC = () =>{
                         <FaFileAlt className="text-sm" />
                       </button>
                     )}
-                    {isLinked ? (
-                      <span className="mr-2 text-xs text-green-600 font-medium px-2 py-1 bg-green-50 rounded-full">Linked</span>
-                    ) : (
-                      <Link
-                        to={`/expenses/${expense._id}`}
-                        className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
-                        title="View Expense"
-                        aria-label="View expense details"
-                      >
-                        <FaEye className="text-sm" />
-                      </Link>
-                    )}
+                    <Link
+                      to={`/expenses/${expense._id}`}
+                      className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
+                      title="View Expense"
+                      aria-label="View expense details"
+                    >
+                      <FaEye className="text-sm" />
+                    </Link>
                     {isAdmin && (
                       <button
                         onClick={(e) =>{ e.stopPropagation(); setDeleteConfirm({ show: true, expenseId: expense._id }); }}

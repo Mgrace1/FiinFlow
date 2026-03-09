@@ -62,16 +62,6 @@ interface PaymentIngestionEvent {
   errorMessage?: string;
 }
 
-interface IngestionFormData {
-  source: 'manual' | 'gmail' | 'sms';
-  directionHint: 'unknown' | 'incoming' | 'outgoing';
-  channelIdentifier: string;
-  subject: string;
-  messageText: string;
-  dryRun: boolean;
-}
-
-
 const Settings: React.FC = () =>{
   const navigate = useNavigate();
   const { setAuth, companyId: activeCompanyId } = useAuth();
@@ -106,19 +96,10 @@ const Settings: React.FC = () =>{
   const [eventsLoading, setEventsLoading] = useState(false);
   const [creatingConnection, setCreatingConnection] = useState(false);
   const [deletingConnectionId, setDeletingConnectionId] = useState<string | null>(null);
-  const [submittingAlert, setSubmittingAlert] = useState(false);
   const [connectionForm, setConnectionForm] = useState({
     channel: 'gmail' as 'gmail' | 'sms_forward',
     identifier: '',
     displayName: '',
-  });
-  const [ingestionForm, setIngestionForm] = useState<IngestionFormData>({
-    source: 'manual',
-    directionHint: 'unknown',
-    channelIdentifier: '',
-    subject: '',
-    messageText: '',
-    dryRun: true,
   });
 
   useEffect(() =>{
@@ -129,7 +110,8 @@ const Settings: React.FC = () =>{
       const rawUser = localStorage.getItem('finflow_user');
       const parsedUser = rawUser ? JSON.parse(rawUser) : null;
       const email = String(parsedUser?.email || '').trim().toLowerCase();
-      setIsAdmin(String(parsedUser?.role || '').toLowerCase() === 'admin');
+      const role = String(parsedUser?.role || '').toLowerCase();
+      setIsAdmin(role === 'admin' || role === 'super_admin');
       if (email) {
         setCurrentUserEmail(email);
         setWorkspaceForm((prev) => ({ ...prev, email }));
@@ -345,43 +327,6 @@ const Settings: React.FC = () =>{
       notifyError(getErrorMessage(error, 'Failed to delete connection'));
     } finally {
       setDeletingConnectionId(null);
-    }
-  };
-
-  const handleSubmitIngestionAlert = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ingestionForm.messageText.trim()) {
-      notifyError('Message text is required');
-      return;
-    }
-
-    setSubmittingAlert(true);
-    try {
-      const response = await apiClient.post('/payment-ingestion/alerts', {
-        source: ingestionForm.source,
-        directionHint: ingestionForm.directionHint,
-        channelIdentifier: ingestionForm.channelIdentifier.trim() || undefined,
-        subject: ingestionForm.subject.trim() || undefined,
-        messageText: ingestionForm.messageText.trim(),
-        dryRun: ingestionForm.dryRun,
-      });
-
-      const status = String(response.data?.data?.status || '').toLowerCase();
-      if (status === 'processed') {
-        notifySuccess('Alert processed and payment applied');
-      } else if (status === 'ignored') {
-        notifyError('Alert parsed but no matching invoice/expense found');
-      } else if (status === 'duplicate') {
-        notifyError('Duplicate alert ignored');
-      } else {
-        notifySuccess('Alert ingested');
-      }
-
-      fetchIngestionEvents();
-    } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to ingest payment alert'));
-    } finally {
-      setSubmittingAlert(false);
     }
   };
 
@@ -623,7 +568,7 @@ const Settings: React.FC = () =>{
           )}
           {isAdmin && activeTab === 'payments' && (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-6">
                 <form onSubmit={handleCreateConnection} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                   <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Connect Mailbox or SMS Forward</h3>
                   <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
@@ -655,67 +600,6 @@ const Settings: React.FC = () =>{
                     />
                     <button type="submit" className="btn btn-primary w-full" disabled={creatingConnection}>
                       {creatingConnection ? 'Saving...' : 'Add Connection'}
-                    </button>
-                  </div>
-                </form>
-
-                <form onSubmit={handleSubmitIngestionAlert} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                  <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Manual Alert Ingestion</h3>
-                  <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                    Paste a payment alert from email/SMS and let the system detect and apply payment.
-                  </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <select
-                        className="input"
-                        value={ingestionForm.source}
-                        onChange={(e) => setIngestionForm({ ...ingestionForm, source: e.target.value as 'manual' | 'gmail' | 'sms' })}
-                      >
-                        <option value="manual">Manual</option>
-                        <option value="gmail">Gmail</option>
-                        <option value="sms">SMS</option>
-                      </select>
-                      <select
-                        className="input"
-                        value={ingestionForm.directionHint}
-                        onChange={(e) => setIngestionForm({ ...ingestionForm, directionHint: e.target.value as 'unknown' | 'incoming' | 'outgoing' })}
-                      >
-                        <option value="unknown">Direction: Unknown</option>
-                        <option value="incoming">Incoming</option>
-                        <option value="outgoing">Outgoing</option>
-                      </select>
-                    </div>
-                    <input
-                      type="text"
-                      className="input"
-                      placeholder="Channel identifier (optional)"
-                      value={ingestionForm.channelIdentifier}
-                      onChange={(e) => setIngestionForm({ ...ingestionForm, channelIdentifier: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      className="input"
-                      placeholder="Subject (optional)"
-                      value={ingestionForm.subject}
-                      onChange={(e) => setIngestionForm({ ...ingestionForm, subject: e.target.value })}
-                    />
-                    <textarea
-                      className="input min-h-[120px]"
-                      placeholder="Paste full payment alert text"
-                      value={ingestionForm.messageText}
-                      onChange={(e) => setIngestionForm({ ...ingestionForm, messageText: e.target.value })}
-                      required
-                    />
-                    <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <input
-                        type="checkbox"
-                        checked={ingestionForm.dryRun}
-                        onChange={(e) => setIngestionForm({ ...ingestionForm, dryRun: e.target.checked })}
-                      />
-                      Dry run (parse and match only, do not update invoice/expense)
-                    </label>
-                    <button type="submit" className="btn btn-primary w-full" disabled={submittingAlert}>
-                      {submittingAlert ? 'Processing...' : 'Ingest Alert'}
                     </button>
                   </div>
                 </form>

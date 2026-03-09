@@ -5,6 +5,7 @@ interface EmptyDocumentStateProps {
   subtitle: string;
   buttonLabel: string;
   onAction: () => void;
+  variant?: 'default' | 'compact';
 }
 
 const EmptyDocumentState: React.FC<EmptyDocumentStateProps> = ({
@@ -12,27 +13,37 @@ const EmptyDocumentState: React.FC<EmptyDocumentStateProps> = ({
   subtitle,
   buttonLabel,
   onAction,
+  variant = 'default',
 }) => {
-  return (
-    <div className="flex h-[calc(100vh-220px)] flex-col items-center justify-center px-6 py-6 text-center">
-      <div className="relative mb-6 h-52 w-52 rounded-full bg-[#f2f1f6]">
-        <div className="absolute left-[52px] top-[74px] h-[84px] w-[62px] rounded-xl border-[4px] border-[#a6a6ab] bg-transparent" />
-        <div className="absolute left-[95px] top-[74px] h-[84px] w-[62px] rounded-xl border-[4px] border-[#a6a6ab] bg-transparent" />
-        <div className="absolute left-[96px] top-[86px] h-[14px] w-[14px] rotate-45 border-r-[4px] border-t-[4px] border-[#a6a6ab]" />
-        <div className="absolute left-[140px] top-[86px] h-[14px] w-[14px] rotate-45 border-r-[4px] border-t-[4px] border-[#a6a6ab]" />
+  const isCompact = variant === 'compact';
 
-        <div className="absolute left-[88px] top-[94px] flex h-[88px] w-[84px] flex-col items-center rounded-2xl border-[4px] border-[#9f9fa4] bg-[#f7f7f9]">
-          <div className="mt-5 flex items-center gap-4">
-            <span className="text-[30px] leading-none text-[#9f9fa4]">×</span>
-            <span className="text-[30px] leading-none text-[#9f9fa4]">×</span>
-          </div>
-          <div className="mt-1 h-5 w-8 rounded-t-full border-t-[4px] border-[#9f9fa4]" />
-        </div>
+  return (
+    <div className={`flex flex-col items-center justify-center px-4 text-center ${
+      isCompact ? 'min-h-[320px] py-6 sm:min-h-[360px]' : 'min-h-[calc(100vh-220px)] py-6'
+    }`}>
+      <div className={`w-full ${isCompact ? 'mb-4 max-w-[170px] sm:max-w-[210px]' : 'mb-6 max-w-[220px] sm:max-w-[260px]'}`}>
+        <svg
+          viewBox="0 0 220 220"
+          className="h-auto w-full"
+          role="img"
+          aria-label="Empty documents illustration"
+        >
+          <circle cx="110" cy="110" r="104" fill="#f2f1f6" />
+          <rect x="54" y="74" width="62" height="84" rx="12" fill="none" stroke="#a6a6ab" strokeWidth="4" />
+          <rect x="96" y="74" width="62" height="84" rx="12" fill="none" stroke="#a6a6ab" strokeWidth="4" />
+          <path d="M110 86 l10 0 l0 10" fill="none" stroke="#a6a6ab" strokeWidth="4" />
+          <path d="M152 86 l10 0 l0 10" fill="none" stroke="#a6a6ab" strokeWidth="4" />
+
+          <rect x="90" y="94" width="84" height="88" rx="16" fill="#f7f7f9" stroke="#9f9fa4" strokeWidth="4" />
+          <text x="112" y="136" textAnchor="middle" fontSize="26" fill="#9f9fa4">x</text>
+          <text x="146" y="136" textAnchor="middle" fontSize="26" fill="#9f9fa4">x</text>
+          <path d="M124 162 q8 -12 16 0" fill="none" stroke="#9f9fa4" strokeWidth="4" strokeLinecap="round" />
+        </svg>
       </div>
 
-      <h3 className="text-3xl font-bold text-gray-900">{title}</h3>
-      <p className="mt-2 max-w-md text-sm text-gray-500">{subtitle}</p>
-      <button onClick={onAction} className="btn btn-primary mt-6">
+      <h3 className={`${isCompact ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-bold text-gray-900`}>{title}</h3>
+      <p className={`max-w-md text-sm text-gray-500 ${isCompact ? 'mt-1.5' : 'mt-2'}`}>{subtitle}</p>
+      <button onClick={onAction} className={`btn btn-primary ${isCompact ? 'mt-5' : 'mt-6'}`}>
         {buttonLabel}
       </button>
     </div>

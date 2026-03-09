@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/common/ConfirmModal';
-import EmptyState from '../components/common/EmptyState';
+import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { Search, Link2 } from 'lucide-react';
 import { notifyInfo } from '../utils/toast';
@@ -27,7 +27,8 @@ const getLinkedIds = (): Set<string> => {
 };
 
 const Transactions: React.FC = () => {
-  const isAdmin = getUserRole() === 'admin';
+  const role = getUserRole();
+  const isAdmin = role === 'admin' || role === 'super_admin';
   const navigate = useNavigate();
   const currencyConfig = getCurrencyConfig();
 
@@ -141,6 +142,7 @@ const Transactions: React.FC = () => {
   if (loading) return <LoadingOverlay message="Loading transactions..." />;
 
   const displayedTransactions = filteredTransactions.slice(0, visibleCount);
+  const hasFilters = Boolean(searchQuery || startDate || endDate || activeTab !== 'bank');
 
   const tabClass = (tab: typeof activeTab) =>
     `pb-3 border-b-2 transition text-sm font-medium whitespace-nowrap ${
@@ -195,7 +197,22 @@ const Transactions: React.FC = () => {
         <div>
           {displayedTransactions.length === 0 ? (
             <div className="p-6">
-              <EmptyState icon="" title="No transactions found" subtitle="Try changing filters." />
+              <EmptyDocumentState
+                title="No transactions found"
+                subtitle={hasFilters ? 'Try changing or clearing filters.' : 'No transactions yet.'}
+                buttonLabel={hasFilters ? 'Clear Filters' : '+ Create Invoice'}
+                variant="compact"
+                onAction={() => {
+                  if (hasFilters) {
+                    setSearchQuery('');
+                    setStartDate('');
+                    setEndDate('');
+                    setActiveTab('bank');
+                    return;
+                  }
+                  navigate('/invoices');
+                }}
+              />
             </div>
           ) : (
             <>

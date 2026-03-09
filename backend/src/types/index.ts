@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 
 export type Currency = 'RWF' | 'USD' | 'EUR';
 
-export type UserRole = 'admin' | 'finance_manager' | 'staff';
+export type UserRole = 'super_admin' | 'admin' | 'finance_manager' | 'staff';
 
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 export type InvoiceType = 'standard' | 'proforma' | 'tax' | 'commercial' | 'credit_note' | 'debit_note';

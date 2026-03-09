@@ -13,6 +13,7 @@ import aiRoutes from './aiRoutes';
 import kpayRoutes from './kpayRoutes';
 import searchRoutes from './searchRoutes';
 import paymentIngestionRoutes from './paymentIngestionRoutes';
+import platformRoutes from './platformRoutes';
 
 import { fixCompanyLoginUrl } from '../controllers/companyController';
 import { testEmail } from '../controllers/mailerController';
@@ -45,6 +46,7 @@ router.use('/forecasting', forecastingRoutes);
 router.use('/kpay', kpayRoutes);
 router.use('/search', searchRoutes);
 router.use('/payment-ingestion', paymentIngestionRoutes);
+router.use('/platform', platformRoutes);
 
 // Additional routes
 router.get('/mailer/test', testEmail);

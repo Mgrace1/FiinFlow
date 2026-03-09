@@ -11,7 +11,7 @@ export const useRole = () =>{
     setLoading(false);
   }, []);
 
-  const isAdmin = role === 'admin';
+  const isAdmin = role === 'admin' || role === 'super_admin';
   const isFinanceManager = role === 'finance_manager';
   const isStaff = role === 'staff';
   const canManageUsers = isAdmin;

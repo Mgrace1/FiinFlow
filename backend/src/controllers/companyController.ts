@@ -17,6 +17,25 @@ const generatePassword = (): string =>{
   return password;
 };
 
+export const deleteCompanyWithDependencies = async (targetCompanyId: string): Promise<void> => {
+  // Verify company exists
+  const company = await Company.findById(targetCompanyId);
+  if (!company) {
+    throw new Error('Company not found');
+  }
+
+  // Delete all associated data in order
+  const { Client, Invoice, Expense, File, Notification } = require('../models');
+
+  await Notification.deleteMany({ companyId: targetCompanyId });
+  await File.deleteMany({ companyId: targetCompanyId });
+  await Expense.deleteMany({ companyId: targetCompanyId });
+  await Invoice.deleteMany({ companyId: targetCompanyId });
+  await Client.deleteMany({ companyId: targetCompanyId });
+  await User.deleteMany({ companyId: targetCompanyId });
+  await Company.findByIdAndDelete(targetCompanyId);
+};
+
 /**
  * Create a new company account
  */
@@ -250,75 +269,40 @@ export const deleteCompany = async (req: AuthRequest, res: Response) =>{
     }
 
     // Check if user is admin (using userRole from AuthRequest)
-    if (req.userRole !== 'admin') {
+    if (req.userRole !== 'admin' && req.userRole !== 'super_admin') {
       return res.status(403).json({
         success: false,
         error: 'Only company administrators can delete the company',
       });
     }
 
-    // Security: when deleting another workspace, ensure the same email is also admin in that target workspace
-    const currentUser = req.userId ? await User.findById(req.userId).select('email') : null;
-    const currentEmail = String(currentUser?.email || '').trim().toLowerCase();
-    if (!currentEmail) {
-      return res.status(403).json({
-        success: false,
-        error: 'Unable to verify workspace admin access',
-      });
+    // Security: when deleting another workspace, normal admins must also be admins in target workspace.
+    // Super admins can delete any workspace.
+    if (req.userRole !== 'super_admin') {
+      const currentUser = req.userId ? await User.findById(req.userId).select('email') : null;
+      const currentEmail = String(currentUser?.email || '').trim().toLowerCase();
+      if (!currentEmail) {
+        return res.status(403).json({
+          success: false,
+          error: 'Unable to verify workspace admin access',
+        });
+      }
+
+      const adminInTarget = await User.findOne({
+        companyId: targetCompanyId,
+        email: currentEmail,
+        role: 'admin',
+      }).select('_id');
+
+      if (!adminInTarget) {
+        return res.status(403).json({
+          success: false,
+          error: 'You are not an admin of the selected workspace',
+        });
+      }
     }
 
-    const adminInTarget = await User.findOne({
-      companyId: targetCompanyId,
-      email: currentEmail,
-      role: 'admin',
-    }).select('_id');
-
-    if (!adminInTarget) {
-      return res.status(403).json({
-        success: false,
-        error: 'You are not an admin of the selected workspace',
-      });
-    }
-
-    // Verify company exists
-    const company = await Company.findById(targetCompanyId);
-    if (!company) {
-      return res.status(404).json({
-        success: false,
-        error: 'Company not found',
-      });
-    }
-
-    // Delete all associated data in order
-    const { Client, Invoice, Expense, File, Notification } = require('../models');
-
-    // 1. Delete all notifications
-    await Notification.deleteMany({ companyId: targetCompanyId });
-    console.log(`Deleted notifications for company ${targetCompanyId}`);
-
-    // 2. Delete all files
-    await File.deleteMany({ companyId: targetCompanyId });
-    console.log(`Deleted files for company ${targetCompanyId}`);
-
-    // 3. Delete all expenses
-    await Expense.deleteMany({ companyId: targetCompanyId });
-    console.log(`Deleted expenses for company ${targetCompanyId}`);
-
-    // 4. Delete all invoices
-    await Invoice.deleteMany({ companyId: targetCompanyId });
-    console.log(`Deleted invoices for company ${targetCompanyId}`);
-
-    // 5. Delete all clients
-    await Client.deleteMany({ companyId: targetCompanyId });
-    console.log(`Deleted clients for company ${targetCompanyId}`);
-
-    // 6. Delete all users
-    await User.deleteMany({ companyId: targetCompanyId });
-    console.log(`Deleted users for company ${targetCompanyId}`);
-
-    // 7. Finally delete the company
-    await Company.findByIdAndDelete(targetCompanyId);
-    console.log(`Deleted company ${targetCompanyId}`);
+    await deleteCompanyWithDependencies(targetCompanyId);
 
     res.json({
       success: true,
@@ -343,7 +327,7 @@ export const fixCompanyLoginUrl = async (req: AuthRequest, res: Response) =>{
     const { companyId } = req.params;
 
     // Check if user is admin
-    if (req.userRole !== 'admin') {
+    if (req.userRole !== 'admin' && req.userRole !== 'super_admin') {
       return res.status(403).json({
         success: false,
         error: 'Only company administrators can fix login URL',

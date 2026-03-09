@@ -19,7 +19,8 @@ interface Client {
 
 const Clients: React.FC = () =>{
   const navigate = useNavigate();
-  const isAdmin = getUserRole() === 'admin';
+  const role = getUserRole();
+  const isAdmin = role === 'admin' || role === 'super_admin';
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);

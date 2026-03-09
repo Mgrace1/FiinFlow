@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
   companyId?: Types.ObjectId;
   userId?: Types.ObjectId;
   userRole?: string;
+  isSuperAdmin?: boolean;
 }
 
 // Middleware to verify company access token
@@ -49,6 +50,7 @@ export const verifyCompanyAccess = (req: AuthRequest, res: Response, next: NextF
     req.companyId = new Types.ObjectId(decoded.companyId);
     req.userId = decoded.userId ? new Types.ObjectId(decoded.userId) : undefined;
     req.userRole = decoded.role;
+    req.isSuperAdmin = decoded.role === 'super_admin';
 
     next();
   } catch (error: any) {
@@ -62,7 +64,7 @@ export const verifyCompanyAccess = (req: AuthRequest, res: Response, next: NextF
 
 // Middleware to check if user has admin role
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) =>{
-  if (req.userRole !== 'admin') {
+  if (req.userRole !== 'admin' && req.userRole !== 'super_admin') {
     return res.status(403).json({
       success: false,
       error: 'Admin access required',
@@ -73,7 +75,7 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
 
 // Middleware to check if user has admin or finance_manager role
 export const requireFinanceAccess = (req: AuthRequest, res: Response, next: NextFunction) =>{
-  if (req.userRole !== 'admin' && req.userRole !== 'finance_manager') {
+  if (req.userRole !== 'admin' && req.userRole !== 'finance_manager' && req.userRole !== 'super_admin') {
     return res.status(403).json({
       success: false,
       error: 'Finance Manager or Admin access required',
@@ -93,8 +95,21 @@ export const requireStaffAccess = (req: AuthRequest, res: Response, next: NextFu
   next();
 };
 
+export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (req.userRole !== 'super_admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Super admin access required',
+    });
+  }
+  next();
+};
+
 // Middleware for draft-only access (staff can only create/edit drafts)
 export const requireDraftAccess = (req: AuthRequest, res: Response, next: NextFunction) =>{
+  if (req.userRole === 'super_admin') {
+    return next();
+  }
   // Staff can only work with drafts
   if (req.userRole === 'staff') {
     const status = req.body.status || req.query.status;

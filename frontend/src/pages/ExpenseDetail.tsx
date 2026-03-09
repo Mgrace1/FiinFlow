@@ -137,8 +137,8 @@ const ExpenseDetail: React.FC = () =>{
     return <div className="text-center py-12 text-red-600">Expense not found</div>;
   }
 
-  const canEdit = userRole === 'admin' || userRole === 'finance_manager';
-  const canDelete = userRole === 'admin';
+  const canEdit = userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager';
+  const canDelete = userRole === 'admin' || userRole === 'super_admin';
 
   const getCategoryBadgeVariant = (category: string) =>{
     const variantMap: { [key: string]: 'transport' | 'office' | 'marketing' | 'utilities' | 'salaries' | 'other' } = {

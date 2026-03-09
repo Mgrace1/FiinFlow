@@ -36,7 +36,7 @@ const UserSchema: Schema = new Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'finance_manager', 'staff'],
+      enum: ['super_admin', 'admin', 'finance_manager', 'staff'],
       default: 'staff',
       required: true,
     },

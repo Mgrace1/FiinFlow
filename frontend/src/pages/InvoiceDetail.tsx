@@ -4,7 +4,6 @@ import { apiClient } from '../api/client';
 import { ConfirmModal } from '../components/ConfirmModal';
 import PaymentReceipt from '../components/invoice/PaymentReceipt';
 import Badge from '../components/common/Badge';
-import Tooltip from '../components/common/Tooltip';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { formatDateDMY } from '../utils/formatDate';
 import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
@@ -109,7 +108,6 @@ const InvoiceDetail: React.FC = () =>{
     receivedBy: '',
   });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [installmentPrompt, setInstallmentPrompt] = useState<{ show: boolean; remaining: number }>({ show: false, remaining: 0 });
 
   // Confirm modals
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; fileId: string | null }>({
@@ -120,7 +118,6 @@ const InvoiceDetail: React.FC = () =>{
     show: false,
     status: null,
   });
-  const [noReceiptError, setNoReceiptError] = useState(false);
   const [showPDFConfirm, setShowPDFConfirm] = useState(false);
 
   useEffect(() =>{
@@ -164,7 +161,7 @@ const InvoiceDetail: React.FC = () =>{
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      fetchInvoice(); // Refresh invoice data
+      await fetchInvoice(); // Refresh invoice data
     } catch (error: any) {
       notifyError(getErrorMessage(error, 'Failed to upload file'));
     } finally {
@@ -220,10 +217,6 @@ const InvoiceDetail: React.FC = () =>{
       setShowPaymentModal(false);
       setPaymentForm((prev) => ({ ...prev, amountToPayNow: '' }));
       notifySuccess('Payment recorded successfully');
-      const newRemaining = invoiceTotal - newAmountPaid;
-      if (newRemaining > 0) {
-        setInstallmentPrompt({ show: true, remaining: newRemaining });
-      }
     } catch (error: any) {
       notifyError(getErrorMessage(error, 'Failed to mark as paid'));
     }
@@ -519,7 +512,7 @@ const handleSaveEdit = async () =>{
             receipts={invoice.attachments || []}
             onDelete={(fileId) => setDeleteConfirm({ show: true, fileId })}
             uploading={uploading}
-            onUpload={(e) => handleFileUpload(e, 'payment_receipt')}
+            showUpload={false}
           />
         </div>
 
@@ -546,17 +539,12 @@ const handleSaveEdit = async () =>{
                   </button>
                 )}
                 {availableStatuses.includes('paid') && (
-                  <Tooltip content={!hasReceipt ? 'Upload a payment receipt first' : ''}>
-                    <button
-                      onClick={() => {
-                        if (!hasReceipt) { setNoReceiptError(true); return; }
-                        setShowPaymentModal(true);
-                      }}
-                      className={`btn w-full text-sm py-1.5 ${hasReceipt ? 'btn-primary' : 'btn-secondary opacity-70'}`}
-                    >
-                      Mark as Paid
-                    </button>
-                  </Tooltip>
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className="btn btn-primary w-full text-sm py-1.5"
+                  >
+                    Mark as Paid
+                  </button>
                 )}
                 {availableStatuses.includes('cancelled') && (
                   <button
@@ -570,7 +558,7 @@ const handleSaveEdit = async () =>{
             )}
             {!hasReceipt && availableStatuses.includes('paid') && (
               <p className="text-xs text-amber-700 mt-2 bg-amber-50 rounded-md p-2">
-                Upload a payment receipt below to enable "Mark as Paid"
+                Upload receipt in the "Confirm Payment Details" modal when recording payment.
               </p>
             )}
           </div>
@@ -734,16 +722,6 @@ const handleSaveEdit = async () =>{
         onCancel={() => setStatusConfirm({ show: false, status: null })}
       />
       <ConfirmModal
-        isOpen={noReceiptError}
-        title="Payment Receipt Required"
-        message="You must upload at least one payment receipt before marking this invoice as paid."
-        confirmText="OK"
-        cancelText=""
-        variant="danger"
-        onConfirm={() => setNoReceiptError(false)}
-        onCancel={() => setNoReceiptError(false)}
-      />
-      <ConfirmModal
         isOpen={showPDFConfirm}
         title="Generate Invoice PDF"
         message="This will generate and download a PDF version of this invoice."
@@ -752,16 +730,6 @@ const handleSaveEdit = async () =>{
         variant="info"
         onConfirm={handleDownloadPDF}
         onCancel={() => setShowPDFConfirm(false)}
-      />
-      <ConfirmModal
-        isOpen={installmentPrompt.show}
-        title="Partial Payment Recorded"
-        message={`There is still a remaining balance of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice?.currency || 'RWF', maximumFractionDigits: invoice?.currency === 'RWF' ? 0 : 2 }).format(installmentPrompt.remaining)}. Would you like to create a new invoice for the remaining installment?`}
-        confirmText="Create Invoice"
-        cancelText="Not Now"
-        variant="info"
-        onConfirm={() => { setInstallmentPrompt({ show: false, remaining: 0 }); navigate('/invoices'); }}
-        onCancel={() => setInstallmentPrompt({ show: false, remaining: 0 })}
       />
     </div>
   );

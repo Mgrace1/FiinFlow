@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { NavLink } from 'react-router-dom';
+import { getUserRole } from '../../utils/roleUtils';
 import { 
   LayoutDashboard, 
   Users, 
@@ -10,6 +11,7 @@ import {
   BarChart3, 
   UserCog, 
   Settings,
+  Shield,
   ChevronLeft,
   ChevronRight,
   X 
@@ -23,6 +25,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { t } = useLanguage();
+  const role = getUserRole();
   const navItems = [
     { name: t('nav.dashboard'), path: '/dashboard', icon: LayoutDashboard },
     { name: t('nav.clients'), path: '/clients', icon: Users },
@@ -32,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
     { name: t('nav.reports'), path: '/reports', icon: BarChart3 },
     { name: t('nav.team'), path: '/team', icon: UserCog },
     { name: t('nav.settings'), path: '/settings', icon: Settings },
+    ...(role === 'super_admin' ? [{ name: 'Platform Admin', path: '/platform-admin', icon: Shield }] : []),
   ];
 
   const handleLinkClick = () => {

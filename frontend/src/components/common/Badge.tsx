@@ -14,6 +14,7 @@ export type BadgeVariant =
   | 'salaries'
   | 'other'
   | 'admin'
+  | 'super_admin'
   | 'finance_manager'
   | 'staff'
   | 'success'
@@ -51,6 +52,7 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
       other: 'bg-gray-100 text-gray-800',
 
       // User roles
+      super_admin: 'bg-black text-white',
       admin: 'bg-purple-100 text-purple-800',
       finance_manager: 'bg-blue-100 text-blue-800',
       staff: 'bg-gray-100 text-gray-800',

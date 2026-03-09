@@ -28,7 +28,8 @@ interface CompanySettingsProps {
 }
 
 const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =>{
-  const isAdmin = getUserRole() === 'admin';
+  const role = getUserRole();
+  const isAdmin = role === 'admin' || role === 'super_admin';
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

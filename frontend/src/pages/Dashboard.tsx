@@ -77,7 +77,8 @@ interface DashboardResponse {
 
 interface MonthlyRow {
   month: string;
-  billed: number;
+  pending: number;
+  draft: number;
   collected: number;
   spent: number;
   net: number;
@@ -95,7 +96,7 @@ const PIE_COLORS = {
 const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#f97316', '#94a3b8'];
 
 const DASHBOARD_CARD =
-  'rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_14px_40px_-24px_rgba(15,23,42,0.35)]';
+  'rounded-2xl border border-slate-200 bg-white p-5';
 
 const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
 
@@ -133,7 +134,7 @@ const getTimeGreeting = (date: Date) => {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 border border-slate-200 rounded-lg shadow-lg text-sm">
+      <div className="bg-white p-3 border border-slate-200 rounded-lg text-sm">
         <p className="font-medium text-slate-900 mb-2">{label}</p>
         {payload.map((entry: any, index: number) => (
           <div key={`item-${index}`} className="flex items-center gap-2 text-xs mb-1">
@@ -203,7 +204,8 @@ const Dashboard: React.FC = () => {
       return {
         key,
         month: monthFormatter.format(d),
-        billed: 0,
+        pending: 0,
+        draft: 0,
         collected: 0,
         spent: 0,
       };
@@ -225,9 +227,12 @@ const Dashboard: React.FC = () => {
         getCurrencyConfig().defaultCurrency,
         getCurrencyConfig().exchangeRateUSD
       );
-      row.billed += amount;
       if (invoice.status === 'paid') {
         row.collected += amount;
+      } else if (invoice.status === 'draft') {
+        row.draft += amount;
+      } else {
+        row.pending += amount;
       }
     });
 
@@ -246,9 +251,10 @@ const Dashboard: React.FC = () => {
       );
     });
 
-    return seed.map(({ month, billed, collected, spent }) => ({
+    return seed.map(({ month, pending, draft, collected, spent }) => ({
       month,
-      billed,
+      pending,
+      draft,
       collected,
       spent,
       net: collected - spent,
@@ -356,7 +362,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white px-6 py-6 shadow-sm">
+      <section className="rounded-3xl border border-slate-200 bg-white px-6 py-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Overview</p>
@@ -366,7 +372,7 @@ const Dashboard: React.FC = () => {
             <p className="text-sm text-slate-600">Here is how your business is performing today.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            {(userRole === 'admin' || userRole === 'finance_manager') && (
+            {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager') && (
               <button
                 onClick={() => setShowPDFConfirm(true)}
                 className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -451,7 +457,7 @@ const Dashboard: React.FC = () => {
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Cashflow trends</h2>
-            <p className="text-sm text-slate-500">Last 6 months of income, expenses, and pending amounts.</p>
+            <p className="text-sm text-slate-500">Last 6 months of income, expenses, pending, and draft amounts.</p>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -471,7 +477,8 @@ const Dashboard: React.FC = () => {
                   axisLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(14, 165, 233, 0.05)' }} />
-                <Bar dataKey="billed" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={30} name="Pending" />
+                <Bar dataKey="pending" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={30} name="Pending" />
+                <Bar dataKey="draft" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={30} name="Draft" />
                 <Bar dataKey="collected" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} name="Income" />
                 <Bar dataKey="spent" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={30} name="Expenses" />
               </BarChart>
@@ -482,6 +489,10 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#0ea5e9' }}></span>
               <span className="text-slate-600">Pending</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#6366f1' }}></span>
+              <span className="text-slate-600">Draft</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#10b981' }}></span>
@@ -664,7 +675,7 @@ const Dashboard: React.FC = () => {
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <button
           onClick={() => navigate('/clients')}
-          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5"
         >
           <div className="flex items-start gap-3">
             <span className="rounded-lg bg-slate-100 p-2 text-slate-600">
@@ -678,7 +689,7 @@ const Dashboard: React.FC = () => {
         </button>
         <button
           onClick={() => navigate('/invoices')}
-          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5"
         >
           <div className="flex items-start gap-3">
             <span className="rounded-lg bg-slate-100 p-2 text-slate-600">
@@ -692,7 +703,7 @@ const Dashboard: React.FC = () => {
         </button>
         <button
           onClick={() => navigate('/expenses')}
-          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5"
         >
           <div className="flex items-start gap-3">
             <span className="rounded-lg bg-slate-100 p-2 text-slate-600">

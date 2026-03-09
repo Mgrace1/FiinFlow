@@ -19,6 +19,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import TeamMembers from './pages/TeamMembers';
 import SearchPage from './pages/Search';
+import PlatformAdmin from './pages/PlatformAdmin';
 import Starfield from './components/common/Starfield';
 import Landing from './pages/Landing';
 import FeatureDetail from './pages/FeatureDetail';
@@ -27,6 +28,7 @@ import ResearchConsent from './pages/ResearchConsent';
 import { ToastContainer } from 'react-toastify';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { getUserRole } from './utils/roleUtils';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +39,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+const SuperAdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (getUserRole() !== 'super_admin') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 };
 
 function AppRoutes() {
@@ -77,6 +87,14 @@ function AppRoutes() {
         <Route path="settings" element={<Settings />} />
         <Route path="branding" element={<Navigate to="/settings" replace />} />
         <Route path="team" element={<TeamMembers />} />
+        <Route
+          path="platform-admin"
+          element={(
+            <SuperAdminRoute>
+              <PlatformAdmin />
+            </SuperAdminRoute>
+          )}
+        />
       </Route>
 
       {/* 404 */}
