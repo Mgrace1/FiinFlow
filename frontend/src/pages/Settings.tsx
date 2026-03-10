@@ -6,6 +6,7 @@ import ChangePassword from './ChangePassword';
 import CompanySettings from './CompanySettings';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getUserRole } from '../utils/roleUtils';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 
 
@@ -123,8 +124,7 @@ const Settings: React.FC = () =>{
       const rawUser = localStorage.getItem('finflow_user');
       const parsedUser = rawUser ? JSON.parse(rawUser) : null;
       const email = String(parsedUser?.email || '').trim().toLowerCase();
-      const role = String(parsedUser?.role || '').toLowerCase();
-      setIsAdmin(role === 'admin' || role === 'super_admin');
+      setIsAdmin(getUserRole() === 'admin' || getUserRole() === 'super_admin');
       if (email) {
         setCurrentUserEmail(email);
         setWorkspaceForm((prev) => ({ ...prev, email }));

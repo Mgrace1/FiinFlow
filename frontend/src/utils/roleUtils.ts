@@ -8,6 +8,17 @@ export interface DecodedToken {
   exp: number;
 }
 
+const normalizeRole = (rawRole: string | null | undefined): UserRole | null => {
+  const role = String(rawRole || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (role === 'superadmin') return 'super_admin';
+  if (role === 'super_admin') return 'super_admin';
+  if (role === 'admin') return 'admin';
+  if (role === 'finance_manager') return 'finance_manager';
+  if (role === 'finance') return 'finance_manager';
+  if (role === 'staff') return 'staff';
+  return null;
+};
+
 /**
  * Decode JWT token to extract user role
  */
@@ -27,10 +38,18 @@ export const decodeToken = (token: string): DecodedToken | null =>{
  */
 export const getUserRole = (): UserRole | null =>{
   const token = localStorage.getItem('finflow_token');
-  if (!token) return null;
-
-  const decoded = decodeToken(token);
-  return decoded?.role || null;
+  if (token) {
+    const decoded = decodeToken(token);
+    const normalized = normalizeRole(decoded?.role);
+    if (normalized) return normalized;
+  }
+  try {
+    const rawUser = localStorage.getItem('finflow_user');
+    const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+    return normalizeRole(parsedUser?.role);
+  } catch {
+    return null;
+  }
 };
 
 /**
