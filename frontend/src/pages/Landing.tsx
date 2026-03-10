@@ -208,7 +208,7 @@ const Landing = () => {
                   <h3 className="text-base font-semibold text-slate-900">{item.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{item.desc}</p>
                   <div className="mt-4 inline-flex items-center text-xs font-semibold uppercase tracking-[0.14em] text-[#4B5320]">
-                    Explore feature
+                    Learn more
                   </div>
                 </div>
               </Link>

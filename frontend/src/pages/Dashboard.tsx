@@ -91,10 +91,10 @@ const PIE_COLORS = {
   inProgress: '#0ea5e9', // blue
   overdue: '#f59e0b',    // amber
   draft: '#9ca3af',      // gray
-  cancelled: '#94a3b8',  // slate
+  cancelled: '#ef4444',  // red
 };
 
-const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#9ca3af', '#94a3b8'];
+const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#9ca3af', '#ef4444'];
 
 const DASHBOARD_CARD =
   'rounded-2xl border border-slate-200 bg-white p-5';

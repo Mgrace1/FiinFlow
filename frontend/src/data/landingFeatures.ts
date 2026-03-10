@@ -92,4 +92,18 @@ export const landingFeatures: LandingFeature[] = [
       'PDF and CSV export options',
     ],
   },
+  {
+    slug: 'transaction-linking',
+    title: 'Transaction linking',
+    desc: 'Connect bank activity with invoices and expenses to keep balances accurate.',
+    image: '/landing/link.png',
+    overview:
+      'Link recorded transactions to invoices or expenses, apply payments automatically, and keep your ledger clean without double entry.',
+    highlights: [
+      'One-click linking to invoices or expenses',
+      'Automatic balance reduction on linked items',
+      'Clear linked/unlinked status by transaction',
+      'Fast reconciliation for monthly close',
+    ],
+  },
 ];

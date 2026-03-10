@@ -40,7 +40,7 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
       sent: 'bg-blue-100 text-blue-800',
       overdue: 'bg-red-100 text-red-800',
       draft: 'bg-gray-100 text-gray-800',
-      cancelled: 'bg-gray-200 text-gray-600',
+      cancelled: 'bg-red-100 text-red-800',
       pending: 'bg-yellow-100 text-yellow-800',
 
       // Expense categories
