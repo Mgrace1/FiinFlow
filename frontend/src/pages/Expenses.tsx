@@ -351,11 +351,11 @@ const Expenses: React.FC = () =>{
         )}
       </div>
       {expenses.length > 0 && (
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex flex-nowrap gap-3 w-full md:w-auto">
           <button onClick={() =>setShowPDFConfirm(true)} className="btn btn-secondary w-full text-xs px-3 py-2">
                Export to PDF
           </button>
-          <button onClick={() =>{ resetForm(); setShowModal(true); }} className="btn btn-primary w-full text-xs px-3 py-2">
+          <button onClick={() =>{ resetForm(); setShowModal(true); }} className="btn btn-primary w-full text-xs px-3 py-2 whitespace-nowrap">
               + Add Expense
           </button>
         </div>

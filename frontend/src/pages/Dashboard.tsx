@@ -89,11 +89,11 @@ const PIE_COLORS = {
   paid: '#10b981',      // green
   inProgress: '#0ea5e9', // blue
   overdue: '#f59e0b',    // amber
-  draft: '#f97316',      // orange
+  draft: '#9ca3af',      // gray
   cancelled: '#94a3b8',  // slate
 };
 
-const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#f97316', '#94a3b8'];
+const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#9ca3af', '#94a3b8'];
 
 const DASHBOARD_CARD =
   'rounded-2xl border border-slate-200 bg-white p-5';
@@ -478,7 +478,7 @@ const Dashboard: React.FC = () => {
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(14, 165, 233, 0.05)' }} />
                 <Bar dataKey="pending" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={30} name="Pending" />
-                <Bar dataKey="draft" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={30} name="Draft" />
+                <Bar dataKey="draft" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={30} name="Draft" />
                 <Bar dataKey="collected" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} name="Income" />
                 <Bar dataKey="spent" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={30} name="Expenses" />
               </BarChart>
@@ -491,7 +491,7 @@ const Dashboard: React.FC = () => {
               <span className="text-slate-600">Pending</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#6366f1' }}></span>
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#9ca3af' }}></span>
               <span className="text-slate-600">Draft</span>
             </div>
             <div className="flex items-center gap-1.5">

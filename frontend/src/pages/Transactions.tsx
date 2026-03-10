@@ -124,6 +124,14 @@ const Transactions: React.FC = () => {
     notifyInfo('Delete action will be available soon');
   };
 
+  const handleUnlink = (txId: string) => {
+    const next = new Set(linkedIds);
+    next.delete(txId);
+    localStorage.setItem('finflow_linked_ids', JSON.stringify([...next]));
+    setLinkedIds(next);
+    notifyInfo('Link removed');
+  };
+
   const formatMoney = (amount: number, currency: string) =>
     formatCompanyMoney(amount, currency, currencyConfig);
 
@@ -266,6 +274,16 @@ const Transactions: React.FC = () => {
                           </p>
                         </div>
                       </div>
+                      {isLinked && (
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            onClick={() => handleUnlink(tx._id)}
+                            className="text-xs font-semibold text-red-600 hover:text-red-700"
+                          >
+                            Unlink
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -300,9 +318,17 @@ const Transactions: React.FC = () => {
                           </td>
                           <td className="px-4 py-3 text-right">
                             {isLinked ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
-                                <Link2 size={12} /> Linked
-                              </span>
+                              <div className="inline-flex items-center gap-3">
+                                <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
+                                  <Link2 size={12} /> Linked
+                                </span>
+                                <button
+                                  onClick={() => handleUnlink(tx._id)}
+                                  className="text-xs font-semibold text-red-600 hover:text-red-700"
+                                >
+                                  Unlink
+                                </button>
+                              </div>
                             ) : (
                               <button onClick={() => handleLinkClick(tx)}
                                 className="inline-flex items-center gap-1 text-sky-500 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-semibold text-sm">
