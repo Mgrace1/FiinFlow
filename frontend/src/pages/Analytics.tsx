@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
+import { useLanguage } from '../contexts/LanguageContext';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { Bar, Pie } from 'react-chartjs-2';
 import {
@@ -40,6 +41,7 @@ interface AnalyticsData {
 }
 
 const Analytics: React.FC = () =>{
+  const { lang, t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
 
@@ -70,16 +72,20 @@ const Analytics: React.FC = () =>{
           .map(([category, amount]) =>({ category, amount }))
           .sort((a, b) => b.amount - a.amount);
 
-        const topCategory = categoryData[0] || { category: 'Food', amount: 0 };
+        const fallbackCategory = lang === 'fr' ? 'Alimentation' : 'Food';
+        const topCategory = categoryData[0] || { category: fallbackCategory, amount: 0 };
 
         // Generate monthly data (simplified - in real app, use actual monthly data)
+        const monthLabels = lang === 'fr'
+          ? ['Janv', 'Févr', 'Mars', 'Avr', 'Mai', 'Juin']
+          : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
         const monthlyData = [
-          { month: 'Jan', income: 4500, expense: 2500 },
-          { month: 'Feb', income: 2000, expense: 1000 },
-          { month: 'Mar', income: 3000, expense: 9500 },
-          { month: 'Apr', income: 3500, expense: 4000 },
-          { month: 'May', income: 2000, expense: 4500 },
-          { month: 'Jun', income: 3000, expense: 4000 },
+          { month: monthLabels[0], income: 4500, expense: 2500 },
+          { month: monthLabels[1], income: 2000, expense: 1000 },
+          { month: monthLabels[2], income: 3000, expense: 9500 },
+          { month: monthLabels[3], income: 3500, expense: 4000 },
+          { month: monthLabels[4], income: 2000, expense: 4500 },
+          { month: monthLabels[5], income: 3000, expense: 4000 },
         ];
 
         setAnalyticsData({
@@ -89,11 +95,11 @@ const Analytics: React.FC = () =>{
           topCategoryAmount: topCategory.amount,
           monthlyData,
           categoryData: categoryData.length > 0 ? categoryData : [
-            { category: 'Food', amount: 450 },
-            { category: 'Transportation', amount: 320 },
-            { category: 'Entertainment', amount: 280 },
-            { category: 'Utilities', amount: 200 },
-            { category: 'Other', amount: 150 },
+            { category: lang === 'fr' ? 'Alimentation' : 'Food', amount: 450 },
+            { category: lang === 'fr' ? 'Transport' : 'Transportation', amount: 320 },
+            { category: lang === 'fr' ? 'Divertissement' : 'Entertainment', amount: 280 },
+            { category: lang === 'fr' ? 'Services publics' : 'Utilities', amount: 200 },
+            { category: lang === 'fr' ? 'Autres' : 'Other', amount: 150 },
           ],
         });
       }
@@ -105,18 +111,18 @@ const Analytics: React.FC = () =>{
   };
 
   const formatCurrency = (amount: number) =>{
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
   };
 
-  if (loading) return <LoadingOverlay message="Loading analytics..." />;
+  if (loading) return <LoadingOverlay message={t('analytics.loading')} />;
 
   if (!analyticsData) {
     return (
     <div className="text-center text-gray-500 py-12">
-        No analytics data available
+        {t('analytics.no_data')}
     </div>
     );
   }
@@ -126,12 +132,12 @@ const Analytics: React.FC = () =>{
     labels: analyticsData.monthlyData.map((d) => d.month),
     datasets: [
       {
-        label: 'Income',
+        label: t('analytics.income'),
         data: analyticsData.monthlyData.map((d) => d.income),
         backgroundColor: '#10b981',
       },
       {
-        label: 'Expense',
+        label: t('analytics.expense'),
         data: analyticsData.monthlyData.map((d) => d.expense),
         backgroundColor: '#ef4444',
       },
@@ -191,22 +197,22 @@ const Analytics: React.FC = () =>{
   <div>
       {/* Header */}
     <div className="mb-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Analytics</h1>
-      <p className="text-gray-600">Visualize your spending patterns and financial insights</p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('analytics.title')}</h1>
+      <p className="text-gray-600">{t('analytics.subtitle')}</p>
     </div>
 
       {/* Summary Cards */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-sm text-gray-600 mb-1">Top Category</p>
+        <p className="text-sm text-gray-600 mb-1">{t('analytics.top_category')}</p>
         <p className="text-2xl font-bold text-gray-900">{formatCurrency(analyticsData.topCategoryAmount)}</p>
       </div>
       <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-sm text-gray-600 mb-1">Total Income (YTD)</p>
+        <p className="text-sm text-gray-600 mb-1">{t('analytics.total_income')}</p>
         <p className="text-2xl font-bold text-gray-900">{formatCurrency(analyticsData.totalIncome)}</p>
       </div>
       <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-sm text-gray-600 mb-1">Total Expense (YTD)</p>
+        <p className="text-sm text-gray-600 mb-1">{t('analytics.total_expense')}</p>
         <p className="text-2xl font-bold text-gray-900">{formatCurrency(analyticsData.totalExpense)}</p>
       </div>
     </div>
@@ -215,7 +221,7 @@ const Analytics: React.FC = () =>{
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Income vs Expense Bar Chart */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Income vs Expense</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('analytics.income_vs_expense')}</h2>
         <div className="h-64">
           <Bar data={incomeVsExpenseData} options={incomeVsExpenseOptions} />
         </div>
@@ -223,7 +229,7 @@ const Analytics: React.FC = () =>{
 
         {/* Spending by Category Pie Chart */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Spending by Category</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('analytics.spending_by_category')}</h2>
         <div className="h-64">
           <Pie data={spendingByCategoryData} options={spendingByCategoryOptions} />
         </div>
@@ -246,18 +252,18 @@ const Analytics: React.FC = () =>{
 
       {/* Summary Section */}
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('analytics.summary')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
-          <p className="text-sm text-gray-600 mb-1">Savings Rate</p>
+          <p className="text-sm text-gray-600 mb-1">{t('analytics.savings_rate')}</p>
           <p className="text-3xl font-bold text-gray-900">{savingsRate}%</p>
         </div>
         <div>
-          <p className="text-sm text-gray-600 mb-1">Average Monthly Expense</p>
+          <p className="text-sm text-gray-600 mb-1">{t('analytics.avg_expense')}</p>
           <p className="text-3xl font-bold text-gray-900">{formatCurrency(avgMonthlyExpense)}</p>
         </div>
         <div>
-          <p className="text-sm text-gray-600 mb-1">Average Monthly Income</p>
+          <p className="text-sm text-gray-600 mb-1">{t('analytics.avg_income')}</p>
           <p className="text-3xl font-bold text-gray-900">{formatCurrency(avgMonthlyIncome)}</p>
         </div>
       </div>

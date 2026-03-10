@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
-import { strongPasswordErrorMessage, validateStrongPassword } from '../utils/password';
+import { getPasswordRuleKey, validateStrongPassword } from '../utils/password';
 
 const ResetPassword: React.FC = () =>{
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -22,7 +24,7 @@ const ResetPassword: React.FC = () =>{
 
   useEffect(() =>{
     if (!token) {
-      setError('Invalid or missing reset link');
+      setError(t('reset_password.invalid_link_error'));
     }
   }, [token]);
 
@@ -32,12 +34,12 @@ const ResetPassword: React.FC = () =>{
 
     // Validation
     if (!passwordValidation.isValid) {
-      setError(strongPasswordErrorMessage);
+      setError(t('password.error_strong'));
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('reset_password.mismatch'));
       return;
     }
 
@@ -51,14 +53,14 @@ const ResetPassword: React.FC = () =>{
 
       if (response.data.success) {
         setSuccess(true);
-        notifySuccess('Password reset successful');
+        notifySuccess(t('reset_password.success_toast'));
         setTimeout(() => {
           navigate('/login');
         }, 3000);
       }
     } catch (error: any) {
       console.error('Reset password error:', error);
-      const message = getErrorMessage(error, 'Failed to reset password. The link may have expired. Please request a new reset link.');
+      const message = getErrorMessage(error, t('reset_password.error_default'));
       setError(message);
       notifyError(message);
     } finally {
@@ -70,15 +72,15 @@ const ResetPassword: React.FC = () =>{
     return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Link</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('reset_password.invalid_title')}</h2>
         <p className="text-gray-600 mb-6">
-            This password reset link is invalid or has expired.
+            {t('reset_password.invalid_body')}
         </p>
         <button
           onClick={() => navigate('/forgot-password')}
           className="btn btn-primary"
         >
-          Request New Reset Link
+          {t('reset_password.request_new_link')}
         </button>
       </div>
     </div>
@@ -89,11 +91,11 @@ const ResetPassword: React.FC = () =>{
     return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Password Reset Successful!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('reset_password.success_title')}</h2>
         <p className="text-gray-600 mb-6">
-            Your password has been reset successfully. You can now log in with your new password.
+            {t('reset_password.success_body')}
         </p>
-        <p className="text-sm text-gray-500">Redirecting to login page...</p>
+        <p className="text-sm text-gray-500">{t('reset_password.redirecting')}</p>
       </div>
     </div>
     );
@@ -103,8 +105,8 @@ const ResetPassword: React.FC = () =>{
   <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-600 flex items-center justify-center p-4">
     <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Reset Password</h1>
-        <p className="text-gray-600">Enter your new password below</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('reset_password.title')}</h1>
+        <p className="text-gray-600">{t('reset_password.subtitle')}</p>
       </div>
 
         {error && (
@@ -116,7 +118,7 @@ const ResetPassword: React.FC = () =>{
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              New Password
+              {t('reset_password.new_label')}
           </label>
           <div className="relative">
             <input
@@ -125,7 +127,7 @@ const ResetPassword: React.FC = () =>{
                 onChange={(e) =>setFormData({ ...formData, password: e.target.value })}
                 required
                 className="input pr-20"
-                placeholder="Enter new password"
+                placeholder={t('reset_password.new_placeholder')}
                 minLength={8}
               />
             <button
@@ -133,7 +135,7 @@ const ResetPassword: React.FC = () =>{
                 onClick={() =>setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? t('reset_password.hide') : t('reset_password.show')}
             </button>
           </div>
           <div className="mt-2 space-y-1">
@@ -142,7 +144,7 @@ const ResetPassword: React.FC = () =>{
                 key={rule.label}
                 className={`text-xs ${rule.passed ? 'text-success-500' : 'text-gray-500'}`}
               >
-                {rule.passed ? '✓' : '•'} {rule.label}
+                {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
               </p>
             ))}
           </div>
@@ -150,7 +152,7 @@ const ResetPassword: React.FC = () =>{
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm New Password
+              {t('reset_password.confirm_label')}
           </label>
           <div className="relative">
             <input
@@ -159,7 +161,7 @@ const ResetPassword: React.FC = () =>{
                 onChange={(e) =>setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
                 className="input pr-20"
-                placeholder="Confirm new password"
+                placeholder={t('reset_password.confirm_placeholder')}
                 minLength={8}
               />
             <button
@@ -167,7 +169,7 @@ const ResetPassword: React.FC = () =>{
                 onClick={() =>setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showConfirmPassword ? 'Hide' : 'Show'}
+                {showConfirmPassword ? t('reset_password.hide') : t('reset_password.show')}
             </button>
           </div>
         </div>
@@ -177,18 +179,18 @@ const ResetPassword: React.FC = () =>{
             disabled={loading}
             className="btn btn-primary w-full"
           >
-            {loading ? 'Resetting Password...' : 'Reset Password'}
+            {loading ? t('reset_password.resetting') : t('reset_password.submit')}
         </button>
       </form>
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-            Remember your password?{' '}
+            {t('reset_password.remember_prompt')}{' '}
           <button
               onClick={() => navigate('/login')}
               className="text-primary-500 hover:text-primary-700 font-medium"
             >
-              Sign In
+              {t('reset_password.sign_in')}
           </button>
         </p>
       </div>

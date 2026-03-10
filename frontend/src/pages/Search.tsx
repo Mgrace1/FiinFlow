@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { formatDateDMY } from '../utils/formatDate';
 import { formatCompanyMoney } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SearchClient {
   _id: string;
@@ -44,67 +45,9 @@ interface SearchNavigationItem {
   keywords: string[];
 }
 
-const appNavigationIndex: SearchNavigationItem[] = [
-  {
-    id: 'nav-dashboard',
-    title: 'Dashboard',
-    description: 'Overview of business performance and quick actions.',
-    category: 'Workspace',
-    path: '/dashboard',
-    keywords: ['dashboard', 'home', 'overview', 'workspace'],
-  },
-  {
-    id: 'nav-clients',
-    title: 'Clients',
-    description: 'Manage clients, contacts, and account history.',
-    category: 'CRM',
-    path: '/clients',
-    keywords: ['clients', 'customers', 'contacts', 'crm'],
-  },
-  {
-    id: 'nav-invoices',
-    title: 'Invoices',
-    description: 'Create invoices and monitor payment status.',
-    category: 'Billing',
-    path: '/invoices',
-    keywords: ['invoice', 'billing', 'payments', 'receivables'],
-  },
-  {
-    id: 'nav-expenses',
-    title: 'Expenses',
-    description: 'Track spending, categories, and supplier costs.',
-    category: 'Finance',
-    path: '/expenses',
-    keywords: ['expenses', 'costs', 'spending', 'suppliers'],
-  },
-  {
-    id: 'nav-reports',
-    title: 'Reports',
-    description: 'Review revenue, costs, and profitability insights.',
-    category: 'Analytics',
-    path: '/reports',
-    keywords: ['reports', 'analytics', 'profit', 'cashflow', 'forecast'],
-  },
-  {
-    id: 'nav-team',
-    title: 'Team',
-    description: 'Invite and manage teammates and roles.',
-    category: 'Administration',
-    path: '/team',
-    keywords: ['team', 'users', 'members', 'roles', 'permissions'],
-  },
-  {
-    id: 'nav-settings',
-    title: 'Settings',
-    description: 'Configure company profile, branding, and preferences.',
-    category: 'Administration',
-    path: '/settings',
-    keywords: ['settings', 'configuration', 'company', 'branding', 'profile'],
-  },
-];
-
 const SearchPage: React.FC = () => {
   const { search } = useLocation();
+  const { t } = useLanguage();
   const query = (new URLSearchParams(search).get('q') || '').trim().toLowerCase();
 
   const [clients, setClients] = useState<SearchClient[]>([]);
@@ -143,7 +86,7 @@ const SearchPage: React.FC = () => {
       } catch (fetchError) {
         if (cancelled) return;
         console.error('Search fetch failed:', fetchError);
-        setError('Failed to load search data. Please try again.');
+        setError('search_error');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -171,6 +114,65 @@ const SearchPage: React.FC = () => {
     [expenses]
   );
 
+  const appNavigationIndex: SearchNavigationItem[] = useMemo(() => [
+    {
+      id: 'nav-dashboard',
+      title: t('nav.dashboard'),
+      description: t('search.nav_dashboard_desc'),
+      category: t('search.nav_workspace'),
+      path: '/dashboard',
+      keywords: ['dashboard', 'home', 'overview', 'workspace', 'tableau de bord', 'accueil', 'aperçu', 'espace de travail'],
+    },
+    {
+      id: 'nav-clients',
+      title: t('nav.clients'),
+      description: t('search.nav_clients_desc'),
+      category: t('search.nav_crm'),
+      path: '/clients',
+      keywords: ['clients', 'customers', 'contacts', 'crm', 'clients', 'contacts', 'crm'],
+    },
+    {
+      id: 'nav-invoices',
+      title: t('nav.invoices'),
+      description: t('search.nav_invoices_desc'),
+      category: t('search.nav_billing'),
+      path: '/invoices',
+      keywords: ['invoice', 'billing', 'payments', 'receivables', 'factures', 'facturation', 'paiements'],
+    },
+    {
+      id: 'nav-expenses',
+      title: t('nav.expenses'),
+      description: t('search.nav_expenses_desc'),
+      category: t('search.nav_finance'),
+      path: '/expenses',
+      keywords: ['expenses', 'costs', 'spending', 'suppliers', 'dépenses', 'coûts', 'fournisseurs'],
+    },
+    {
+      id: 'nav-reports',
+      title: t('nav.reports'),
+      description: t('search.nav_reports_desc'),
+      category: t('search.nav_analytics'),
+      path: '/reports',
+      keywords: ['reports', 'analytics', 'profit', 'cashflow', 'forecast', 'rapports', 'analytique', 'profit', 'trésorerie'],
+    },
+    {
+      id: 'nav-team',
+      title: t('nav.team'),
+      description: t('search.nav_team_desc'),
+      category: t('search.nav_admin'),
+      path: '/team',
+      keywords: ['team', 'users', 'members', 'roles', 'permissions', 'équipe', 'utilisateurs', 'rôles', 'permissions'],
+    },
+    {
+      id: 'nav-settings',
+      title: t('nav.settings'),
+      description: t('search.nav_settings_desc'),
+      category: t('search.nav_admin'),
+      path: '/settings',
+      keywords: ['settings', 'configuration', 'company', 'branding', 'profile', 'paramètres', 'configuration', 'entreprise', 'profil'],
+    },
+  ], [t]);
+
   const navigationResults = useMemo(() => {
     if (!query) return [];
 
@@ -186,7 +188,7 @@ const SearchPage: React.FC = () => {
       .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title))
       .slice(0, 12)
       .map((entry) => entry.item);
-  }, [query]);
+  }, [query, appNavigationIndex]);
 
   const totalResults = navigationResults.length + clientResults.length + invoiceResults.length + expenseResults.length;
 
@@ -197,32 +199,32 @@ const SearchPage: React.FC = () => {
           <Search size={18} />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Search</h1>
-          <p className="text-sm text-gray-500">{query ? `Results for "${query}"` : 'Type in the top bar to search'}</p>
+          <h1 className="text-2xl font-semibold text-gray-900">{t('search.title')}</h1>
+          <p className="text-sm text-gray-500">{query ? `${t('search.results_for')} "${query}"` : t('search.type_hint')}</p>
         </div>
       </div>
 
       {!query && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          Search across pages, clients, invoices, and expenses from the navbar.
+          {t('search.helper')}
         </div>
       )}
 
       {loading && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          Searching records...
+          {t('search.loading')}
         </div>
       )}
 
       {!loading && error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+          {t('search.error')}
         </div>
       )}
 
       {!loading && query && !error && totalResults === 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-          No matches found in pages, clients, invoices, or expenses.
+          {t('search.no_matches')}
         </div>
       )}
 
@@ -231,7 +233,7 @@ const SearchPage: React.FC = () => {
           {navigationResults.length > 0 && (
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-gray-900">Pages ({navigationResults.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t('search.pages')} ({navigationResults.length})</h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {navigationResults.map((result) => (
@@ -249,14 +251,14 @@ const SearchPage: React.FC = () => {
           {clientResults.length > 0 && (
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-gray-900">Clients ({clientResults.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t('search.clients')} ({clientResults.length})</h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {clientResults.map((client) => (
                   <Link key={client._id} to="/clients" className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{client.name}</p>
                     <p className="text-sm text-gray-500">
-                      {client.contactPerson || 'No contact'} {client.email ? `• ${client.email}` : ''}
+                      {client.contactPerson || t('search.no_contact')} {client.email ? `• ${client.email}` : ''}
                     </p>
                   </Link>
                 ))}
@@ -267,15 +269,15 @@ const SearchPage: React.FC = () => {
           {invoiceResults.length > 0 && (
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-gray-900">Invoices ({invoiceResults.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t('search.invoices')} ({invoiceResults.length})</h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {invoiceResults.map((invoice) => (
                   <Link key={invoice._id} to={`/invoices/${invoice._id}`} className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{invoice.invoiceNumber || `Invoice ${invoice._id}`}</p>
                     <p className="text-sm text-gray-500">
-                      {typeof invoice.clientId === 'object' ? invoice.clientId?.name : 'Client unavailable'} •{' '}
-                      {(invoice.status === 'sent' ? 'pending' : invoice.status) || 'unknown'} • Due {invoice.dueDate ? formatDateDMY(invoice.dueDate) : 'N/A'}
+                      {typeof invoice.clientId === 'object' ? invoice.clientId?.name : t('search.client_unavailable')} •{' '}
+                      {(invoice.status === 'sent' ? 'pending' : invoice.status) || 'unknown'} • {t('search.due')} {invoice.dueDate ? formatDateDMY(invoice.dueDate) : 'N/A'}
                     </p>
                   </Link>
                 ))}
@@ -286,14 +288,14 @@ const SearchPage: React.FC = () => {
           {expenseResults.length > 0 && (
             <section className="rounded-lg border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-gray-900">Expenses ({expenseResults.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-900">{t('search.expenses')} ({expenseResults.length})</h2>
               </div>
               <div className="divide-y divide-gray-100">
                 {expenseResults.map((expense) => (
                   <Link key={expense._id} to="/expenses" className="block px-4 py-3 hover:bg-gray-50">
-                    <p className="font-medium text-gray-900">{expense.supplier || 'Unnamed supplier'}</p>
+                    <p className="font-medium text-gray-900">{expense.supplier || t('search.unnamed_supplier')}</p>
                     <p className="text-sm text-gray-500">
-                      {expense.category || 'Uncategorized'} • {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} • {expense.paymentStatus || 'unknown'} • {expense.date ? formatDateDMY(expense.date) : 'No date'}
+                      {expense.category || t('search.uncategorized')} • {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} • {expense.paymentStatus || 'unknown'} • {expense.date ? formatDateDMY(expense.date) : 'No date'}
                     </p>
                   </Link>
                 ))}

@@ -25,3 +25,14 @@ export const validateStrongPassword = (password: string): PasswordValidationResu
 
 export const strongPasswordErrorMessage =
   'Password must be strong: 8+ characters, uppercase, lowercase, number, and special character.';
+
+const passwordRuleKeyMap: Record<string, string> = {
+  'At least 8 characters': 'password.rule.min_length',
+  'At least one uppercase letter': 'password.rule.uppercase',
+  'At least one lowercase letter': 'password.rule.lowercase',
+  'At least one number': 'password.rule.number',
+  'At least one special character': 'password.rule.special',
+};
+
+export const getPasswordRuleKey = (label: string): string =>
+  passwordRuleKeyMap[label] ?? label;

@@ -5,6 +5,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import ChangePassword from './ChangePassword';
 import CompanySettings from './CompanySettings';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 
 
@@ -74,6 +75,7 @@ interface UserProfile {
 const Settings: React.FC = () =>{
   const navigate = useNavigate();
   const { setAuth, companyId: activeCompanyId } = useAuth();
+  const { t } = useLanguage();
   const [company, setCompany] = useState<Company | null>(null);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,12 +201,12 @@ const Settings: React.FC = () =>{
         localStorage.setItem('finflow_company', JSON.stringify(response.data.data));
         setCompany(response.data.data);
       }
-      notifySuccess('Company updated successfully');
+      notifySuccess(t('settings.company_updated'));
       setSaveConfirm(false);
     } catch (error) {
       console.error('Failed to update company:', error);
       setSaveConfirm(false);
-      notifyError(getErrorMessage(error, 'Failed to update company'));
+      notifyError(getErrorMessage(error, t('settings.company_update_error')));
     }
   };
 
@@ -221,11 +223,11 @@ const Settings: React.FC = () =>{
         localStorage.setItem('finflow_user', JSON.stringify(user));
         localStorage.setItem('finflow_company', JSON.stringify(selectedCompany));
         setAuth(token, String(user.companyId));
-        notifySuccess(`Switched to ${selectedCompany.name}`);
+        notifySuccess(`${t('settings.switched_to')} ${selectedCompany.name}`);
         navigate('/dashboard', { replace: true });
       }
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to switch company'));
+      notifyError(getErrorMessage(error, t('settings.switch_error')));
     } finally {
       setSwitchingWorkspaceId(null);
     }
@@ -244,7 +246,7 @@ const Settings: React.FC = () =>{
         industry: workspaceForm.industry.trim(),
       };
       await apiClient.post('/auth/workspaces', payload);
-      notifySuccess('New workspace created successfully');
+      notifySuccess(t('settings.workspace_created'));
       setWorkspaceForm({
         name: '',
         email: currentUserEmail || '',
@@ -257,7 +259,7 @@ const Settings: React.FC = () =>{
       });
       fetchWorkspaces();
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to create workspace'));
+      notifyError(getErrorMessage(error, t('settings.workspace_create_error')));
     } finally {
       setCreatingWorkspace(false);
     }
@@ -271,7 +273,7 @@ const Settings: React.FC = () =>{
         setConnections(response.data.data || []);
       }
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to load payment ingestion connections'));
+      notifyError(getErrorMessage(error, t('settings.payments_load_connections_error')));
     } finally {
       setConnectionsLoading(false);
     }
@@ -285,7 +287,7 @@ const Settings: React.FC = () =>{
         setEvents(response.data.data || []);
       }
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to load ingestion events'));
+      notifyError(getErrorMessage(error, t('settings.payments_load_events_error')));
     } finally {
       setEventsLoading(false);
     }
@@ -293,7 +295,7 @@ const Settings: React.FC = () =>{
 
   const askDeleteWorkspace = (workspace: Workspace) => {
     if (String(workspace.companyId) === String(activeCompanyId)) {
-      notifyError('You cannot delete the current active workspace.');
+      notifyError(t('settings.workspace_delete_active_error'));
       return;
     }
     setDeleteWorkspaceConfirm({ show: true, workspace });
@@ -303,7 +305,7 @@ const Settings: React.FC = () =>{
     const workspace = deleteWorkspaceConfirm.workspace;
     if (!workspace) return;
     if (String(workspace.companyId) === String(activeCompanyId)) {
-      notifyError('You cannot delete the current active workspace.');
+      notifyError(t('settings.workspace_delete_active_error'));
       setDeleteWorkspaceConfirm({ show: false, workspace: null });
       return;
     }
@@ -311,11 +313,11 @@ const Settings: React.FC = () =>{
     setDeletingWorkspaceId(workspace.companyId);
     try {
       await apiClient.delete(`/companies/${workspace.companyId}`);
-      notifySuccess(`Workspace "${workspace.companyName}" deleted successfully`);
+      notifySuccess(`${t('settings.workspace_deleted')} "${workspace.companyName}"`);
       setDeleteWorkspaceConfirm({ show: false, workspace: null });
       fetchWorkspaces();
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to delete workspace'));
+      notifyError(getErrorMessage(error, t('settings.workspace_delete_error')));
     } finally {
       setDeletingWorkspaceId(null);
     }
@@ -324,7 +326,7 @@ const Settings: React.FC = () =>{
   const handleCreateConnection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connectionForm.identifier.trim()) {
-      notifyError('Identifier is required');
+      notifyError(t('settings.identifier_required'));
       return;
     }
 
@@ -335,11 +337,11 @@ const Settings: React.FC = () =>{
         identifier: connectionForm.identifier.trim(),
         displayName: connectionForm.displayName.trim() || undefined,
       });
-      notifySuccess('Payment ingestion connection added');
+      notifySuccess(t('settings.connection_added'));
       setConnectionForm({ channel: 'gmail', identifier: '', displayName: '' });
       fetchIngestionConnections();
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to create payment ingestion connection'));
+      notifyError(getErrorMessage(error, t('settings.connection_create_error')));
     } finally {
       setCreatingConnection(false);
     }
@@ -349,23 +351,23 @@ const Settings: React.FC = () =>{
     setDeletingConnectionId(connectionId);
     try {
       await apiClient.delete(`/payment-ingestion/connections/${connectionId}`);
-      notifySuccess('Connection deleted');
+      notifySuccess(t('settings.connection_deleted'));
       fetchIngestionConnections();
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to delete connection'));
+      notifyError(getErrorMessage(error, t('settings.connection_delete_error')));
     } finally {
       setDeletingConnectionId(null);
     }
   };
 
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>{t('settings.loading')}</div>;
 
   return (
   <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
     <div className="mb-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Settings</h1>
-      <p className="text-gray-600 dark:text-gray-400">Manage your account preferences and settings</p>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('settings.title')}</h1>
+      <p className="text-gray-600 dark:text-gray-400">{t('settings.subtitle')}</p>
     </div>
 
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow hover:shadow-md transition-shadow">
@@ -379,7 +381,7 @@ const Settings: React.FC = () =>{
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
-              {isAdmin ? 'Company Profile' : 'Profile'}
+              {isAdmin ? t('settings.tab_company') : t('settings.tab_profile')}
           </button>
           <button
               onClick={() =>setActiveTab('security')}
@@ -389,18 +391,18 @@ const Settings: React.FC = () =>{
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
-              Security
+              {t('settings.tab_security')}
           </button>
           {isAdmin && (
             <button
                 onClick={() =>setActiveTab('branding')}
-                className={`px-4 sm:px-6 py-4 text-sm font-medium ${
+              className={`px-4 sm:px-6 py-4 text-sm font-medium ${
                   activeTab === 'branding'
                     ? 'border-b-2 border-primary-500 text-primary-500'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
-                Branding
+                {t('settings.tab_branding')}
             </button>
           )}
           {isAdmin && (
@@ -412,7 +414,7 @@ const Settings: React.FC = () =>{
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
-                Workspaces
+                {t('settings.tab_workspaces')}
             </button>
           )}
           {isAdmin && (
@@ -424,7 +426,7 @@ const Settings: React.FC = () =>{
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
-                Payment Alerts
+                {t('settings.tab_payments')}
             </button>
           )}
         </nav>
@@ -435,7 +437,7 @@ const Settings: React.FC = () =>{
           <form onSubmit={handleUpdateCompany} className="space-y-4 max-w-2xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('settings.company_name')}</label>
                 <input
                     type="text"
                     value={company.name}
@@ -444,7 +446,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.email')}</label>
                 <input
                     type="email"
                     value={company.email}
@@ -453,7 +455,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.phone')}</label>
                 <input
                     type="tel"
                     value={company.phone}
@@ -462,7 +464,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('settings.industry')}</label>
                 <input
                     type="text"
                     value={company.industry || ''}
@@ -472,7 +474,7 @@ const Settings: React.FC = () =>{
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.address')}</label>
               <textarea
                   value={company.address}
                   onChange={(e) =>setCompany({ ...company, address: e.target.value })}
@@ -482,7 +484,7 @@ const Settings: React.FC = () =>{
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Currency</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('settings.default_currency')}</label>
                 <select
                     value={company.defaultCurrency}
                     onChange={(e) =>setCompany({ ...company, defaultCurrency: e.target.value })}
@@ -493,7 +495,7 @@ const Settings: React.FC = () =>{
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Rate (%)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('settings.tax_rate')}</label>
                 <input
                     type="number"
                     value={company.taxRate}
@@ -502,7 +504,7 @@ const Settings: React.FC = () =>{
                   />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">USD Exchange Rate</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('settings.usd_exchange_rate')}</label>
                 <input
                     type="number"
                     value={company.exchangeRateUSD}
@@ -512,19 +514,19 @@ const Settings: React.FC = () =>{
               </div>
             </div>
             <button type="submit" className="btn btn-primary hover:bg-primary-600 transition-colors">
-                Save Changes
+                {t('settings.save_changes')}
             </button>
           </form>
           )}
           {activeTab === 'company' && !isAdmin && (
             <div className="max-w-2xl space-y-4">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Profile</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">These details reflect your user account.</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.profile_title')}</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t('settings.profile_subtitle')}</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.name')}</label>
                   <input
                     type="text"
                     value={currentUser?.name || ''}
@@ -534,7 +536,7 @@ const Settings: React.FC = () =>{
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.email')}</label>
                   <input
                     type="email"
                     value={currentUser?.email || currentUserEmail}
@@ -544,7 +546,7 @@ const Settings: React.FC = () =>{
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.phone')}</label>
                   <input
                     type="text"
                     value={currentUser?.phone || ''}
@@ -554,7 +556,7 @@ const Settings: React.FC = () =>{
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.role')}</label>
                   <input
                     type="text"
                     value={currentUser?.role || ''}
@@ -564,7 +566,7 @@ const Settings: React.FC = () =>{
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.status')}</label>
                   <input
                     type="text"
                     value={currentUser?.status || ''}
@@ -587,20 +589,20 @@ const Settings: React.FC = () =>{
             <div>
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Switch Company Workspace</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.workspaces_title')}</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Use one email across multiple companies and choose which workspace to manage in this session.
+                    {t('settings.workspaces_subtitle')}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowCreateWorkspaceModal(true)}
                   className="btn btn-primary whitespace-nowrap"
                 >
-                  + Create New Workspace
+                  {t('settings.create_workspace')}
                 </button>
               </div>
               {workspaces.length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">No workspaces found for this email.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.no_workspaces')}</p>
               ) : (
                 <div className="space-y-3">
                   {workspaces.map((workspace) => {
@@ -626,7 +628,7 @@ const Settings: React.FC = () =>{
                           <div>
                             <p className="font-semibold text-gray-900 dark:text-gray-100">{workspace.companyName}</p>
                             <p className="text-xs text-gray-600 dark:text-gray-400">
-                              Role: {workspace.role} {workspace.companyEmail ? `| ${workspace.companyEmail}` : ''}
+                              {t('settings.workspace_role')}: {workspace.role} {workspace.companyEmail ? `| ${workspace.companyEmail}` : ''}
                             </p>
                           </div>
                         </div>
@@ -636,15 +638,15 @@ const Settings: React.FC = () =>{
                             disabled={isActive || isSwitching || deletingWorkspaceId === workspace.companyId}
                             className={isActive ? 'btn btn-secondary' : 'btn btn-primary'}
                           >
-                            {isActive ? 'Current' : isSwitching ? 'Switching...' : 'Switch'}
+                            {isActive ? t('settings.workspace_current') : isSwitching ? t('settings.workspace_switching') : t('settings.workspace_switch')}
                           </button>
                           <button
                             onClick={() => askDeleteWorkspace(workspace)}
                             disabled={isActive || deletingWorkspaceId === workspace.companyId}
                             className={isActive ? 'btn btn-secondary' : 'btn btn-danger'}
-                            title={isActive ? 'Cannot delete current workspace' : 'Delete workspace'}
+                            title={isActive ? t('settings.workspace_delete_disabled') : t('settings.workspace_delete')}
                           >
-                            {deletingWorkspaceId === workspace.companyId ? 'Deleting...' : isActive ? 'Cannot Delete' : 'Delete'}
+                            {deletingWorkspaceId === workspace.companyId ? t('settings.workspace_deleting') : isActive ? t('settings.workspace_cannot_delete') : t('common.delete')}
                           </button>
                         </div>
                       </div>
@@ -658,9 +660,9 @@ const Settings: React.FC = () =>{
             <div className="space-y-8">
               <div className="grid grid-cols-1 gap-6">
                 <form onSubmit={handleCreateConnection} className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                  <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">Connect Mailbox or SMS Forward</h3>
+                  <h3 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.payments_connect_title')}</h3>
                   <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                    Add a mailbox address or SMS-forward sender to enable payment alert ingestion.
+                    {t('settings.payments_connect_subtitle')}
                   </p>
                   <div className="grid grid-cols-1 gap-3">
                     <select
@@ -674,7 +676,7 @@ const Settings: React.FC = () =>{
                     <input
                       type="text"
                       className="input"
-                      placeholder={connectionForm.channel === 'gmail' ? 'alerts@yourcompany.com' : 'Sender phone or identifier'}
+                      placeholder={connectionForm.channel === 'gmail' ? t('settings.payments_placeholder_gmail') : t('settings.payments_placeholder_sms')}
                       value={connectionForm.identifier}
                       onChange={(e) => setConnectionForm({ ...connectionForm, identifier: e.target.value })}
                       required
@@ -682,12 +684,12 @@ const Settings: React.FC = () =>{
                     <input
                       type="text"
                       className="input"
-                      placeholder="Display name (optional)"
+                      placeholder={t('settings.payments_display_name')}
                       value={connectionForm.displayName}
                       onChange={(e) => setConnectionForm({ ...connectionForm, displayName: e.target.value })}
                     />
                     <button type="submit" className="btn btn-primary w-full" disabled={creatingConnection}>
-                      {creatingConnection ? 'Saving...' : 'Add Connection'}
+                      {creatingConnection ? t('settings.payments_saving') : t('settings.payments_add_connection')}
                     </button>
                   </div>
                 </form>
@@ -695,16 +697,16 @@ const Settings: React.FC = () =>{
 
               <div className="rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Connected Sources</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.payments_connected')}</h3>
                   <button onClick={fetchIngestionConnections} className="btn btn-secondary" disabled={connectionsLoading}>
-                    {connectionsLoading ? 'Refreshing...' : 'Refresh'}
+                    {connectionsLoading ? t('settings.payments_refreshing') : t('settings.payments_refresh')}
                   </button>
                 </div>
                 <div className="p-4">
                   {connectionsLoading ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading connections...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.payments_loading_connections')}</p>
                   ) : connections.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No mailbox or SMS forwarding connections yet.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.payments_none')}</p>
                   ) : (
                     <div className="space-y-2">
                       {connections.map((connection) => (
@@ -722,7 +724,7 @@ const Settings: React.FC = () =>{
                             onClick={() => handleDeleteConnection(connection._id)}
                             disabled={deletingConnectionId === connection._id}
                           >
-                            {deletingConnectionId === connection._id ? 'Removing...' : 'Remove'}
+                            {deletingConnectionId === connection._id ? t('settings.payments_removing') : t('settings.payments_remove')}
                           </button>
                         </div>
                       ))}
@@ -733,16 +735,16 @@ const Settings: React.FC = () =>{
 
               <div className="rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Ingestion Events</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.payments_events_title')}</h3>
                   <button onClick={fetchIngestionEvents} className="btn btn-secondary" disabled={eventsLoading}>
-                    {eventsLoading ? 'Refreshing...' : 'Refresh'}
+                    {eventsLoading ? t('settings.payments_refreshing') : t('settings.payments_refresh')}
                   </button>
                 </div>
                 <div className="max-h-96 overflow-auto p-4">
                   {eventsLoading ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading events...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.payments_loading_events')}</p>
                   ) : events.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">No ingestion events yet.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('settings.payments_no_events')}</p>
                   ) : (
                     <div className="space-y-2">
                       {events.map((event) => (
@@ -756,11 +758,11 @@ const Settings: React.FC = () =>{
                             </p>
                           </div>
                           {event.subject && (
-                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">Subject: {event.subject}</p>
+                            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">{t('settings.payments_subject')}: {event.subject}</p>
                           )}
                           <p className="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">{event.messageText}</p>
                           {event.errorMessage && (
-                            <p className="mt-1 text-xs text-red-600">Error: {event.errorMessage}</p>
+                            <p className="mt-1 text-xs text-red-600">{t('settings.payments_error')}: {event.errorMessage}</p>
                           )}
                         </div>
                       ))}
@@ -777,7 +779,7 @@ const Settings: React.FC = () =>{
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white dark:bg-gray-900 rounded-xl w-full max-w-lg shadow-2xl">
           <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create New Workspace</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('settings.create_workspace_title')}</h3>
             <button
               onClick={() => setShowCreateWorkspaceModal(false)}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none"
@@ -790,7 +792,7 @@ const Settings: React.FC = () =>{
               <input
                 type="text"
                 className="input"
-                placeholder="Company name"
+                placeholder={t('settings.workspace_company_name')}
                 value={workspaceForm.name}
                 onChange={(e) => setWorkspaceForm({ ...workspaceForm, name: e.target.value })}
                 required
@@ -798,16 +800,16 @@ const Settings: React.FC = () =>{
               <input
                 type="email"
                 className="input cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
-                placeholder="Workspace owner email"
+                placeholder={t('settings.workspace_owner_email')}
                 value={workspaceForm.email || currentUserEmail}
                 readOnly
                 disabled
-                title="Uses your current logged-in email"
+                title={t('settings.workspace_owner_hint')}
               />
               <input
                 type="text"
                 className="input"
-                placeholder="Phone"
+                placeholder={t('common.phone')}
                 value={workspaceForm.phone}
                 onChange={(e) => setWorkspaceForm({ ...workspaceForm, phone: e.target.value })}
                 required
@@ -815,14 +817,14 @@ const Settings: React.FC = () =>{
               <input
                 type="text"
                 className="input"
-                placeholder="Industry"
+                placeholder={t('settings.industry')}
                 value={workspaceForm.industry}
                 onChange={(e) => setWorkspaceForm({ ...workspaceForm, industry: e.target.value })}
               />
               <input
                 type="text"
                 className="input md:col-span-2"
-                placeholder="Address"
+                placeholder={t('common.address')}
                 value={workspaceForm.address}
                 onChange={(e) => setWorkspaceForm({ ...workspaceForm, address: e.target.value })}
                 required
@@ -838,7 +840,7 @@ const Settings: React.FC = () =>{
               <input
                 type="number"
                 className="input"
-                placeholder="Tax rate (%)"
+                placeholder={t('settings.tax_rate')}
                 value={workspaceForm.taxRate}
                 onChange={(e) => setWorkspaceForm({ ...workspaceForm, taxRate: Number(e.target.value || 0) })}
               />
@@ -849,10 +851,10 @@ const Settings: React.FC = () =>{
                 onClick={() => setShowCreateWorkspaceModal(false)}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" className="btn btn-primary" disabled={creatingWorkspace}>
-                {creatingWorkspace ? 'Creating...' : 'Create Workspace'}
+                {creatingWorkspace ? t('settings.workspace_creating') : t('settings.create_workspace')}
               </button>
             </div>
           </form>
@@ -862,20 +864,20 @@ const Settings: React.FC = () =>{
 
     <ConfirmModal
         isOpen={saveConfirm}
-        title="Save Changes"
-        message="Are you sure you want to save these changes to your company profile?"
-        confirmText="Save"
-        cancelText="Cancel"
+        title={t('settings.save_title')}
+        message={t('settings.save_message')}
+        confirmText={t('common.save')}
+        cancelText={t('common.cancel')}
         variant="primary"
         onConfirm={confirmSave}
         onCancel={() =>setSaveConfirm(false)}
       />
     <ConfirmModal
         isOpen={deleteWorkspaceConfirm.show}
-        title="Delete Workspace"
-        message={`Are you sure you want to delete "${deleteWorkspaceConfirm.workspace?.companyName || 'this workspace'}"? This will permanently remove all its data and cannot be undone.`}
-        confirmText="Delete Workspace"
-        cancelText="Cancel"
+        title={t('settings.delete_workspace_title')}
+        message={`${t('settings.delete_workspace_message')} "${deleteWorkspaceConfirm.workspace?.companyName || t('settings.this_workspace')}". ${t('settings.delete_workspace_warning')}`}
+        confirmText={t('settings.delete_workspace_confirm')}
+        cancelText={t('common.cancel')}
         variant="danger"
         onConfirm={confirmDeleteWorkspace}
         onCancel={() => setDeleteWorkspaceConfirm({ show: false, workspace: null })}

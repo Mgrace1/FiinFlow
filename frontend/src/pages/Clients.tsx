@@ -4,6 +4,7 @@ import { apiClient } from '../api/client';
 import ConfirmModal from '../components/common/ConfirmModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { FaEye, FaPen, FaTrash } from 'react-icons/fa';
 import { getUserRole } from '../utils/roleUtils';
@@ -21,6 +22,7 @@ const Clients: React.FC = () =>{
   const navigate = useNavigate();
   const role = getUserRole();
   const isAdmin = role === 'admin' || role === 'super_admin';
+  const { t } = useLanguage();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -61,7 +63,7 @@ const Clients: React.FC = () =>{
 
     const phoneDigits = formData.phone.replace(/\D/g, '');
     if (phoneDigits.length < 10) {
-      const message = 'Phone number must contain at least 10 digits.';
+      const message = t('clients.phone_validation');
       setError(message);
       notifyError(message);
       return;
@@ -70,16 +72,16 @@ const Clients: React.FC = () =>{
     try {
       if (editingClient) {
         await apiClient.put(`/clients/${editingClient._id}`, formData);
-        notifySuccess('Client updated successfully');
+        notifySuccess(t('clients.updated_success'));
       } else {
         await apiClient.post('/clients', formData);
-        notifySuccess('Client created successfully');
+        notifySuccess(t('clients.created_success'));
       }
       fetchClients();
       closeModal();
     } catch (error: any) {
       console.error('Failed to save client:', error);
-      const message = getErrorMessage(error, 'Failed to save client. Please try again.');
+      const message = getErrorMessage(error, t('clients.save_error'));
       setError(message);
       notifyError(message);
     }
@@ -92,10 +94,10 @@ const Clients: React.FC = () =>{
       await apiClient.delete(`/clients/${deleteConfirm.clientId}`);
       fetchClients();
       setDeleteConfirm({ show: false, clientId: null });
-      notifySuccess('Client deleted successfully');
+      notifySuccess(t('clients.deleted_success'));
     } catch (error) {
       console.error('Failed to delete client:', error);
-      notifyError(getErrorMessage(error, 'Failed to delete client'));
+      notifyError(getErrorMessage(error, t('clients.delete_error')));
     }
   };
 
@@ -129,25 +131,25 @@ const Clients: React.FC = () =>{
   };
 
   if (loading) {
-    return <LoadingOverlay message="Loading clients..." />;
+    return <LoadingOverlay message={t('clients.loading')} />;
   }
 
   return (
   <div>
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-      <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
+      <h1 className="text-3xl font-bold text-gray-900">{t('clients.title')}</h1>
       {clients.length > 0 && (
         <button onClick={() =>openModal()} className="btn btn-primary w-full md:w-auto">
-            + Add Client
+            {t('clients.add_client')}
         </button>
       )}
     </div>
 
     {clients.length === 0 ? (
       <EmptyDocumentState
-        title="No clients yet"
-        subtitle="Add your first client to start creating invoices"
-        buttonLabel="+ Add Client"
+        title={t('clients.empty_title')}
+        subtitle={t('clients.empty_subtitle')}
+        buttonLabel={t('clients.add_client')}
         onAction={() => openModal()}
       />
     ) : (
@@ -163,23 +165,23 @@ const Clients: React.FC = () =>{
                 </div>
               </div>
               <div className="mt-4">
-                <p className="text-gray-600">Email: {client.email}</p>
-                <p className="text-gray-600">Phone: {client.phone}</p>
+                <p className="text-gray-600">{t('clients.email_label')}: {client.email}</p>
+                <p className="text-gray-600">{t('clients.phone_label')}: {client.phone}</p>
               </div>
               <div className="mt-4 flex justify-end gap-x-4">
                 <button
                   onClick={() => navigate(`/clients/${client._id}`)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-                  title="View"
-                  aria-label="View client"
+                  title={t('common.view')}
+                  aria-label={t('clients.view_client')}
                 >
                   <FaEye className="text-sm" />
                 </button>
                 <button
                   onClick={() =>openModal(client)}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
-                  title="Edit"
-                  aria-label="Edit client"
+                  title={t('common.edit')}
+                  aria-label={t('clients.edit_client')}
                 >
                   <FaPen className="text-sm" />
                 </button>
@@ -187,8 +189,8 @@ const Clients: React.FC = () =>{
                   <button
                     onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                    title="Delete"
-                    aria-label="Delete client"
+                    title={t('common.delete')}
+                    aria-label={t('clients.delete_client')}
                   >
                     <FaTrash className="text-sm" />
                   </button>
@@ -204,19 +206,19 @@ const Clients: React.FC = () =>{
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    {t('clients.table_name')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact Person
+                    {t('clients.table_contact')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                    {t('clients.table_email')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
+                    {t('clients.table_phone')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('common.actions')}
                 </th>
               </tr>
             </thead>
@@ -239,16 +241,16 @@ const Clients: React.FC = () =>{
                     <button
                       onClick={() => navigate(`/clients/${client._id}`)}
                       className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-                      title="View"
-                      aria-label="View client"
+                      title={t('common.view')}
+                      aria-label={t('clients.view_client')}
                     >
                       <FaEye className="text-sm" />
                     </button>
                     <button
                       onClick={() =>openModal(client)}
                       className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-primary-500 transition hover:bg-primary-50 hover:text-primary-700"
-                      title="Edit"
-                      aria-label="Edit client"
+                      title={t('common.edit')}
+                      aria-label={t('clients.edit_client')}
                     >
                       <FaPen className="text-sm" />
                     </button>
@@ -256,8 +258,8 @@ const Clients: React.FC = () =>{
                       <button
                         onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                        title="Delete"
-                        aria-label="Delete client"
+                        title={t('common.delete')}
+                        aria-label={t('clients.delete_client')}
                       >
                         <FaTrash className="text-sm" />
                       </button>
@@ -276,7 +278,7 @@ const Clients: React.FC = () =>{
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
           <h2 className="text-2xl font-bold mb-4">
-              {editingClient ? 'Edit Client' : 'Add New Client'}
+              {editingClient ? t('clients.edit_title') : t('clients.add_title')}
           </h2>
             {error && (
             <div className="bg-danger-50 border border-danger-500 text-danger-700 px-4 py-3 rounded mb-4">
@@ -286,7 +288,7 @@ const Clients: React.FC = () =>{
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Company Name *
+                  {t('clients.form_company_name')}
               </label>
               <input
                   type="text"
@@ -298,7 +300,7 @@ const Clients: React.FC = () =>{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contact Person *
+                  {t('clients.form_contact')}
               </label>
               <input
                   type="text"
@@ -310,7 +312,7 @@ const Clients: React.FC = () =>{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email *
+                  {t('clients.form_email')}
               </label>
               <input
                   type="email"
@@ -322,7 +324,7 @@ const Clients: React.FC = () =>{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone *
+                  {t('clients.form_phone')}
               </label>
               <input
                   type="tel"
@@ -331,12 +333,12 @@ const Clients: React.FC = () =>{
                   minLength={10}
                   required
                   className="input"
-                  title="Phone number must contain at least 10 digits"
+                  title={t('clients.phone_validation')}
                 />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address *
+                  {t('clients.form_address')}
               </label>
               <textarea
                   value={formData.address}
@@ -348,14 +350,14 @@ const Clients: React.FC = () =>{
             </div>
             <div className="flex space-x-3">
               <button type="submit" className="btn btn-primary flex-1">
-                  {editingClient ? 'Update' : 'Create'}
+                  {editingClient ? t('clients.update') : t('clients.create')}
               </button>
               <button
                   type="button"
                   onClick={closeModal}
                   className="btn btn-secondary flex-1"
                 >
-                  Cancel
+                  {t('common.cancel')}
               </button>
             </div>
           </form>
@@ -366,10 +368,10 @@ const Clients: React.FC = () =>{
       {/* Delete Confirmation Modal */}
     <ConfirmModal
         isOpen={isAdmin && deleteConfirm.show}
-        title="Delete Client"
-        message="Are you sure you want to delete this client? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('clients.delete_title')}
+        message={t('clients.delete_message')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() =>setDeleteConfirm({ show: false, clientId: null })}

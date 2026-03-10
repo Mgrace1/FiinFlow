@@ -10,6 +10,7 @@ import { FaTimes, FaTrash, FaFileAlt } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
 import { convertCurrencyAmount, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
 import { getUserRole } from '../utils/roleUtils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Expense {
   _id: string;
@@ -40,6 +41,7 @@ const getLinkedIds = (): Set<string> => {
 };
 
 const Expenses: React.FC = () =>{
+  const { t, lang } = useLanguage();
   const role = getUserRole();
   const isAdmin = role === 'admin' || role === 'super_admin';
   const [searchParams] = useSearchParams();
@@ -95,7 +97,7 @@ const Expenses: React.FC = () =>{
     const markerId = sourceId || expense._id;
     if (ids.has(markerId)) {
       setLinkConfirm({ show: false, expense: null });
-      notifyWarning('This transaction is already linked');
+      notifyWarning(t('transactions.already_linked'));
       return;
     }
     ids.add(markerId);
@@ -103,7 +105,7 @@ const Expenses: React.FC = () =>{
     setLinkConfirm({ show: false, expense: null });
 
     if (linkAmount <= 0) {
-      notifySuccess('Expense linked successfully');
+      notifySuccess(t('expenses.linked_success'));
       return;
     }
 
@@ -118,7 +120,7 @@ const Expenses: React.FC = () =>{
     const nextPaid = Math.min(total, currentPaid + amountToApply);
 
     if (nextPaid <= currentPaid) {
-      notifySuccess('Expense linked successfully');
+      notifySuccess(t('expenses.linked_success'));
       return;
     }
 
@@ -129,9 +131,9 @@ const Expenses: React.FC = () =>{
       });
       await fetchExpenses();
       const remaining = Math.max(0, total - nextPaid);
-      notifySuccess(`Expense linked and updated. Remaining balance: ${formatCompanyMoney(remaining, targetCurrency)}`);
+      notifySuccess(`${t('expenses.linked_updated')} ${formatCompanyMoney(remaining, targetCurrency)}`);
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Expense linked, but failed to apply amount'));
+      notifyError(getErrorMessage(error, t('expenses.linked_failed_apply')));
     }
   };
 
@@ -165,24 +167,24 @@ const Expenses: React.FC = () =>{
 
     const parsedAmount = Number(formData.amount);
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setFormError('Please enter a valid total amount greater than 0.');
+      setFormError(t('expenses.form_invalid_total'));
       return;
     }
 
     const parsedAmountPaid = Number(formData.amountPaid) || 0;
     if (parsedAmountPaid < 0) {
-      setFormError('Amount paid cannot be negative.');
+      setFormError(t('expenses.form_negative_paid'));
       return;
     }
     if (parsedAmountPaid > parsedAmount) {
-      setFormError('Amount paid cannot exceed the total amount.');
+      setFormError(t('expenses.form_paid_exceeds'));
       return;
     }
 
     const linkedClient = clients.find((c) => c._id === formData.clientId);
     const resolvedSupplier = linkedClient?.name || formData.supplier.trim();
     if (!resolvedSupplier) {
-      setFormError('Please provide a supplier name or select a linked client.');
+      setFormError(t('expenses.form_supplier_required'));
       return;
     }
 
@@ -226,11 +228,11 @@ const Expenses: React.FC = () =>{
       window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchExpenses();
       closeModal();
-      notifySuccess('Expense created successfully');
+      notifySuccess(t('expenses.created_success'));
     } catch (error) {
       console.error('Failed to create expense:', error);
-      setFormError('Failed to create expense. Please check the details and try again.');
-      notifyError(getErrorMessage(error, 'Failed to create expense. Please check the details and try again.'));
+      setFormError(t('expenses.create_failed'));
+      notifyError(getErrorMessage(error, t('expenses.create_failed')));
     }
   };
 
@@ -240,10 +242,10 @@ const Expenses: React.FC = () =>{
       await apiClient.delete(`/expenses/${deleteConfirm.expenseId}`);
       fetchExpenses();
       setDeleteConfirm({ show: false, expenseId: null });
-      notifySuccess('Expense deleted successfully');
+      notifySuccess(t('expenses.deleted_success'));
     } catch (error) {
       console.error('Failed to delete expense:', error);
-      notifyError(getErrorMessage(error, 'Failed to delete expense'));
+      notifyError(getErrorMessage(error, t('expenses.delete_failed')));
     } 
   };
 
@@ -269,7 +271,7 @@ const Expenses: React.FC = () =>{
       // Let browser open it first, then release URL
       setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10_000);
     } catch (error) {
-      notifyError(getErrorMessage(error, 'Failed to open receipt'));
+      notifyError(getErrorMessage(error, t('expenses.receipt_open_failed')));
     }
   };
 
@@ -314,9 +316,9 @@ const Expenses: React.FC = () =>{
       window.URL.revokeObjectURL(url);
 
       setShowPDFConfirm(false);
-      notifySuccess('Expenses PDF downloaded');
+      notifySuccess(t('expenses.pdf_downloaded'));
     } catch (error: any) {
-      notifyError(getErrorMessage(error, 'Failed to download expenses PDF'));
+      notifyError(getErrorMessage(error, t('expenses.pdf_failed')));
       setShowPDFConfirm(false);
     }
   };
@@ -330,7 +332,7 @@ const Expenses: React.FC = () =>{
     return statusMap[status] || 'default';
   };
 
-  if (loading) return <LoadingOverlay message="Loading expenses..." />;
+  if (loading) return <LoadingOverlay message={t('expenses.loading')} />;
 
   const allowedStatuses = urlStatusFilter
     ? urlStatusFilter.split(',').map((s) => s.trim().toLowerCase())
@@ -343,21 +345,21 @@ const Expenses: React.FC = () =>{
   <div>
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('expenses.title')}</h1>
         {allowedStatuses && (
           <p className="text-sm text-gray-500 mt-1">
-            Filtered: showing <span className="font-medium">{allowedStatuses.join(', ')}</span> expenses
-            <button onClick={() => navigate('/expenses')} className="ml-2 text-blue-600 hover:underline text-xs">Clear filter</button>
+            {t('expenses.filtered_showing')} <span className="font-medium">{allowedStatuses.join(', ')}</span> {t('expenses.title').toLowerCase()}
+            <button onClick={() => navigate('/expenses')} className="ml-2 text-blue-600 hover:underline text-xs">{t('expenses.clear_filter')}</button>
           </p>
         )}
       </div>
       {expenses.length > 0 && (
         <div className="flex flex-nowrap gap-3 w-full md:w-auto">
           <button onClick={() =>setShowPDFConfirm(true)} className="btn btn-secondary w-full text-xs px-3 py-2">
-               Export to PDF
+               {t('expenses.export_pdf')}
           </button>
           <button onClick={() =>{ resetForm(); setShowModal(true); }} className="btn btn-primary w-full text-xs px-3 py-2 whitespace-nowrap">
-              + Add Expense
+              {t('expenses.add')}
           </button>
         </div>
       )}
@@ -365,9 +367,9 @@ const Expenses: React.FC = () =>{
 
     {expenses.length === 0 ? (
       <EmptyDocumentState
-        title="No expenses yet"
-        subtitle="Add your first expense to start tracking your spending"
-        buttonLabel="+ Add Expense"
+        title={t('expenses.empty_title')}
+        subtitle={t('expenses.empty_subtitle')}
+        buttonLabel={t('expenses.add')}
         variant="compact"
         onAction={() => { resetForm(); setShowModal(true); }}
       />
@@ -397,22 +399,22 @@ const Expenses: React.FC = () =>{
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="text-gray-500">Total</p>
+                  <p className="text-gray-500">{t('expenses.mobile.total')}</p>
                   <p className="font-bold">{formatCompanyMoney(expense.amount, expense.currency)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Paid</p>
+                  <p className="text-gray-500">{t('expenses.mobile.paid')}</p>
                   <p className="font-bold text-green-700">{formatCompanyMoney(expense.amountPaid, expense.currency)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Remaining</p>
+                  <p className="text-gray-500">{t('expenses.mobile.remaining')}</p>
                   <p className={`font-bold ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
                     {formatCompanyMoney(expense.remainingAmount, expense.currency)}
                   </p>
                 </div>
                 {expense.remainingAmount > 0 && (
                   <div>
-                    <p className="text-gray-500">Due Date</p>
+                    <p className="text-gray-500">{t('expenses.mobile.due_date')}</p>
                     <p className="font-bold">{formatDateDMY(expense.dueDate)}</p>
                   </div>
                 )}
@@ -428,8 +430,8 @@ const Expenses: React.FC = () =>{
                       handleViewReceipt(expense);
                     }}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
-                    title="View Receipt"
-                    aria-label="View receipt"
+                    title={t('common.view')}
+                    aria-label={t('common.view')}
                   >
                     <FaFileAlt className="text-sm" />
                   </button>
@@ -441,8 +443,8 @@ const Expenses: React.FC = () =>{
                       setDeleteConfirm({ show: true, expenseId: expense._id });
                     }}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                    title="Delete"
-                    aria-label="Delete expense"
+                    title={t('common.delete')}
+                    aria-label={t('common.delete')}
                   >
                     <FaTrash className="text-sm" />
                   </button>
@@ -458,15 +460,15 @@ const Expenses: React.FC = () =>{
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created At</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remaining</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.supplier')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.category')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.created_at')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.total_amount')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.amount_paid')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.remaining')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.due_date')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('expenses.table.status')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('expenses.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -502,7 +504,7 @@ const Expenses: React.FC = () =>{
                       {formatCompanyMoney(expense.remainingAmount, expense.currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {expense.remainingAmount > 0 ? formatDateDMY(expense.dueDate) : '—'}
+                      {expense.remainingAmount > 0 ? formatDateDMY(expense.dueDate) : t('common.na')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>
@@ -512,8 +514,8 @@ const Expenses: React.FC = () =>{
                       <button
                         onClick={(e) =>{ e.stopPropagation(); handleViewReceipt(expense); }}
                         className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
-                        title="View Receipt"
-                        aria-label="View receipt"
+                        title={t('common.view')}
+                        aria-label={t('common.view')}
                       >
                         <FaFileAlt className="text-sm" />
                       </button>
@@ -522,8 +524,8 @@ const Expenses: React.FC = () =>{
                       <button
                         onClick={(e) =>{ e.stopPropagation(); setDeleteConfirm({ show: true, expenseId: expense._id }); }}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
-                        title="Delete"
-                        aria-label="Delete expense"
+                        title={t('common.delete')}
+                        aria-label={t('common.delete')}
                       >
                         <FaTrash className="text-sm" />
                       </button>
@@ -541,7 +543,7 @@ const Expenses: React.FC = () =>{
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
         <div className="bg-white rounded-xl w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl">
           <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-4 flex items-center justify-between z-10 rounded-t-xl">
-            <h2 className="text-xl font-bold text-gray-900">Create Expense</h2>
+            <h2 className="text-xl font-bold text-gray-900">{t('expenses.modal.create_title')}</h2>
             <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
               <FaTimes />
             </button>
@@ -559,7 +561,7 @@ const Expenses: React.FC = () =>{
                 <div className="lg:col-span-2 space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Linked Client (Optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.linked_client')}</label>
                       <select
                         value={formData.clientId}
                         onChange={(e) =>{
@@ -573,7 +575,7 @@ const Expenses: React.FC = () =>{
                         }}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
                       >
-                        <option value="">No linked client</option>
+                        <option value="">{t('expenses.modal.no_linked_client')}</option>
                         {clients.map((client) => (
                           <option key={client._id} value={client._id}>
                             {client.name}
@@ -584,21 +586,21 @@ const Expenses: React.FC = () =>{
 
                     {!formData.clientId && (
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier Name *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.supplier_name_required')}</label>
                         <input
                           type="text"
                           value={formData.supplier}
                           onChange={(e) =>setFormData({ ...formData, supplier: e.target.value })}
                           required={!formData.clientId}
                           className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          placeholder="Supplier or vendor name"
+                          placeholder={t('expenses.modal.supplier_name')}
                         />
                       </div>
                     )}
 
                     {formData.clientId && (
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Supplier Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.supplier_name')}</label>
                         <input
                           type="text"
                           value={formData.supplier}
@@ -611,7 +613,7 @@ const Expenses: React.FC = () =>{
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.category')}</label>
                       <select
                         value={formData.category}
                         onChange={(e) => {
@@ -637,7 +639,7 @@ const Expenses: React.FC = () =>{
                           onChange={(e) => setCustomCategory(e.target.value)}
                           required
                           className="mt-2 w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          placeholder="Enter custom category..."
+                          placeholder={t('expenses.modal.custom_category_placeholder')}
                         />
                       )}
                     </div>
@@ -646,7 +648,7 @@ const Expenses: React.FC = () =>{
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Amount *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.total_amount')}</label>
                       <input
                         type="number"
                         min="0"
@@ -659,7 +661,7 @@ const Expenses: React.FC = () =>{
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Amount Paid</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.amount_paid')}</label>
                       <input
                         type="number"
                         min="0"
@@ -671,7 +673,7 @@ const Expenses: React.FC = () =>{
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Remaining Amount</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.remaining_amount')}</label>
                       <input
                         type="text"
                         readOnly
@@ -680,10 +682,11 @@ const Expenses: React.FC = () =>{
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Due Date *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.due_date')}</label>
                       <input
                         type="date"
                         value={formData.dueDate}
+                        lang={lang === 'fr' ? 'fr' : 'en-GB'}
                         onChange={(e) =>setFormData({ ...formData, dueDate: e.target.value })}
                         required
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -693,7 +696,7 @@ const Expenses: React.FC = () =>{
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.payment_method')}</label>
                       <select
                         value={formData.paymentMethod}
                         onChange={(e) =>setFormData({ ...formData, paymentMethod: e.target.value })}
@@ -708,30 +711,30 @@ const Expenses: React.FC = () =>{
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Reference Number</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.reference_number')}</label>
                       <input
                         type="text"
                         value={formData.referenceNumber}
                         onChange={(e) =>setFormData({ ...formData, referenceNumber: e.target.value })}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="Transaction / receipt ref"
+                        placeholder={t('expenses.modal.reference_placeholder')}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Description / Notes</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.description_notes')}</label>
                     <textarea
                       value={formData.description}
                       onChange={(e) =>setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
                       rows={4}
-                      placeholder="Add details about this expense..."
+                      placeholder={t('expenses.modal.description_placeholder')}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Receipt (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.receipt_optional')}</label>
                     <label className="btn btn-primary cursor-pointer inline-flex items-center">
                       <input
                         type="file"
@@ -739,27 +742,27 @@ const Expenses: React.FC = () =>{
                         accept=".pdf,.jpg,.jpeg,.png"
                         onChange={(e) => setFormData({ ...formData, receiptFile: e.target.files?.[0] || null })}
                       />
-                      {formData.receiptFile ? 'Change Receipt' : '+ Upload Receipt'}
+                      {formData.receiptFile ? t('expenses.modal.change_receipt') : t('expenses.modal.upload_receipt')}
                     </label>
                     <p className="mt-2 text-xs text-gray-500">
-                      {formData.receiptFile ? `Selected: ${formData.receiptFile.name}` : 'Accepted: PDF, JPG, JPEG, PNG'}
+                      {formData.receiptFile ? `${t('expenses.modal.receipt_selected')} ${formData.receiptFile.name}` : t('expenses.modal.receipt_accepted')}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Expense Summary</p>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{t('expenses.modal.summary_title')}</p>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Total</span>
+                      <span className="text-gray-500">{t('expenses.modal.summary_total')}</span>
                       <span className="font-bold text-gray-900">{(Number(formData.amount) || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Paid</span>
+                      <span className="text-gray-500">{t('expenses.modal.summary_paid')}</span>
                       <span className="font-bold text-green-700">{(Number(formData.amountPaid) || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm border-t pt-2">
-                      <span className="text-gray-500">Remaining</span>
+                      <span className="text-gray-500">{t('expenses.modal.summary_remaining')}</span>
                       <span className={`font-bold ${Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)) > 0 ? 'text-red-600' : 'text-green-600'}`}>
                         {Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)).toLocaleString()}
                       </span>
@@ -767,11 +770,11 @@ const Expenses: React.FC = () =>{
                   </div>
 
                   <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-blue-900 mb-2">Tips</p>
+                    <p className="text-sm font-semibold text-blue-900 mb-2">{t('expenses.modal.tips_title')}</p>
                     <ul className="text-xs text-blue-800 space-y-1 list-disc pl-4">
-                      <li>Use clear supplier names for easier reporting.</li>
-                      <li>Add a reference number for reconciliation.</li>
-                      <li>Link a client when expense is project-related.</li>
+                      <li>{t('expenses.modal.tip_supplier')}</li>
+                      <li>{t('expenses.modal.tip_reference')}</li>
+                      <li>{t('expenses.modal.tip_link_client')}</li>
                     </ul>
                   </div>
                 </div>
@@ -784,13 +787,13 @@ const Expenses: React.FC = () =>{
                 onClick={closeModal}
                 className="px-4 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm transition-colors order-2 sm:order-1"
               >
-                Cancel
+                {t('expenses.modal.cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors order-1 sm:order-2"
               >
-                Create Expense
+                {t('expenses.modal.create_button')}
               </button>
             </div>
           </form>
@@ -801,10 +804,10 @@ const Expenses: React.FC = () =>{
       {/* Delete Confirmation Modal */}
     <ConfirmModal
         isOpen={isAdmin && deleteConfirm.show}
-        title="Delete Expense"
-        message="Are you sure you want to delete this expense? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
+        title={t('expenses.confirm_delete_title')}
+        message={t('expenses.confirm_delete_message')}
+        confirmText={t('expenses.confirm_delete_confirm')}
+        cancelText={t('expenses.confirm_delete_cancel')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() =>setDeleteConfirm({ show: false, expenseId: null })}
@@ -813,10 +816,10 @@ const Expenses: React.FC = () =>{
       {/* PDF Export Confirm Modal */}
     <ConfirmModal
         isOpen={showPDFConfirm}
-        title="Export Expenses to PDF"
-        message="This will generate and download a PDF report of all expenses. This may take a few seconds."
-        confirmText="Download PDF"
-        cancelText="Cancel"
+        title={t('expenses.confirm_pdf_title')}
+        message={t('expenses.confirm_pdf_message')}
+        confirmText={t('expenses.confirm_pdf_confirm')}
+        cancelText={t('expenses.confirm_pdf_cancel')}
         variant="primary"
         onConfirm={handleDownloadExpensesPDF}
         onCancel={() =>setShowPDFConfirm(false)}
@@ -825,10 +828,10 @@ const Expenses: React.FC = () =>{
       {/* Link Confirmation Modal */}
       <ConfirmModal
         isOpen={linkConfirm.show}
-        title="Link Expense"
-        message={`Are you sure you want to link this expense from "${linkConfirm.expense?.supplier || 'this supplier'}" to this client?`}
-        confirmText="Link"
-        cancelText="Cancel"
+        title={t('expenses.confirm_link_title')}
+        message={`${t('expenses.confirm_link_message_prefix')} \"${linkConfirm.expense?.supplier || t('common.na')}\" ${t('expenses.confirm_link_message_suffix')}`}
+        confirmText={t('expenses.confirm_link_confirm')}
+        cancelText={t('expenses.confirm_link_cancel')}
         variant="primary"
         onConfirm={handleLinkConfirm}
         onCancel={() => setLinkConfirm({ show: false, expense: null })}
@@ -838,3 +841,4 @@ const Expenses: React.FC = () =>{
 };
 
 export default Expenses;
+

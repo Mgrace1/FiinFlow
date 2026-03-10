@@ -8,6 +8,7 @@ import { Search, Link2 } from 'lucide-react';
 import { notifyInfo } from '../utils/toast';
 import { getUserRole } from '../utils/roleUtils';
 import { formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Transaction {
   _id: string;
@@ -20,13 +21,14 @@ interface Transaction {
   createdAt: string;
 }
 
-// ── linked-ID helpers (persisted in localStorage) ──────────────────────────
+// -- linked-ID helpers (persisted in localStorage) --
 const getLinkedIds = (): Set<string> => {
   try { return new Set(JSON.parse(localStorage.getItem('finflow_linked_ids') || '[]')); }
   catch { return new Set(); }
 };
 
 const Transactions: React.FC = () => {
+  const { t, lang } = useLanguage();
   const role = getUserRole();
   const isAdmin = role === 'admin' || role === 'super_admin';
   const navigate = useNavigate();
@@ -48,8 +50,8 @@ const Transactions: React.FC = () => {
   const companyName = (() => {
     try {
       const company = JSON.parse(localStorage.getItem('finflow_company') || '{}');
-      return company.displayName || company.name || 'Your Company';
-    } catch { return 'Your Company'; }
+      return company.displayName || company.name || t('common.your_company');
+    } catch { return t('common.your_company'); }
   })();
 
   useEffect(() => { fetchTransactions(); }, []);
@@ -72,7 +74,7 @@ const Transactions: React.FC = () => {
         ? expensesRes.data.data.map((exp: any) => ({
             _id: exp._id, type: 'expense' as const,
             amount: exp.amount, date: exp.date, createdAt: exp.createdAt,
-            name: exp.supplier || exp.description || 'Expense',
+            name: exp.supplier || exp.description || t('transactions.fallback_expense'),
             currency: exp.currency, status: exp.paymentStatus,
           }))
         : [];
@@ -80,7 +82,7 @@ const Transactions: React.FC = () => {
         ? invoicesRes.data.data.map((inv: any) => ({
             _id: inv._id, type: 'income' as const,
             amount: inv.totalAmount, date: inv.createdAt, createdAt: inv.createdAt,
-            name: inv.clientId?.name || inv.clientName || 'Client',
+            name: inv.clientId?.name || inv.clientName || t('transactions.fallback_client'),
             currency: inv.currency, status: inv.status,
           }))
         : [];
@@ -121,7 +123,7 @@ const Transactions: React.FC = () => {
   const handleDelete = async () => {
     if (!deleteConfirm.transactionId) return;
     setDeleteConfirm({ show: false, transactionId: null });
-    notifyInfo('Delete action will be available soon');
+    notifyInfo(t('transactions.delete_soon'));
   };
 
   const handleUnlink = (txId: string) => {
@@ -129,7 +131,7 @@ const Transactions: React.FC = () => {
     next.delete(txId);
     localStorage.setItem('finflow_linked_ids', JSON.stringify([...next]));
     setLinkedIds(next);
-    notifyInfo('Link removed');
+    notifyInfo(t('transactions.unlink'));
   };
 
   const formatMoney = (amount: number, currency: string) =>
@@ -141,7 +143,7 @@ const Transactions: React.FC = () => {
   /** Navigate to the filtered list page and highlight the specific item */
   const handleLinkClick = (tx: Transaction) => {
     if (linkedIds.has(tx._id)) {
-      notifyInfo('This transaction is already linked');
+      notifyInfo(t('transactions.already_linked'));
       return;
     }
 
@@ -161,7 +163,7 @@ const Transactions: React.FC = () => {
     }
   };
 
-  if (loading) return <LoadingOverlay message="Loading transactions..." />;
+  if (loading) return <LoadingOverlay message={t('transactions.loading')} />;
 
   const displayedTransactions = filteredTransactions.slice(0, visibleCount);
   const hasFilters = Boolean(searchQuery || startDate || endDate || activeTab !== 'bank');
@@ -179,7 +181,7 @@ const Transactions: React.FC = () => {
         ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
         : 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
     }`}>
-      {type === 'income' ? 'Invoice' : 'Expense'}
+      {type === 'income' ? t('transactions.invoice') : t('transactions.expense')}
     </span>
   );
 
@@ -190,27 +192,27 @@ const Transactions: React.FC = () => {
         {/* Header */}
         <div className="px-4 pt-4 pb-4 sm:px-6 sm:pt-5 border-b border-gray-200 dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{companyName}</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Transactions</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{t('transactions.title')}</h1>
         </div>
 
         {/* Tabs */}
         <div className="px-4 sm:px-6 pt-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-5 sm:gap-8 overflow-x-auto scrollbar-hide">
-            <button onClick={() => setActiveTab('bank')} className={tabClass('bank')}>All</button>
-            <button onClick={() => setActiveTab('sales')} className={tabClass('sales')}>Income</button>
-            <button onClick={() => setActiveTab('expenses')} className={tabClass('expenses')}>Expenses</button>
+            <button onClick={() => setActiveTab('bank')} className={tabClass('bank')}>{t('transactions.tab_all')}</button>
+            <button onClick={() => setActiveTab('sales')} className={tabClass('sales')}>{t('transactions.tab_income')}</button>
+            <button onClick={() => setActiveTab('expenses')} className={tabClass('expenses')}>{t('transactions.tab_expenses')}</button>
           </div>
         </div>
 
         {/* Filter Bar */}
         <div className="px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700 flex flex-wrap gap-2">
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+          <input type="date" value={startDate} lang={lang === 'fr' ? 'fr' : 'en-GB'} onChange={(e) => setStartDate(e.target.value)}
             className="min-w-0 w-full sm:w-auto sm:flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+          <input type="date" value={endDate} lang={lang === 'fr' ? 'fr' : 'en-GB'} onChange={(e) => setEndDate(e.target.value)}
             className="min-w-0 w-full sm:w-auto sm:flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <div className="relative w-full sm:flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input type="text" placeholder="Search transactions" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            <input type="text" placeholder={t('transactions.search_placeholder')} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
@@ -220,9 +222,9 @@ const Transactions: React.FC = () => {
           {displayedTransactions.length === 0 ? (
             <div className="p-6">
               <EmptyDocumentState
-                title="No transactions found"
-                subtitle={hasFilters ? 'Try changing or clearing filters.' : 'No transactions yet.'}
-                buttonLabel="Clear Filters"
+                title={t('transactions.empty_title')}
+                subtitle={hasFilters ? t('transactions.empty_subtitle_filtered') : t('transactions.empty_subtitle')}
+                buttonLabel={t('transactions.clear_filters')}
                 variant="compact"
                 hideAction={!hasFilters}
                 onAction={() => {
@@ -251,26 +253,26 @@ const Transactions: React.FC = () => {
                         </div>
                         {isLinked ? (
                           <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium shrink-0 mt-1">
-                            <Link2 size={12} /> Linked
+                            <Link2 size={12} /> {t('transactions.linked')}
                           </span>
                         ) : (
                           <button onClick={() => handleLinkClick(tx)}
                             className="flex items-center gap-1 text-sky-500 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-semibold text-sm shrink-0">
-                            <Link2 size={14} /><span>Link</span>
+                            <Link2 size={14} /><span>{t('transactions.link')}</span>
                           </button>
                         )}
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                         <div className="rounded-md bg-gray-50 dark:bg-gray-800 px-3 py-2">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Spent</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('transactions.spent')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : '—'}
+                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
                           </p>
                         </div>
                         <div className="rounded-md bg-gray-50 dark:bg-gray-800 px-3 py-2">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Received</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('transactions.received')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : '—'}
+                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
                           </p>
                         </div>
                       </div>
@@ -280,7 +282,7 @@ const Transactions: React.FC = () => {
                             onClick={() => handleUnlink(tx._id)}
                             className="text-xs font-semibold text-red-600 hover:text-red-700"
                           >
-                            Unlink
+                            {t('transactions.unlink')}
                           </button>
                         </div>
                       )}
@@ -294,12 +296,12 @@ const Transactions: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <tr className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                      <th className="px-4 py-3 text-left">Date</th>
-                      <th className="px-4 py-3 text-left">Name</th>
-                      <th className="px-4 py-3 text-left">Type</th>
-                      <th className="px-4 py-3 text-right">Spent</th>
-                      <th className="px-4 py-3 text-right">Received</th>
-                      <th className="px-4 py-3 text-right">Action</th>
+                      <th className="px-4 py-3 text-left">{t('transactions.date')}</th>
+                      <th className="px-4 py-3 text-left">{t('transactions.name')}</th>
+                      <th className="px-4 py-3 text-left">{t('transactions.type')}</th>
+                      <th className="px-4 py-3 text-right">{t('transactions.spent')}</th>
+                      <th className="px-4 py-3 text-right">{t('transactions.received')}</th>
+                      <th className="px-4 py-3 text-right">{t('transactions.action')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -311,28 +313,28 @@ const Transactions: React.FC = () => {
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 max-w-[200px] truncate">{tx.name}</td>
                           <td className="px-4 py-3"><TypeBadge type={tx.type} /></td>
                           <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
-                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : '—'}
+                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
                           </td>
                           <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
-                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : '—'}
+                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
                           </td>
                           <td className="px-4 py-3 text-right">
                             {isLinked ? (
                               <div className="inline-flex items-center gap-3">
                                 <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
-                                  <Link2 size={12} /> Linked
+                                  <Link2 size={12} /> {t('transactions.linked')}
                                 </span>
                                 <button
                                   onClick={() => handleUnlink(tx._id)}
                                   className="text-xs font-semibold text-red-600 hover:text-red-700"
                                 >
-                                  Unlink
+                                  {t('transactions.unlink')}
                                 </button>
                               </div>
                             ) : (
                               <button onClick={() => handleLinkClick(tx)}
                                 className="inline-flex items-center gap-1 text-sky-500 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-semibold text-sm">
-                                <Link2 size={14} /><span>Link</span>
+                                <Link2 size={14} /><span>{t('transactions.link')}</span>
                               </button>
                             )}
                           </td>
@@ -351,7 +353,7 @@ const Transactions: React.FC = () => {
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-center">
             <button onClick={() => setVisibleCount((p) => p + 8)}
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-medium">
-              Load more
+              {t('transactions.load_more')}
             </button>
           </div>
         )}
@@ -359,9 +361,9 @@ const Transactions: React.FC = () => {
 
       <ConfirmModal
         isOpen={isAdmin && deleteConfirm.show}
-        title="Delete Transaction"
-        message="Are you sure you want to delete this transaction? This action cannot be undone."
-        confirmText="Delete" cancelText="Cancel" variant="danger"
+        title={t('transactions.delete_title')}
+        message={t('transactions.delete_message')}
+        confirmText={t('common.delete')} cancelText={t('common.cancel')} variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirm({ show: false, transactionId: null })}
       />
@@ -370,3 +372,4 @@ const Transactions: React.FC = () => {
 };
 
 export default Transactions;
+

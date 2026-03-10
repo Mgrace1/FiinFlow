@@ -32,6 +32,7 @@ import { getUserRole } from '../utils/roleUtils';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { formatCompanyMoney, getCurrencyConfig, convertCurrencyAmount } from '../utils/currency';
 import { notifyError } from '../utils/toast';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardStats {
   totalInvoices: number;
@@ -98,8 +99,6 @@ const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#9ca3af', '#94a3b8']
 const DASHBOARD_CARD =
   'rounded-2xl border border-slate-200 bg-white p-5';
 
-const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
-
 const getDateValue = (value?: string) => {
   if (!value) return null;
   const parsed = new Date(value);
@@ -122,14 +121,6 @@ const formatMoney = (amount: number, currency = 'RWF') => {
 
 const formatPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
 
-const getTimeGreeting = (date: Date) => {
-  const hour = date.getHours();
-  if (hour >= 1 && hour < 12) return 'Good morning';
-  if (hour >= 12 && hour < 17) return 'Good afternoon';
-  if (hour >= 17 && hour < 23) return 'Good evening';
-  return 'Good night';
-};
-
 // Custom Tooltip for charts
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -150,6 +141,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const Dashboard: React.FC = () => {
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
@@ -167,6 +159,19 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showPDFConfirm, setShowPDFConfirm] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const monthFormatter = useMemo(
+    () => new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
+    [lang]
+  );
+
+  const getTimeGreeting = (date: Date) => {
+    const hour = date.getHours();
+    if (hour >= 1 && hour < 12) return t('dashboard.greeting_morning');
+    if (hour >= 12 && hour < 17) return t('dashboard.greeting_afternoon');
+    if (hour >= 17 && hour < 23) return t('dashboard.greeting_evening');
+    return t('dashboard.greeting_night');
+  };
 
   const company = JSON.parse(localStorage.getItem('finflow_company') || '{}');
   const userRole = getUserRole();
@@ -270,11 +275,11 @@ const Dashboard: React.FC = () => {
     const active = Math.max(stats.totalInvoices - paid - overdue - drafts - cancelled, 0);
 
     const data = [];
-    if (paid > 0) data.push({ name: 'Paid', value: paid });
-    if (active > 0) data.push({ name: 'In progress', value: active });
-    if (overdue > 0) data.push({ name: 'Overdue', value: overdue });
-    if (drafts > 0) data.push({ name: 'Draft', value: drafts });
-    if (cancelled > 0) data.push({ name: 'Cancelled', value: cancelled });
+    if (paid > 0) data.push({ name: t('status.paid'), value: paid });
+    if (active > 0) data.push({ name: t('status.in_progress'), value: active });
+    if (overdue > 0) data.push({ name: t('status.overdue'), value: overdue });
+    if (drafts > 0) data.push({ name: t('status.draft'), value: drafts });
+    if (cancelled > 0) data.push({ name: t('status.cancelled'), value: cancelled });
     
     return data;
   }, [stats.totalCancelled, stats.totalDrafts, stats.totalInvoices, stats.totalOverdue, stats.totalPaid]);
@@ -285,7 +290,7 @@ const Dashboard: React.FC = () => {
       return {
         id: invoice._id,
         title: invoice.invoiceNumber,
-        subtitle: invoice.clientId?.name || 'Client invoice',
+        subtitle: invoice.clientId?.name || t('dashboard.client_invoice'),
         amount: Number(invoice.totalAmount) || 0,
         currency: invoice.currency || 'RWF',
         amountPrefix: '+',
@@ -299,8 +304,8 @@ const Dashboard: React.FC = () => {
       const dt = getDateValue(expense.date || expense.createdAt || expense.updatedAt);
       return {
         id: expense._id,
-        title: expense.supplier || 'Expense',
-        subtitle: expense.category || 'Operational expense',
+        title: expense.supplier || t('dashboard.expense_title'),
+        subtitle: expense.category || t('dashboard.operational_expense'),
         amount: Number(expense.amount) || 0,
         currency: expense.currency || 'RWF',
         amountPrefix: '-',
@@ -345,7 +350,7 @@ const Dashboard: React.FC = () => {
 
       setShowPDFConfirm(false);
     } catch (error) {
-      notifyError('Failed to download summary PDF');
+      notifyError(t('dashboard.summary_pdf_error'));
       setShowPDFConfirm(false);
     }
   };
@@ -355,7 +360,7 @@ const Dashboard: React.FC = () => {
       <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200 bg-white">
         <div className="flex items-center gap-2 text-slate-600">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading dashboard...</span>
+          <span>{t('dashboard.loading')}</span>
         </div>
       </div>
     );
@@ -366,11 +371,11 @@ const Dashboard: React.FC = () => {
       <section className="rounded-3xl border border-slate-200 bg-white px-6 py-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">Overview</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">{t('dashboard.overview')}</p>
             <h1 className="text-2xl font-bold text-slate-900">
               {getTimeGreeting(currentTime)}{company?.displayName ? `, ${company.displayName}` : ''}
             </h1>
-            <p className="text-sm text-slate-600">Here is how your business is performing today.</p>
+            <p className="text-sm text-slate-600">{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex flex-wrap gap-3">
             {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager') && (
@@ -378,14 +383,14 @@ const Dashboard: React.FC = () => {
                 onClick={() => setShowPDFConfirm(true)}
                 className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Export summary PDF
+                {t('dashboard.export_summary_pdf')}
               </button>
             )}
             <button
               onClick={() => navigate('/invoices')}
               className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
             >
-              Create invoice
+              {t('dashboard.create_invoice')}
             </button>
           </div>
         </div>
@@ -396,7 +401,7 @@ const Dashboard: React.FC = () => {
         <article className={DASHBOARD_CARD}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Income</p>
+              <p className="text-sm text-slate-500">{t('dashboard.income')}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.totalRevenue)}</p>
             </div>
             <span className="rounded-full bg-emerald-100 p-2 text-emerald-600">
@@ -405,14 +410,14 @@ const Dashboard: React.FC = () => {
           </div>
           <p className="mt-4 flex items-center gap-1 text-xs text-emerald-600">
             <ArrowUpRight className="h-3.5 w-3.5" />
-            {formatPct(Math.max(marginPercent, 0))} margin
+            {formatPct(Math.max(marginPercent, 0))} {t('dashboard.margin')}
           </p>
         </article>
 
         <article className={DASHBOARD_CARD}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Expenses</p>
+              <p className="text-sm text-slate-500">{t('dashboard.expenses')}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.totalExpenses)}</p>
             </div>
             <span className="rounded-full bg-rose-100 p-2 text-rose-600">
@@ -421,27 +426,27 @@ const Dashboard: React.FC = () => {
           </div>
           <p className="mt-4 flex items-center gap-1 text-xs text-rose-600">
             <ArrowDownRight className="h-3.5 w-3.5" />
-            {formatPct(spendRatioPercent)} spend vs revenue
+            {formatPct(spendRatioPercent)} {t('dashboard.spend_vs_revenue')}
           </p>
         </article>
 
         <article className={DASHBOARD_CARD}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Pending amount</p>
+              <p className="text-sm text-slate-500">{t('dashboard.pending_amount')}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.pendingAmount)}</p>
             </div>
             <span className="rounded-full bg-amber-100 p-2 text-amber-600">
               <Clock3 className="h-5 w-5" />
             </span>
           </div>
-          <p className="mt-4 text-xs text-slate-500">Outstanding from unpaid invoices</p>
+          <p className="mt-4 text-xs text-slate-500">{t('dashboard.outstanding_unpaid')}</p>
         </article>
 
         <article className={DASHBOARD_CARD}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500">Profit</p>
+              <p className="text-sm text-slate-500">{t('dashboard.profit')}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.netIncome)}</p>
             </div>
             <span className="rounded-full bg-sky-100 p-2 text-sky-600">
@@ -449,7 +454,7 @@ const Dashboard: React.FC = () => {
             </span>
           </div>
           <p className="mt-4 text-xs text-slate-500">
-            {stats.totalInvoices} invoices tracked this cycle · {stats.totalCancelled || 0} cancelled
+            {stats.totalInvoices} {t('dashboard.invoices_tracked')} · {stats.totalCancelled || 0} {t('dashboard.cancelled')}
           </p>
         </article>
       </section>
@@ -457,8 +462,8 @@ const Dashboard: React.FC = () => {
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.9fr]">
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Cashflow trends</h2>
-            <p className="text-sm text-slate-500">Last 6 months of income, expenses, pending, and draft amounts.</p>
+            <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.cashflow_trends')}</h2>
+            <p className="text-sm text-slate-500">{t('dashboard.last_6_months')}</p>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -478,10 +483,10 @@ const Dashboard: React.FC = () => {
                   axisLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(14, 165, 233, 0.05)' }} />
-                <Bar dataKey="pending" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={30} name="Pending" />
-                <Bar dataKey="draft" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={30} name="Draft" />
-                <Bar dataKey="collected" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} name="Income" />
-                <Bar dataKey="spent" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={30} name="Expenses" />
+                <Bar dataKey="pending" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.pending')} />
+                <Bar dataKey="draft" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.draft')} />
+                <Bar dataKey="collected" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.income')} />
+                <Bar dataKey="spent" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.expenses')} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -489,19 +494,19 @@ const Dashboard: React.FC = () => {
           <div className="mt-4 flex items-center justify-center gap-6 text-xs">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#0ea5e9' }}></span>
-              <span className="text-slate-600">Pending</span>
+              <span className="text-slate-600">{t('status.pending')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#9ca3af' }}></span>
-              <span className="text-slate-600">Draft</span>
+              <span className="text-slate-600">{t('status.draft')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#10b981' }}></span>
-              <span className="text-slate-600">Income</span>
+              <span className="text-slate-600">{t('dashboard.income')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f97316' }}></span>
-              <span className="text-slate-600">Expenses</span>
+              <span className="text-slate-600">{t('dashboard.expenses')}</span>
             </div>
           </div>
         </article>
@@ -509,14 +514,14 @@ const Dashboard: React.FC = () => {
         {/* Invoice Health */}
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Invoice health</h2>
-            <p className="text-sm text-slate-500">Current invoice status distribution.</p>
+            <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.invoice_health')}</h2>
+            <p className="text-sm text-slate-500">{t('dashboard.invoice_health_subtitle')}</p>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={statusData.length ? statusData : [{ name: 'No data', value: 1 }]}
+                  data={statusData.length ? statusData : [{ name: t('dashboard.no_data'), value: 1 }]}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -527,14 +532,14 @@ const Dashboard: React.FC = () => {
                   label={false}
                   labelLine={false}
                 >
-                  {(statusData.length ? statusData : [{ name: 'No data', value: 1 }]).map((entry, index) => {
+                  {(statusData.length ? statusData : [{ name: t('dashboard.no_data'), value: 1 }]).map((entry, index) => {
                     // Map colors based on status name
                     let color = PIE_COLORS_ARRAY[index % PIE_COLORS_ARRAY.length];
-                    if (entry.name === 'Paid') color = PIE_COLORS.paid;
-                    if (entry.name === 'In progress') color = PIE_COLORS.inProgress;
-                    if (entry.name === 'Overdue') color = PIE_COLORS.overdue;
-                    if (entry.name === 'Draft') color = PIE_COLORS.draft;
-                    if (entry.name === 'Cancelled') color = PIE_COLORS.cancelled;
+                    if (entry.name === t('status.paid')) color = PIE_COLORS.paid;
+                    if (entry.name === t('status.in_progress')) color = PIE_COLORS.inProgress;
+                    if (entry.name === t('status.overdue')) color = PIE_COLORS.overdue;
+                    if (entry.name === t('status.draft')) color = PIE_COLORS.draft;
+                    if (entry.name === t('status.cancelled')) color = PIE_COLORS.cancelled;
                     
                     return <Cell key={`cell-${index}`} fill={color} />;
                   })}
@@ -553,11 +558,11 @@ const Dashboard: React.FC = () => {
             {statusData.map((item, idx) => {
               // Map colors based on status name
               let color = PIE_COLORS_ARRAY[idx % PIE_COLORS_ARRAY.length];
-              if (item.name === 'Paid') color = PIE_COLORS.paid;
-              if (item.name === 'In progress') color = PIE_COLORS.inProgress;
-              if (item.name === 'Overdue') color = PIE_COLORS.overdue;
-              if (item.name === 'Draft') color = PIE_COLORS.draft;
-              if (item.name === 'Cancelled') color = PIE_COLORS.cancelled;
+              if (item.name === t('status.paid')) color = PIE_COLORS.paid;
+              if (item.name === t('status.in_progress')) color = PIE_COLORS.inProgress;
+              if (item.name === t('status.overdue')) color = PIE_COLORS.overdue;
+              if (item.name === t('status.draft')) color = PIE_COLORS.draft;
+              if (item.name === t('status.cancelled')) color = PIE_COLORS.cancelled;
               
               return (
                 <div key={item.name} className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
@@ -575,25 +580,25 @@ const Dashboard: React.FC = () => {
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">Latest invoices</h3>
+            <h3 className="text-lg font-semibold text-slate-900">{t('dashboard.latest_invoices')}</h3>
             <button
               onClick={() => navigate('/invoices')}
               className="text-sm font-semibold text-sky-600 hover:text-sky-700"
             >
-              View all
+              {t('dashboard.view_all')}
             </button>
           </div>
           <div className="space-y-3">
             {latestInvoices.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
-                No invoices yet. Create your first invoice to start tracking collections.
+                {t('dashboard.no_invoices')}
               </p>
             ) : (
               latestInvoices.slice(0, 4).map((invoice) => (
                 <div key={invoice._id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-3 hover:bg-slate-100 transition-colors">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{invoice.invoiceNumber}</p>
-                    <p className="text-xs text-slate-500">{invoice.clientId?.name || 'Client'}</p>
+                    <p className="text-xs text-slate-500">{invoice.clientId?.name || t('dashboard.client_label')}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-slate-900">{formatMoney(invoice.totalAmount, invoice.currency || 'RWF')}</p>
@@ -609,8 +614,8 @@ const Dashboard: React.FC = () => {
 
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-slate-900">Income vs expenses</h3>
-            <span className="text-xs text-slate-500">Recent period</span>
+            <h3 className="text-lg font-semibold text-slate-900">{t('dashboard.income_vs_expenses')}</h3>
+            <span className="text-xs text-slate-500">{t('dashboard.recent_period')}</span>
           </div>
           <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -625,29 +630,29 @@ const Dashboard: React.FC = () => {
                   axisLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="collected" stroke="#10b981" strokeWidth={2.4} dot={false} name="Income" />
-                <Line type="monotone" dataKey="spent" stroke="#f97316" strokeWidth={2.4} dot={false} name="Expenses" />
+                <Line type="monotone" dataKey="collected" stroke="#10b981" strokeWidth={2.4} dot={false} name={t('dashboard.income')} />
+                <Line type="monotone" dataKey="spent" stroke="#f97316" strokeWidth={2.4} dot={false} name={t('dashboard.expenses')} />
               </LineChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">
-              <p className="font-semibold">Income</p>
+              <p className="font-semibold">{t('dashboard.income')}</p>
               <p>{formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.collected, 0))}</p>
             </div>
             <div className="rounded-lg bg-orange-50 px-3 py-2 text-orange-700">
-              <p className="font-semibold">Expenses</p>
+              <p className="font-semibold">{t('dashboard.expenses')}</p>
               <p>{formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.spent, 0))}</p>
             </div>
           </div>
         </article>
 
         <article className={`${DASHBOARD_CARD} p-6`}>
-          <h3 className="text-lg font-semibold text-slate-900">Transactions feed</h3>
-          <p className="mb-3 text-sm text-slate-500">Latest business activity</p>
+          <h3 className="text-lg font-semibold text-slate-900">{t('dashboard.transactions_feed')}</h3>
+          <p className="mb-3 text-sm text-slate-500">{t('dashboard.latest_activity')}</p>
           <div className="space-y-3">
             {activityFeed.length === 0 ? (
-              <p className="text-sm text-slate-500">No recent transactions to show.</p>
+              <p className="text-sm text-slate-500">{t('dashboard.no_transactions')}</p>
             ) : (
               activityFeed.map((item) => (
                 <div key={`${item.type}-${item.id}`} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition-colors">
@@ -683,8 +688,8 @@ const Dashboard: React.FC = () => {
               <CreditCard className="h-5 w-5" />
             </span>
             <div>
-              <h4 className="text-sm font-semibold text-slate-900">Add new client</h4>
-              <p className="mt-1 text-xs text-slate-500">Create and organize client profiles.</p>
+              <h4 className="text-sm font-semibold text-slate-900">{t('dashboard.add_new_client')}</h4>
+              <p className="mt-1 text-xs text-slate-500">{t('dashboard.add_new_client_desc')}</p>
             </div>
           </div>
         </button>
@@ -697,8 +702,8 @@ const Dashboard: React.FC = () => {
               <CheckCircle2 className="h-5 w-5" />
             </span>
             <div>
-              <h4 className="text-sm font-semibold text-slate-900">Create invoice</h4>
-              <p className="mt-1 text-xs text-slate-500">Generate and share invoices quickly.</p>
+              <h4 className="text-sm font-semibold text-slate-900">{t('dashboard.create_invoice')}</h4>
+              <p className="mt-1 text-xs text-slate-500">{t('dashboard.create_invoice_desc')}</p>
             </div>
           </div>
         </button>
@@ -711,8 +716,8 @@ const Dashboard: React.FC = () => {
               <TrendingDown className="h-5 w-5" />
             </span>
             <div>
-              <h4 className="text-sm font-semibold text-slate-900">Add expense</h4>
-              <p className="mt-1 text-xs text-slate-500">Keep spending records up to date.</p>
+              <h4 className="text-sm font-semibold text-slate-900">{t('dashboard.add_expense')}</h4>
+              <p className="mt-1 text-xs text-slate-500">{t('dashboard.add_expense_desc')}</p>
             </div>
           </div>
         </button>
@@ -720,10 +725,10 @@ const Dashboard: React.FC = () => {
 
       <ConfirmModal
         isOpen={showPDFConfirm}
-        title="Generate Summary PDF"
-        message="This will generate and download a comprehensive financial summary PDF. This may take a few seconds."
-        confirmText="Download PDF"
-        cancelText="Cancel"
+        title={t('dashboard.summary_pdf_title')}
+        message={t('dashboard.summary_pdf_message')}
+        confirmText={t('dashboard.download_pdf')}
+        cancelText={t('common.cancel')}
         variant="primary"
         onConfirm={handleDownloadSummaryPDF}
         onCancel={() => setShowPDFConfirm(false)}

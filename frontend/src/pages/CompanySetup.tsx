@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 
 const CompanySetup: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [consentChecked, setConsentChecked] = useState(false);
@@ -29,7 +31,7 @@ const CompanySetup: React.FC = () => {
     e.preventDefault();
 
     if (!consentChecked) {
-      setError('Please agree to the research participation consent before proceeding.');
+      setError(t('company_setup.consent_required'));
       return;
     }
 
@@ -40,11 +42,11 @@ const CompanySetup: React.FC = () => {
       const response = await apiClient.post('/companies', formData);
 
       if (response.data.success) {
-        notifySuccess('Company created successfully. Check your email for login credentials.');
+        notifySuccess(t('company_setup.success_toast'));
         navigate('/login');
       }
     } catch (err: any) {
-      const message = getErrorMessage(err, 'Failed to create company');
+      const message = getErrorMessage(err, t('company_setup.error_default'));
       setError(message);
       notifyError(message);
     } finally {
@@ -61,7 +63,7 @@ const CompanySetup: React.FC = () => {
             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
           >
             <ArrowLeft size={14} />
-            Back to home
+            {t('company_setup.back_home')}
           </Link>
         </div>
 
@@ -69,8 +71,8 @@ const CompanySetup: React.FC = () => {
           <div className="mb-3 inline-flex items-center gap-2">
             <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">FiinFlow</span>
           </div>
-          <h1 className="mt-3 text-4xl font-bold text-slate-900">Create your workspace</h1>
-          <p className="mt-2 text-sm text-slate-500">Set up your company account and get started.</p>
+          <h1 className="mt-3 text-4xl font-bold text-slate-900">{t('company_setup.title')}</h1>
+          <p className="mt-2 text-sm text-slate-500">{t('company_setup.subtitle')}</p>
         </div>
 
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -83,7 +85,7 @@ const CompanySetup: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Company name</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.name_label')}</label>
                 <input
                   type="text"
                   name="name"
@@ -91,12 +93,12 @@ const CompanySetup: React.FC = () => {
                   onChange={handleChange}
                   required
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                  placeholder="Company name"
+                  placeholder={t('company_setup.name_placeholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Company email</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.email_label')}</label>
                 <input
                   type="email"
                   name="email"
@@ -104,12 +106,12 @@ const CompanySetup: React.FC = () => {
                   onChange={handleChange}
                   required
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                  placeholder="company@email.com"
+                  placeholder={t('company_setup.email_placeholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Phone number</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.phone_label')}</label>
                 <input
                   type="tel"
                   name="phone"
@@ -117,24 +119,24 @@ const CompanySetup: React.FC = () => {
                   onChange={handleChange}
                   required
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                  placeholder="+250 XXX XXX XXX"
+                  placeholder={t('company_setup.phone_placeholder')}
                 />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Industry (optional)</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.industry_label')}</label>
                 <input
                   type="text"
                   name="industry"
                   value={formData.industry}
                   onChange={handleChange}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                  placeholder="Industry"
+                  placeholder={t('company_setup.industry_placeholder')}
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Company address</label>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.address_label')}</label>
                 <textarea
                   name="address"
                   value={formData.address}
@@ -142,15 +144,14 @@ const CompanySetup: React.FC = () => {
                   required
                   rows={2}
                   className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-                  placeholder="Company address"
+                  placeholder={t('company_setup.address_placeholder')}
                 />
               </div>
             </div>
 
             <div className="rounded-lg border border-primary-200 bg-primary-50 p-3">
               <p className="mb-2 text-xs text-slate-700">
-                FinFlow is part of a capstone research project at African Leadership University. Data is used for academic
-                evaluation and deleted after the pilot study.
+                {t('company_setup.consent_blurb')}
               </p>
               <label className="flex items-start gap-2 text-xs text-slate-700">
                 <input
@@ -159,14 +160,14 @@ const CompanySetup: React.FC = () => {
                   onChange={(e) => setConsentChecked(e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                 />
-                I consent to participate in the FinFlow research pilot.
+                {t('company_setup.consent_label')}
               </label>
               <button
                 type="button"
                 onClick={() => navigate('/consent')}
                 className="mt-2 text-xs font-semibold text-primary-600 hover:text-primary-500"
               >
-                Read full consent information
+                {t('company_setup.consent_link')}
               </button>
             </div>
 
@@ -177,15 +178,15 @@ const CompanySetup: React.FC = () => {
                 consentChecked ? 'bg-primary-600 text-white hover:bg-primary-500' : 'cursor-not-allowed bg-slate-300 text-slate-500'
               }`}
             >
-              {loading ? 'Creating...' : 'Create account'}
+              {loading ? t('company_setup.creating') : t('company_setup.submit')}
             </button>
           </form>
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account?{' '}
+          {t('company_setup.already_prompt')}{' '}
           <button onClick={() => navigate('/login')} className="font-semibold text-primary-600 hover:text-primary-500">
-            Log in
+            {t('company_setup.sign_in')}
           </button>
         </p>
       </div>

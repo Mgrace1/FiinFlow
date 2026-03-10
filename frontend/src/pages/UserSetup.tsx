@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 
 const UserSetup: React.FC = () =>{
   const navigate = useNavigate();
   const { companyId } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,11 +35,11 @@ const UserSetup: React.FC = () =>{
       const response = await apiClient.post('/users', formData);
 
       if (response.data.success) {
-        notifySuccess('Admin user created successfully');
+        notifySuccess(t('user_setup.success_toast'));
         navigate(`/company/${companyId}/dashboard`);
       }
     } catch (err: any) {
-      const message = getErrorMessage(err, 'Failed to create admin user');
+      const message = getErrorMessage(err, t('user_setup.error_default'));
       setError(message);
       notifyError(message);
     } finally {
@@ -49,8 +51,8 @@ const UserSetup: React.FC = () =>{
   <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-100 flex items-center justify-center p-4">
     <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2"> Create Admin User</h1>
-        <p className="text-gray-600">Set up the main administrator account</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('user_setup.title')}</h1>
+        <p className="text-gray-600">{t('user_setup.subtitle')}</p>
       </div>
 
         {error && (
@@ -62,7 +64,7 @@ const UserSetup: React.FC = () =>{
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name *
+              {t('user_setup.name_label')}
           </label>
           <input
               type="text"
@@ -71,13 +73,13 @@ const UserSetup: React.FC = () =>{
               onChange={handleChange}
               required
               className="input"
-              placeholder="John Doe"
+              placeholder={t('user_setup.name_placeholder')}
             />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
+              {t('user_setup.email_label')}
           </label>
           <input
               type="email"
@@ -86,13 +88,13 @@ const UserSetup: React.FC = () =>{
               onChange={handleChange}
               required
               className="input"
-              placeholder="admin@company.com"
+              placeholder={t('user_setup.email_placeholder')}
             />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone (Optional)
+              {t('user_setup.phone_label')}
           </label>
           <input
               type="tel"
@@ -100,13 +102,13 @@ const UserSetup: React.FC = () =>{
               value={formData.phone}
               onChange={handleChange}
               className="input"
-              placeholder="+250 XXX XXX XXX"
+              placeholder={t('user_setup.phone_placeholder')}
             />
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800">
-            <strong>Role:</strong>Administrator (Full access)
+            <strong>{t('user_setup.role_label')}</strong>{t('user_setup.role_value')}
           </p>
         </div>
 
@@ -115,7 +117,7 @@ const UserSetup: React.FC = () =>{
             disabled={loading}
             className="btn btn-primary w-full"
           >
-            {loading ? 'Creating...' : 'Create Admin & Continue'}
+            {loading ? t('user_setup.creating') : t('user_setup.submit')}
         </button>
       </form>
     </div>

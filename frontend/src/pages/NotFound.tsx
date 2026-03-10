@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const NotFound: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const isAuthenticated = Boolean(localStorage.getItem('finflow_token'));
 
   return (
@@ -12,10 +14,10 @@ const NotFound: React.FC = () => {
           <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">FiinFlow</span>
         </div>
 
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Error 404</p>
-        <h1 className="mt-3 text-4xl font-bold text-slate-900">Page not found</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t('notfound.code')}</p>
+        <h1 className="mt-3 text-4xl font-bold text-slate-900">{t('notfound.title')}</h1>
         <p className="mt-3 text-sm text-slate-600">
-          The page you requested does not exist or was moved.
+          {t('notfound.subtitle')}
         </p>
 
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -24,13 +26,13 @@ const NotFound: React.FC = () => {
             onClick={() => navigate(-1)}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
           >
-            Go back
+            {t('notfound.back')}
           </button>
           <Link
             to={isAuthenticated ? '/dashboard' : '/'}
             className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-500"
           >
-            {isAuthenticated ? 'Go to dashboard' : 'Go to home'}
+            {isAuthenticated ? t('notfound.to_dashboard') : t('notfound.to_home')}
           </Link>
         </div>
       </div>

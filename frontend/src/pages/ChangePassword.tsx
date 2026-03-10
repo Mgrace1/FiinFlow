@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
-import { strongPasswordErrorMessage, validateStrongPassword } from '../utils/password';
+import { getPasswordRuleKey, validateStrongPassword } from '../utils/password';
 
 const ChangePassword: React.FC = () =>{
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -22,12 +24,12 @@ const ChangePassword: React.FC = () =>{
     setSuccess('');
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('New passwords do not match');
+      setError(t('change_password.mismatch'));
       return;
     }
 
     if (!passwordValidation.isValid) {
-      setError(strongPasswordErrorMessage);
+      setError(t('password.error_strong'));
       return;
     }
 
@@ -40,12 +42,12 @@ const ChangePassword: React.FC = () =>{
       });
 
       if (response.data.success) {
-        setSuccess('Password changed successfully!');
-        notifySuccess('Password changed successfully');
+        setSuccess(t('change_password.success'));
+        notifySuccess(t('change_password.success_toast'));
         setTimeout(() =>navigate('/dashboard'), 2000);
       }
     } catch (err: any) {
-      const message = getErrorMessage(err, 'Failed to change password');
+      const message = getErrorMessage(err, t('change_password.error_default'));
       setError(message);
       notifyError(message);
     } finally {
@@ -55,7 +57,7 @@ const ChangePassword: React.FC = () =>{
 
   return (
   <div className="max-w-md mt-2 p-4">
-    <h1 className="text-xl font-bold mb-4">Change Password</h1>
+    <h1 className="text-xl font-bold mb-4">{t('change_password.title')}</h1>
       
     <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
@@ -72,7 +74,7 @@ const ChangePassword: React.FC = () =>{
 
       <div>
         <label className="block text-sm font-medium mb-2">
-            Current Password
+            {t('change_password.current_label')}
         </label>
         <input
             type="password"
@@ -85,7 +87,7 @@ const ChangePassword: React.FC = () =>{
 
       <div>
         <label className="block text-sm font-medium mb-2">
-            New Password
+            {t('change_password.new_label')}
         </label>
         <input
             type="password"
@@ -101,7 +103,7 @@ const ChangePassword: React.FC = () =>{
               key={rule.label}
               className={`text-xs ${rule.passed ? 'text-success-500' : 'text-gray-500'}`}
             >
-              {rule.passed ? '✓' : '•'} {rule.label}
+              {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
             </p>
           ))}
         </div>
@@ -109,7 +111,7 @@ const ChangePassword: React.FC = () =>{
 
       <div>
         <label className="block text-sm font-medium mb-2">
-            Confirm New Password
+            {t('change_password.confirm_label')}
         </label>
         <input
             type="password"
@@ -126,14 +128,14 @@ const ChangePassword: React.FC = () =>{
             disabled={loading}
             className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Changing...' : 'Change Password'}
+            {loading ? t('change_password.changing') : t('change_password.submit')}
         </button>
         <button
             type="button"
             onClick={() =>navigate(-1)}
             className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
           >
-            Cancel
+            {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -142,3 +144,4 @@ const ChangePassword: React.FC = () =>{
 };
 
 export default ChangePassword;
+

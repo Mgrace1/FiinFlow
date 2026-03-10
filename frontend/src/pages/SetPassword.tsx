@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
+import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
-import { strongPasswordErrorMessage, validateStrongPassword } from '../utils/password';
+import { getPasswordRuleKey, validateStrongPassword } from '../utils/password';
 
 const SetPassword: React.FC = () =>{
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -22,7 +24,7 @@ const SetPassword: React.FC = () =>{
 
   useEffect(() => {
     if (!token) {
-      setError('Invalid or missing invitation link');
+      setError(t('set_password.invalid_link_error'));
     }
   }, [token]);
 
@@ -32,12 +34,12 @@ const SetPassword: React.FC = () =>{
 
     // Validation
     if (!passwordValidation.isValid) {
-      setError(strongPasswordErrorMessage);
+      setError(t('password.error_strong'));
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('set_password.mismatch'));
       return;
     }
 
@@ -51,14 +53,14 @@ const SetPassword: React.FC = () =>{
 
       if (response.data.success) {
         setSuccess(true);
-        notifySuccess('Password set successfully');
+        notifySuccess(t('set_password.success_toast'));
         setTimeout(() => {
           navigate('/login');
         }, 3000);
       }
     } catch (error: any) {
       console.error('Set password error:', error);
-      const message = getErrorMessage(error, 'Failed to set password. Please try again or request a new invitation.');
+      const message = getErrorMessage(error, t('set_password.error_default'));
       setError(message);
       notifyError(message);
     } finally {
@@ -70,15 +72,15 @@ const SetPassword: React.FC = () =>{
     return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Link</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('set_password.invalid_title')}</h2>
         <p className="text-gray-600 mb-6">
-            This invitation link is invalid or has expired. Please contact your administrator for a new invitation.
+            {t('set_password.invalid_body')}
         </p>
         <button
             onClick={() =>navigate('/login')}
             className="btn btn-primary"
           >
-            Go to Login
+            {t('set_password.go_login')}
         </button>
       </div>
     </div>
@@ -89,11 +91,11 @@ const SetPassword: React.FC = () =>{
     return (
     <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-600 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Password Set Successfully!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('set_password.success_title')}</h2>
         <p className="text-gray-600 mb-6">
-            Your password has been set. You can now log in to your workspace.
+            {t('set_password.success_body')}
         </p>
-        <p className="text-sm text-gray-500">Redirecting to login page...</p>
+        <p className="text-sm text-gray-500">{t('set_password.redirecting')}</p>
       </div>
     </div>
     );
@@ -103,11 +105,11 @@ const SetPassword: React.FC = () =>{
   <div className="min-h-screen bg-gradient-to-br from-primary-900 to-primary-600 flex items-center justify-center p-4">
     <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-primary-500 mb-2">Welcome!</h1>
-        <p className="text-gray-600">Set your password to join FiinFlow</p>
+        <h1 className="text-4xl font-bold text-primary-500 mb-2">{t('set_password.welcome')}</h1>
+        <p className="text-gray-600">{t('set_password.subtitle')}</p>
       </div>
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Set Your Password</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('set_password.title')}</h2>
 
         {error && (
         <div className="bg-danger-50 border border-danger-500 text-danger-700 px-4 py-3 rounded mb-4">
@@ -118,7 +120,7 @@ const SetPassword: React.FC = () =>{
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              {t('set_password.password_label')}
           </label>
           <div className="relative">
             <input
@@ -127,7 +129,7 @@ const SetPassword: React.FC = () =>{
                 onChange={(e) =>setFormData({ ...formData, password: e.target.value })}
                 required
                 className="input pr-20"
-                placeholder="Enter your password"
+                placeholder={t('set_password.password_placeholder')}
                 minLength={8}
               />
             <button
@@ -135,7 +137,7 @@ const SetPassword: React.FC = () =>{
                 onClick={() =>setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showPassword ? 'Hide' : 'Show'}
+                {showPassword ? t('set_password.hide') : t('set_password.show')}
             </button>
           </div>
           <div className="mt-2 space-y-1">
@@ -144,7 +146,7 @@ const SetPassword: React.FC = () =>{
                 key={rule.label}
                 className={`text-xs ${rule.passed ? 'text-success-500' : 'text-gray-500'}`}
               >
-                {rule.passed ? '✓' : '•'} {rule.label}
+                {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
               </p>
             ))}
           </div>
@@ -152,7 +154,7 @@ const SetPassword: React.FC = () =>{
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm Password
+              {t('set_password.confirm_label')}
           </label>
           <div className="relative">
             <input
@@ -161,7 +163,7 @@ const SetPassword: React.FC = () =>{
                 onChange={(e) =>setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
                 className="input pr-20"
-                placeholder="Confirm your password"
+                placeholder={t('set_password.confirm_placeholder')}
                 minLength={8}
               />
             <button
@@ -169,7 +171,7 @@ const SetPassword: React.FC = () =>{
                 onClick={() =>setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 hover:text-gray-700"
               >
-                {showConfirmPassword ? 'Hide' : 'Show'}
+                {showConfirmPassword ? t('set_password.hide') : t('set_password.show')}
             </button>
           </div>
         </div>
@@ -179,18 +181,18 @@ const SetPassword: React.FC = () =>{
             disabled={loading}
             className="btn btn-primary w-full"
           >
-            {loading ? 'Setting Password...' : 'Set Password & Continue'}
+            {loading ? t('set_password.setting') : t('set_password.submit')}
         </button>
       </form>
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-            Already have an account?{' '}
+            {t('set_password.already_prompt')}{' '}
           <button
               onClick={() => navigate('/login')}
               className="text-primary-500 hover:text-primary-700 font-medium"
             >
-              Sign In
+              {t('set_password.sign_in')}
           </button>
         </p>
       </div>

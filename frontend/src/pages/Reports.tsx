@@ -6,6 +6,7 @@ import ForecastChart from '../components/forecasting/ForecastChart';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import { getErrorMessage, notifyError } from '../utils/toast';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ClientPerformance {
   clientId: string;
@@ -35,8 +36,6 @@ interface ReportData {
   expenses: any[];
 }
 
-const monthLabelFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
-
 const getSafeDate = (value?: string) => {
   if (!value) return null;
   const parsed = new Date(value);
@@ -44,6 +43,7 @@ const getSafeDate = (value?: string) => {
 };
 
 const Reports: React.FC = () =>{
+  const { t, lang } = useLanguage();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
@@ -55,6 +55,10 @@ const Reports: React.FC = () =>{
   const [performance, setPerformance] = useState<PerformancePayload | null>(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [showAllClients, setShowAllClients] = useState(false);
+  const monthLabelFormatter = useMemo(
+    () => new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
+    [lang]
+  );
 
   const fetchReports = async () =>{
     setLoading(true);
@@ -87,7 +91,7 @@ const Reports: React.FC = () =>{
         setPerformance(response.data.data);
       }
     } catch (error) {
-      notifyError('Failed to load performance data');
+      notifyError(t('reports.performance_error'));
     } finally {
       setPerformanceLoading(false);
     }
@@ -192,29 +196,29 @@ const Reports: React.FC = () =>{
 
     // Title
     doc.setFontSize(20);
-    doc.text('FiinFlow Financial Report', 14, 20);
+    doc.text(t('reports.pdf_title'), 14, 20);
 
     // Date range
     doc.setFontSize(10);
-    const dateRangeText = `Period: ${dateRange.startDate || 'All time'} to ${dateRange.endDate || 'Present'}`;
+    const dateRangeText = `${t('reports.pdf_period')}: ${dateRange.startDate || t('reports.pdf_all_time')} to ${dateRange.endDate || t('reports.pdf_present')}`;
     doc.text(dateRangeText, 14, 28);
 
     // Summary section
     doc.setFontSize(14);
-    doc.text('Financial Summary', 14, 40);
+    doc.text(t('reports.pdf_summary_title'), 14, 40);
 
     const summaryData = [
-      ['Total Revenue', formatCurrency(reportData.summary.totalRevenue)],
-      ['Total Expenses', formatCurrency(reportData.summary.totalExpenses)],
-      ['Net Profit', formatCurrency(reportData.summary.profit)],
-      ['Profit Margin', `${reportData.summary.profitMargin.toFixed(2)}%`],
-      ['Total Paid', formatCurrency(reportData.summary.totalPaid)],
-      ['Total Pending', formatCurrency(reportData.summary.totalPending)],
+      [t('reports.total_revenue'), formatCurrency(reportData.summary.totalRevenue)],
+      [t('reports.total_expenses'), formatCurrency(reportData.summary.totalExpenses)],
+      [t('reports.net_profit'), formatCurrency(reportData.summary.profit)],
+      [t('reports.margin'), `${reportData.summary.profitMargin.toFixed(2)}%`],
+      [t('reports.total_paid'), formatCurrency(reportData.summary.totalPaid)],
+      [t('reports.total_pending'), formatCurrency(reportData.summary.totalPending)],
     ];
 
     autoTable(doc, {
       startY: 45,
-      head: [['Metric', 'Value']],
+      head: [[t('reports.pdf_metric'), t('reports.pdf_value')]],
       body: summaryData,
       theme: 'striped',
       headStyles: { fillColor: [30, 136, 229] },
@@ -224,7 +228,7 @@ const Reports: React.FC = () =>{
     if (reportData.invoices.length >0) {
       const finalY = (doc as any).lastAutoTable.finalY || 45;
       doc.setFontSize(14);
-      doc.text('Invoices', 14, finalY + 15);
+      doc.text(t('reports.pdf_invoices'), 14, finalY + 15);
 
       const invoiceData = reportData.invoices.map((inv: any) =>[
         inv.invoiceNumber,
@@ -236,7 +240,7 @@ const Reports: React.FC = () =>{
 
       autoTable(doc, {
         startY: finalY + 20,
-        head: [['Invoice #', 'Client', 'Amount', 'Status', 'Due Date']],
+        head: [[t('reports.pdf_invoice_number'), t('reports.pdf_client'), t('reports.pdf_amount'), t('reports.pdf_status'), t('reports.pdf_due_date')]],
         body: invoiceData,
         theme: 'striped',
         headStyles: { fillColor: [30, 136, 229] },
@@ -247,7 +251,7 @@ const Reports: React.FC = () =>{
     if (reportData.expenses.length >0) {
       const finalY = (doc as any).lastAutoTable.finalY || 45;
       doc.setFontSize(14);
-      doc.text('Expenses', 14, finalY + 15);
+      doc.text(t('reports.pdf_expenses'), 14, finalY + 15);
 
       const expenseData = reportData.expenses.map((exp: any) =>[
         exp.supplier,
@@ -258,7 +262,7 @@ const Reports: React.FC = () =>{
 
       autoTable(doc, {
         startY: finalY + 20,
-        head: [['Supplier', 'Category', 'Amount', 'Date']],
+        head: [[t('reports.pdf_supplier'), t('reports.pdf_category'), t('reports.pdf_amount'), t('reports.pdf_date')]],
         body: expenseData,
         theme: 'striped',
         headStyles: { fillColor: [30, 136, 229] },
@@ -273,23 +277,23 @@ const Reports: React.FC = () =>{
   const exportToCSV = () =>{
     if (!reportData) return;
 
-    let csvContent = 'FiinFlow Financial Report\n';
-    csvContent += `Period: ${dateRange.startDate || 'All time'} to ${dateRange.endDate || 'Present'}\n\n`;
+    let csvContent = `${t('reports.pdf_title')}\n`;
+    csvContent += `${t('reports.csv_period')}: ${dateRange.startDate || t('reports.pdf_all_time')} to ${dateRange.endDate || t('reports.pdf_present')}\n\n`;
 
     // Summary
-    csvContent += 'FINANCIAL SUMMARY\n';
-    csvContent += 'Metric,Value\n';
-    csvContent += `Total Revenue,${reportData.summary.totalRevenue}\n`;
-    csvContent += `Total Expenses,${reportData.summary.totalExpenses}\n`;
-    csvContent += `Net Profit,${reportData.summary.profit}\n`;
-    csvContent += `Profit Margin,${reportData.summary.profitMargin.toFixed(2)}%\n`;
-    csvContent += `Total Paid,${reportData.summary.totalPaid}\n`;
-    csvContent += `Total Pending,${reportData.summary.totalPending}\n\n`;
+    csvContent += `${t('reports.csv_summary')}\n`;
+    csvContent += `${t('reports.pdf_metric')},${t('reports.pdf_value')}\n`;
+    csvContent += `${t('reports.total_revenue')},${reportData.summary.totalRevenue}\n`;
+    csvContent += `${t('reports.total_expenses')},${reportData.summary.totalExpenses}\n`;
+    csvContent += `${t('reports.net_profit')},${reportData.summary.profit}\n`;
+    csvContent += `${t('reports.margin')},${reportData.summary.profitMargin.toFixed(2)}%\n`;
+    csvContent += `${t('reports.total_paid')},${reportData.summary.totalPaid}\n`;
+    csvContent += `${t('reports.total_pending')},${reportData.summary.totalPending}\n\n`;
 
     // Invoices
     if (reportData.invoices.length >0) {
-      csvContent += 'INVOICES\n';
-      csvContent += 'Invoice #,Client,Amount,Status,Due Date\n';
+      csvContent += `${t('reports.csv_invoices')}\n`;
+      csvContent += `${t('reports.pdf_invoice_number')},${t('reports.pdf_client')},${t('reports.pdf_amount')},${t('reports.pdf_status')},${t('reports.pdf_due_date')}\n`;
       reportData.invoices.forEach((inv: any) =>{
         csvContent += `${inv.invoiceNumber},${inv.clientId?.name || 'N/A'},${inv.totalAmount},${inv.status},${new Date(inv.dueDate).toLocaleDateString()}\n`;
       });
@@ -298,8 +302,8 @@ const Reports: React.FC = () =>{
 
     // Expenses
     if (reportData.expenses.length >0) {
-      csvContent += 'EXPENSES\n';
-      csvContent += 'Supplier,Category,Amount,Date\n';
+      csvContent += `${t('reports.csv_expenses')}\n`;
+      csvContent += `${t('reports.pdf_supplier')},${t('reports.pdf_category')},${t('reports.pdf_amount')},${t('reports.pdf_date')}\n`;
       reportData.expenses.forEach((exp: any) =>{
         csvContent += `${exp.supplier},${exp.category},${exp.amount},${new Date(exp.date).toLocaleDateString()}\n`;
       });
@@ -320,43 +324,45 @@ const Reports: React.FC = () =>{
   return (
   <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Financial Reports</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('reports.title')}</h1>
         {reportData && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
           <button onClick={exportToPDF} className="btn btn-success w-full sm:w-auto">
-               Export PDF
+               {t('reports.export_pdf')}
           </button>
           <button onClick={exportToCSV} className="btn btn-success w-full sm:w-auto">
-               Export CSV
+               {t('reports.export_csv')}
           </button>
         </div>
         )}
     </div>
 
     <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-      <h2 className="text-xl font-semibold mb-4">Filter Reports</h2>
+      <h2 className="text-xl font-semibold mb-4">{t('reports.filter_title')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('reports.start_date')}</label>
           <input
               type="date"
               value={dateRange.startDate}
+              lang={lang === 'fr' ? 'fr' : 'en-GB'}
               onChange={(e) =>setDateRange({ ...dateRange, startDate: e.target.value })}
               className="input"
             />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('reports.end_date')}</label>
           <input
               type="date"
               value={dateRange.endDate}
+              lang={lang === 'fr' ? 'fr' : 'en-GB'}
               onChange={(e) =>setDateRange({ ...dateRange, endDate: e.target.value })}
               className="input"
             />
         </div>
         <div className="flex items-end">
           <button onClick={fetchReports} disabled={loading} className="btn btn-primary w-full">
-              {loading ? 'Loading...' : 'Generate Report'}
+              {loading ? t('reports.loading') : t('reports.generate_report')}
           </button>
         </div>
       </div>
@@ -366,24 +372,24 @@ const Reports: React.FC = () =>{
       <>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+            <p className="text-sm text-gray-600 mb-1">{t('reports.total_revenue')}</p>
             <p className="text-2xl font-bold text-success-500">
                 {formatCurrency(reportData.summary.totalRevenue)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Expenses</p>
+            <p className="text-sm text-gray-600 mb-1">{t('reports.total_expenses')}</p>
             <p className="text-2xl font-bold text-danger-500">
                 {formatCurrency(reportData.summary.totalExpenses)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <p className="text-sm text-gray-600 mb-1">Net Profit</p>
+            <p className="text-sm text-gray-600 mb-1">{t('reports.net_profit')}</p>
             <p className="text-2xl font-bold text-primary-500">
                 {formatCurrency(reportData.summary.profit)}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-                Margin: {reportData.summary.profitMargin.toFixed(2)}%
+                {t('reports.margin')}: {reportData.summary.profitMargin.toFixed(2)}%
             </p>
           </div>
         </div>
@@ -391,8 +397,8 @@ const Reports: React.FC = () =>{
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Net cashflow trend</h3>
-              <span className="text-xs text-gray-500">Collected - Expenses</span>
+              <h3 className="text-lg font-semibold text-gray-900">{t('reports.net_cashflow')}</h3>
+              <span className="text-xs text-gray-500">{t('reports.collected_minus_expenses')}</span>
             </div>
             <div className="h-64">
               {netCashflowData.length > 0 ? (
@@ -412,15 +418,15 @@ const Reports: React.FC = () =>{
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-gray-500">No trend data for selected period</div>
+                <div className="flex h-full items-center justify-center text-sm text-gray-500">{t('reports.no_trend')}</div>
               )}
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Top expense categories</h3>
-              <span className="text-xs text-gray-500">Highest spend categories</span>
+              <h3 className="text-lg font-semibold text-gray-900">{t('reports.top_expense_categories')}</h3>
+              <span className="text-xs text-gray-500">{t('reports.highest_spend')}</span>
             </div>
             <div className="h-64">
               {topExpenseCategories.length > 0 ? (
@@ -434,7 +440,7 @@ const Reports: React.FC = () =>{
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm text-gray-500">No expense categories for selected period</div>
+                <div className="flex h-full items-center justify-center text-sm text-gray-500">{t('reports.no_expense_categories')}</div>
               )}
             </div>
           </div>
@@ -442,45 +448,45 @@ const Reports: React.FC = () =>{
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h3 className="text-lg font-semibold mb-4">Invoices Summary</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('reports.invoices_summary')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Paid:</span>
+                <span className="text-gray-600">{t('reports.total_paid')}:</span>
                 <span className="font-semibold text-success-500">
                     {formatCurrency(reportData.summary.totalPaid)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Pending:</span>
+                <span className="text-gray-600">{t('reports.total_pending')}:</span>
                 <span className="font-semibold text-warning-500">
                     {formatCurrency(reportData.summary.totalPending)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t">
-                <span className="text-gray-900 font-medium">Total Invoices:</span>
+                <span className="text-gray-900 font-medium">{t('reports.total_invoices')}:</span>
                 <span className="font-semibold">{reportData.invoices.length}</span>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h3 className="text-lg font-semibold mb-4">Expenses Summary</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('reports.expenses_summary')}</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Expenses:</span>
+                <span className="text-gray-600">{t('reports.total_expenses')}:</span>
                 <span className="font-semibold text-danger-500">
                     {formatCurrency(reportData.summary.totalExpenses)}
                 </span>
               </div>
               <div className="flex justify-between pt-2 border-t">
-                <span className="text-gray-900 font-medium">Total Records:</span>
+                <span className="text-gray-900 font-medium">{t('reports.total_records')}:</span>
                 <span className="font-semibold">{reportData.expenses.length}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Client Performance — only shown when clients have activity in the selected period */}
+        {/* Client Performance - only shown when clients have activity in the selected period */}
         {(() => {
           const activeClients = performance
             ? [...performance.clientsPerformance].filter((r) => (r.totalInvoices ?? 0) > 0).sort((a, b) => b.performanceScore - a.performanceScore)
@@ -489,29 +495,29 @@ const Reports: React.FC = () =>{
           return (
             <div className="mt-6 bg-white rounded-lg shadow overflow-hidden">
               <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Client Performance</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('reports.client_performance')}</h3>
                 {!performanceLoading && activeClients.length > 5 && (
                   <button
                     onClick={() => setShowAllClients(!showAllClients)}
                     className="text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
                   >
-                    {showAllClients ? 'Show Less' : `View All (${activeClients.length})`}
+                    {showAllClients ? t('reports.show_less') : `${t('reports.view_all')} (${activeClients.length})`}
                   </button>
                 )}
               </div>
               {performanceLoading ? (
-                <div className="p-8 text-center text-sm text-gray-500">Loading performance data...</div>
+                <div className="p-8 text-center text-sm text-gray-500">{t('reports.loading_performance')}</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Collected</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Collection Rate</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Paid Rate</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Score</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('reports.pdf_client')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('reports.collected')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('reports.collection_rate')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('reports.paid_rate')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('reports.score')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -543,28 +549,25 @@ const Reports: React.FC = () =>{
 
       {!reportData && !loading && (
       <div className="bg-white rounded-lg shadow p-6 sm:p-12 text-center text-gray-500">
-          Select a date range and click "Generate Report" to view financial data
+          {t('reports.empty_prompt')}
       </div>
       )}
 
     <div className="mt-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">AI-Powered Forecast</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('reports.ai_forecast_title')}</h2>
         <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <p className="mb-4 text-gray-600">
-            Click the button below to generate a 90-day cash flow forecast based on your historical data.
-            This feature uses AI to predict future financial trends.
-          </p>
+          <p className="mb-4 text-gray-600">{t('reports.ai_forecast_desc')}</p>
           <button
             onClick={handleGenerateForecast}
             disabled={isForecastLoading}
             className="btn btn-primary"
           >
-            {isForecastLoading ? 'Generating Forecast...' : 'Generate 90-Day Forecast'}
+            {isForecastLoading ? t('reports.generating_forecast') : t('reports.generate_forecast')}
           </button>
         </div>
       </div>
 
-      {isForecastLoading && <LoadingOverlay message="AI is analyzing your data..." />}
+      {isForecastLoading && <LoadingOverlay message={t('reports.ai_loading')} />}
 
       {forecastData && (
         <ForecastChart data={forecastData} />
@@ -575,3 +578,4 @@ const Reports: React.FC = () =>{
 };
 
 export default Reports;
+
