@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../api/client';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/common/ConfirmModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import { formatDateDMY } from '../utils/formatDate';
 import Badge from '../components/common/Badge';
-import { FaTimes, FaTrash, FaEye, FaFileAlt } from 'react-icons/fa';
-import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
-import { formatCompanyMoney } from '../utils/currency';
+import { FaTimes, FaTrash, FaFileAlt } from 'react-icons/fa';
+import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
+import { convertCurrencyAmount, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
 import { getUserRole } from '../utils/roleUtils';
 
 interface Expense {
@@ -46,10 +46,13 @@ const Expenses: React.FC = () =>{
   const navigate = useNavigate();
   const urlStatusFilter = searchParams.get('status');
   const highlightId = searchParams.get('highlight');
+  const sourceId = searchParams.get('sourceId');
+  const linkAmountParam = Number(searchParams.get('linkAmount') || 0);
+  const linkAmount = Number.isFinite(linkAmountParam) ? Math.max(0, linkAmountParam) : 0;
+  const linkCurrency = String(searchParams.get('linkCurrency') || 'RWF').toUpperCase();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [linkedIds, setLinkedIds] = useState<Set<string>>(getLinkedIds);
   const [linkConfirm, setLinkConfirm] = useState<{ show: boolean; expense: Expense | null }>({ show: false, expense: null });
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [showModal, setShowModal] = useState(false);
@@ -88,21 +91,46 @@ const Expenses: React.FC = () =>{
     if (!linkConfirm.expense) return;
     const expense = linkConfirm.expense;
     const ids = getLinkedIds();
-    ids.add(expense._id);
+    const markerId = sourceId || expense._id;
+    if (ids.has(markerId)) {
+      setLinkConfirm({ show: false, expense: null });
+      notifyWarning('This transaction is already linked');
+      return;
+    }
+    ids.add(markerId);
     localStorage.setItem('finflow_linked_ids', JSON.stringify([...ids]));
-    setLinkedIds(new Set([...ids]));
     setLinkConfirm({ show: false, expense: null });
 
-    if (expense.remainingAmount === 0 && expense.paymentStatus !== 'paid') {
-      try {
-        await apiClient.patch(`/expenses/${expense._id}`, { paymentStatus: 'paid' });
-        setExpenses((prev) => prev.filter((exp) => exp._id !== expense._id));
-        notifySuccess('Expense linked and marked as paid');
-      } catch {
-        notifySuccess('Expense linked successfully');
-      }
-    } else {
+    if (linkAmount <= 0) {
       notifySuccess('Expense linked successfully');
+      return;
+    }
+
+    const currencyCfg = getCurrencyConfig();
+    const targetCurrency = String(expense.currency || currencyCfg.defaultCurrency).toUpperCase() === 'USD' ? 'USD' : 'RWF';
+    const amountToApply = Math.max(
+      0,
+      convertCurrencyAmount(linkAmount, linkCurrency, targetCurrency, currencyCfg.exchangeRateUSD)
+    );
+    const total = Math.max(0, Number(expense.amount || 0));
+    const currentPaid = Math.max(0, Number(expense.amountPaid || 0));
+    const nextPaid = Math.min(total, currentPaid + amountToApply);
+
+    if (nextPaid <= currentPaid) {
+      notifySuccess('Expense linked successfully');
+      return;
+    }
+
+    try {
+      await apiClient.put(`/expenses/${expense._id}`, {
+        amountPaid: nextPaid,
+        paymentStatus: nextPaid >= total ? 'paid' : 'pending',
+      });
+      await fetchExpenses();
+      const remaining = Math.max(0, total - nextPaid);
+      notifySuccess(`Expense linked and updated. Remaining balance: ${formatCompanyMoney(remaining, targetCurrency)}`);
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Expense linked, but failed to apply amount'));
     }
   };
 
@@ -348,19 +376,16 @@ const Expenses: React.FC = () =>{
         <div className="md:hidden space-y-4">
           {[...displayedExpenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) => {
             const isHighlightedCard = expense._id === highlightId;
-            const isLinkedCard = linkedIds.has(expense._id);
-            const isClickableCard = !!urlStatusFilter && !isLinkedCard;
+            const isClickableCard = !!urlStatusFilter;
             return (
             <div
               key={expense._id}
               className={`rounded-lg shadow p-4 ${
-                isLinkedCard
-                  ? 'bg-green-50'
-                  : isHighlightedCard
-                    ? 'bg-yellow-50 ring-2 ring-yellow-400 cursor-pointer'
-                    : isClickableCard
-                      ? 'bg-white cursor-pointer hover:bg-blue-50 transition-colors'
-                      : 'bg-white'
+                isHighlightedCard
+                  ? 'bg-yellow-50 ring-2 ring-yellow-400 cursor-pointer'
+                  : isClickableCard
+                    ? 'bg-white cursor-pointer hover:bg-blue-50 transition-colors'
+                    : 'bg-white'
               }`}
               onClick={isClickableCard ? () => setLinkConfirm({ show: true, expense }) : undefined}
             >
@@ -411,14 +436,6 @@ const Expenses: React.FC = () =>{
                     <FaFileAlt className="text-sm" />
                   </button>
                 )}
-                <Link
-                  to={`/expenses/${expense._id}`}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
-                  title="View Expense"
-                  aria-label="View expense details"
-                >
-                  <FaEye className="text-sm" />
-                </Link>
                 {isAdmin && (
                   <button
                     onClick={(e) =>{
@@ -457,20 +474,17 @@ const Expenses: React.FC = () =>{
             <tbody className="bg-white divide-y divide-gray-200">
               {[...displayedExpenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) =>{
                 const isHighlighted = expense._id === highlightId;
-                const isLinked = linkedIds.has(expense._id);
-                const isClickable = !!urlStatusFilter && !isLinked;
+                const isClickable = !!urlStatusFilter;
                 return (
                 <tr
                   key={expense._id}
                   ref={isHighlighted ? highlightRef : undefined}
                   className={`transition-colors ${
-                    isLinked
-                      ? 'bg-green-50'
-                      : isHighlighted
-                        ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
-                        : isClickable
-                          ? 'hover:bg-blue-50 cursor-pointer'
-                          : 'hover:bg-gray-50'
+                    isHighlighted
+                      ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
+                      : isClickable
+                        ? 'hover:bg-blue-50 cursor-pointer'
+                        : 'hover:bg-gray-50'
                   }`}
                   onClick={isClickable ? () => setLinkConfirm({ show: true, expense }) : undefined}
                 >
@@ -510,14 +524,6 @@ const Expenses: React.FC = () =>{
                         <FaFileAlt className="text-sm" />
                       </button>
                     )}
-                    <Link
-                      to={`/expenses/${expense._id}`}
-                      className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-indigo-600 transition hover:bg-indigo-50 hover:text-indigo-800"
-                      title="View Expense"
-                      aria-label="View expense details"
-                    >
-                      <FaEye className="text-sm" />
-                    </Link>
                     {isAdmin && (
                       <button
                         onClick={(e) =>{ e.stopPropagation(); setDeleteConfirm({ show: true, expenseId: expense._id }); }}

@@ -132,10 +132,24 @@ const Transactions: React.FC = () => {
 
   /** Navigate to the filtered list page and highlight the specific item */
   const handleLinkClick = (tx: Transaction) => {
+    if (linkedIds.has(tx._id)) {
+      notifyInfo('This transaction is already linked');
+      return;
+    }
+
+    const params = new URLSearchParams({
+      highlight: tx._id,
+      sourceId: tx._id,
+      linkAmount: String(Number(tx.amount) || 0),
+      linkCurrency: tx.currency || 'RWF',
+    });
+
     if (tx.type === 'income') {
-      navigate(`/invoices?status=sent,overdue&highlight=${tx._id}`);
+      params.set('status', 'sent,overdue');
+      navigate(`/invoices?${params.toString()}`);
     } else {
-      navigate(`/expenses?status=pending&highlight=${tx._id}`);
+      params.set('status', 'pending');
+      navigate(`/expenses?${params.toString()}`);
     }
   };
 
@@ -200,17 +214,16 @@ const Transactions: React.FC = () => {
               <EmptyDocumentState
                 title="No transactions found"
                 subtitle={hasFilters ? 'Try changing or clearing filters.' : 'No transactions yet.'}
-                buttonLabel={hasFilters ? 'Clear Filters' : '+ Create Invoice'}
+                buttonLabel="Clear Filters"
                 variant="compact"
+                hideAction={!hasFilters}
                 onAction={() => {
                   if (hasFilters) {
                     setSearchQuery('');
                     setStartDate('');
                     setEndDate('');
                     setActiveTab('bank');
-                    return;
                   }
-                  navigate('/invoices');
                 }}
               />
             </div>
@@ -228,7 +241,7 @@ const Transactions: React.FC = () => {
                           <p className="mt-0.5 font-semibold text-gray-900 dark:text-gray-100 truncate">{tx.name}</p>
                           <TypeBadge type={tx.type} />
                         </div>
-                        {isLinked && tx.status === 'paid' ? (
+                        {isLinked ? (
                           <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium shrink-0 mt-1">
                             <Link2 size={12} /> Linked
                           </span>
@@ -286,7 +299,7 @@ const Transactions: React.FC = () => {
                             {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : '—'}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {isLinked && tx.status === 'paid' ? (
+                            {isLinked ? (
                               <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
                                 <Link2 size={12} /> Linked
                               </span>

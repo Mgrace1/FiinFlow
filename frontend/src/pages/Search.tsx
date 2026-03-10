@@ -290,7 +290,7 @@ const SearchPage: React.FC = () => {
               </div>
               <div className="divide-y divide-gray-100">
                 {expenseResults.map((expense) => (
-                  <Link key={expense._id} to={`/expenses/${expense._id}`} className="block px-4 py-3 hover:bg-gray-50">
+                  <Link key={expense._id} to="/expenses" className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{expense.supplier || 'Unnamed supplier'}</p>
                     <p className="text-sm text-gray-500">
                       {expense.category || 'Uncategorized'} • {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} • {expense.date ? formatDateDMY(expense.date) : 'No date'}

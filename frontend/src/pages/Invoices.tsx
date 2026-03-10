@@ -8,7 +8,7 @@ import EmptyDocumentState from '../components/common/EmptyDocumentState';
 import { formatDateDMY } from '../utils/formatDate';
 import { FaTimes, FaPlus, FaTrash, FaEye, FaPen } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../utils/toast';
-import { type AppCurrency, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
+import { type AppCurrency, convertCurrencyAmount, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
 import { getUserRole } from '../utils/roleUtils';
 
 interface Invoice {
@@ -93,6 +93,10 @@ const Invoices: React.FC = () => {
   const [searchParams] = useSearchParams();
   const urlStatusFilter = searchParams.get('status'); // e.g. "sent,overdue"
   const highlightId = searchParams.get('highlight');
+  const sourceId = searchParams.get('sourceId');
+  const linkAmountParam = Number(searchParams.get('linkAmount') || 0);
+  const linkAmount = Number.isFinite(linkAmountParam) ? Math.max(0, linkAmountParam) : 0;
+  const linkCurrency = String(searchParams.get('linkCurrency') || 'RWF').toUpperCase();
   const companyConfig = getCurrencyConfig();
   const role = getUserRole();
   const isAdmin = role === 'admin' || role === 'super_admin';
@@ -102,7 +106,6 @@ const Invoices: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
-  const [linkedIds, setLinkedIds] = useState<Set<string>>(getLinkedIds);
   const [linkConfirm, setLinkConfirm] = useState<{ show: boolean; invoice: Invoice | null }>({ show: false, invoice: null });
   const highlightRef = useRef<HTMLTableRowElement>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; invoiceId: string | null }>({
@@ -150,22 +153,43 @@ const Invoices: React.FC = () => {
     if (!linkConfirm.invoice) return;
     const invoice = linkConfirm.invoice;
     const ids = getLinkedIds();
-    ids.add(invoice._id);
+    const markerId = sourceId || invoice._id;
+    if (ids.has(markerId)) {
+      setLinkConfirm({ show: false, invoice: null });
+      notifyWarning('This transaction is already linked');
+      return;
+    }
+    ids.add(markerId);
     localStorage.setItem('finflow_linked_ids', JSON.stringify([...ids]));
-    setLinkedIds(new Set([...ids]));
     setLinkConfirm({ show: false, invoice: null });
 
-    const remaining = Math.max(0, invoice.remainingAmount ?? (invoice.totalAmount - (invoice.amountPaid ?? 0)));
-    if (remaining === 0 && invoice.status !== 'paid') {
-      try {
-        await apiClient.patch(`/invoices/${invoice._id}/status`, { status: 'paid' });
-        setInvoices((prev) => prev.filter((inv) => inv._id !== invoice._id));
-        notifySuccess('Invoice linked and marked as paid');
-      } catch {
-        notifySuccess('Invoice linked successfully');
-      }
-    } else {
+    if (linkAmount <= 0) {
       notifySuccess('Invoice linked successfully');
+      return;
+    }
+
+    const currencyCfg = getCurrencyConfig();
+    const targetCurrency = String(invoice.currency || currencyCfg.defaultCurrency).toUpperCase() === 'USD' ? 'USD' : 'RWF';
+    const amountToApply = Math.max(
+      0,
+      convertCurrencyAmount(linkAmount, linkCurrency, targetCurrency, currencyCfg.exchangeRateUSD)
+    );
+    const invoiceTotal = Math.max(0, Number(invoice.totalAmount || invoice.amount || 0));
+    const currentPaid = Math.max(0, Number(invoice.amountPaid || 0));
+    const nextPaid = Math.min(invoiceTotal, currentPaid + amountToApply);
+
+    if (nextPaid <= currentPaid) {
+      notifySuccess('Invoice linked successfully');
+      return;
+    }
+
+    try {
+      await apiClient.put(`/invoices/${invoice._id}`, { amountPaid: nextPaid });
+      await fetchInvoices();
+      const remaining = Math.max(0, invoiceTotal - nextPaid);
+      notifySuccess(`Invoice linked and updated. Remaining balance: ${formatCompanyMoney(remaining, targetCurrency)}`);
+    } catch (error) {
+      notifyError(getErrorMessage(error, 'Invoice linked, but failed to apply amount'));
     }
   };
 
@@ -529,20 +553,17 @@ const Invoices: React.FC = () => {
                 {displayedInvoices.map((invoice) => {
                   const effectiveStatus = getEffectiveStatus(invoice);
                   const isHighlighted = invoice._id === highlightId;
-                  const isLinked = linkedIds.has(invoice._id);
-                  const isClickable = !!urlStatusFilter && !isLinked;
+                  const isClickable = !!urlStatusFilter;
                   return (
                   <tr
                     key={invoice._id}
                     ref={isHighlighted ? highlightRef : undefined}
                     className={`align-middle transition-colors ${
-                      isLinked
-                        ? 'bg-green-50'
-                        : isHighlighted
-                          ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
-                          : isClickable
-                            ? 'hover:bg-blue-50 cursor-pointer'
-                            : 'hover:bg-gray-50'
+                      isHighlighted
+                        ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
+                        : isClickable
+                          ? 'hover:bg-blue-50 cursor-pointer'
+                          : 'hover:bg-gray-50'
                     }`}
                     onClick={isClickable ? () => setLinkConfirm({ show: true, invoice }) : undefined}
                   >

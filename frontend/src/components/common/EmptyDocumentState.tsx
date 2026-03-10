@@ -6,6 +6,7 @@ interface EmptyDocumentStateProps {
   buttonLabel: string;
   onAction: () => void;
   variant?: 'default' | 'compact';
+  hideAction?: boolean;
 }
 
 const EmptyDocumentState: React.FC<EmptyDocumentStateProps> = ({
@@ -14,6 +15,7 @@ const EmptyDocumentState: React.FC<EmptyDocumentStateProps> = ({
   buttonLabel,
   onAction,
   variant = 'default',
+  hideAction = false,
 }) => {
   const isCompact = variant === 'compact';
 
@@ -43,9 +45,11 @@ const EmptyDocumentState: React.FC<EmptyDocumentStateProps> = ({
 
       <h3 className={`${isCompact ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-bold text-gray-900`}>{title}</h3>
       <p className={`max-w-md text-sm text-gray-500 ${isCompact ? 'mt-1.5' : 'mt-2'}`}>{subtitle}</p>
-      <button onClick={onAction} className={`btn btn-primary ${isCompact ? 'mt-5' : 'mt-6'}`}>
-        {buttonLabel}
-      </button>
+      {!hideAction && (
+        <button onClick={onAction} className={`btn btn-primary ${isCompact ? 'mt-5' : 'mt-6'}`}>
+          {buttonLabel}
+        </button>
+      )}
     </div>
   );
 };

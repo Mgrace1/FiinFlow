@@ -108,6 +108,7 @@ const InvoiceDetail: React.FC = () =>{
     receivedBy: '',
   });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentReceiptUploadedForCurrentPayment, setPaymentReceiptUploadedForCurrentPayment] = useState(false);
 
   // Confirm modals
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; fileId: string | null }>({
@@ -162,6 +163,9 @@ const InvoiceDetail: React.FC = () =>{
       });
 
       await fetchInvoice(); // Refresh invoice data
+      if (type === 'payment_receipt' && showPaymentModal) {
+        setPaymentReceiptUploadedForCurrentPayment(true);
+      }
     } catch (error: any) {
       notifyError(getErrorMessage(error, 'Failed to upload file'));
     } finally {
@@ -182,10 +186,8 @@ const InvoiceDetail: React.FC = () =>{
   };
 
   const handleMarkAsPaid = async () =>{
-    // Check if payment_receipt exists
-    const hasReceipt = invoice?.attachments?.some(att =>att.type === 'payment_receipt');
-    if (!hasReceipt) {
-      notifyWarning('Please upload a payment receipt before marking as paid');
+    if (!paymentReceiptUploadedForCurrentPayment) {
+      notifyWarning('Please upload a new payment receipt for this payment');
       return;
     }
 
@@ -215,6 +217,7 @@ const InvoiceDetail: React.FC = () =>{
       window.dispatchEvent(new Event('finflow:notifications:refresh'));
       fetchInvoice();
       setShowPaymentModal(false);
+      setPaymentReceiptUploadedForCurrentPayment(false);
       setPaymentForm((prev) => ({ ...prev, amountToPayNow: '' }));
       notifySuccess('Payment recorded successfully');
     } catch (error: any) {
@@ -540,7 +543,10 @@ const handleSaveEdit = async () =>{
                 )}
                 {availableStatuses.includes('paid') && (
                   <button
-                    onClick={() => setShowPaymentModal(true)}
+                    onClick={() => {
+                      setPaymentReceiptUploadedForCurrentPayment(false);
+                      setShowPaymentModal(true);
+                    }}
                     className="btn btn-primary w-full text-sm py-1.5"
                   >
                     Mark as Paid
@@ -677,9 +683,6 @@ const handleSaveEdit = async () =>{
               </div>
               <div className="border-t border-gray-100 pt-3">
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Payment Receipt</label>
-                {invoice.attachments?.some(a => a.type === 'payment_receipt') && (
-                  <p className="text-xs text-green-600 font-medium mb-2">✓ Previous receipt on file — upload a new one for this payment</p>
-                )}
                 <label className={`cursor-pointer inline-flex items-center gap-2 px-3 py-2 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
                   <input
                     type="file"
@@ -690,11 +693,11 @@ const handleSaveEdit = async () =>{
                   />
                   {uploading ? 'Uploading…' : '+ Upload Receipt'}
                 </label>
-                <p className="mt-1 text-xs text-gray-400">A receipt is required to record payment</p>
+                <p className="mt-1 text-xs text-gray-400">A new receipt is required for every payment record.</p>
               </div>
             </div>
             <div className="flex gap-3 mt-5">
-              <button onClick={() => setShowPaymentModal(false)} className="btn btn-secondary flex-1 text-sm">Cancel</button>
+              <button onClick={() => { setShowPaymentModal(false); setPaymentReceiptUploadedForCurrentPayment(false); }} className="btn btn-secondary flex-1 text-sm">Cancel</button>
               <button onClick={handleMarkAsPaid} className="btn btn-primary flex-1 text-sm">Record Payment</button>
             </div>
           </div>
@@ -736,3 +739,4 @@ const handleSaveEdit = async () =>{
 };
 
 export default InvoiceDetail;
+

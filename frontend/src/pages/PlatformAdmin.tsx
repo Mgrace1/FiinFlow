@@ -4,7 +4,6 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import { FaPen, FaTrash } from 'react-icons/fa';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 import { strongPasswordErrorMessage, validateStrongPassword } from '../utils/password';
-
 interface PlatformCompany {
   _id: string;
   name: string;

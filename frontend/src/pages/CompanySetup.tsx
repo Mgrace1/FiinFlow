@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import { ArrowLeft, Clipboard } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
 
 const CompanySetup: React.FC = () => {
@@ -9,13 +9,6 @@ const CompanySetup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [consentChecked, setConsentChecked] = useState(false);
-  const [credentials, setCredentials] = useState<{
-    companyId: string;
-    companyName: string;
-    loginUrl: string;
-    adminEmail: string;
-    adminTemporaryPassword: string;
-  } | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -47,15 +40,8 @@ const CompanySetup: React.FC = () => {
       const response = await apiClient.post('/companies', formData);
 
       if (response.data.success) {
-        const { companyId, companyName, loginUrl, adminEmail, adminTemporaryPassword } = response.data.data;
-        setCredentials({
-          companyId,
-          companyName,
-          loginUrl,
-          adminEmail,
-          adminTemporaryPassword,
-        });
-        notifySuccess('Company created successfully');
+        notifySuccess('Company created successfully. Check your email for login credentials.');
+        navigate('/login');
       }
     } catch (err: any) {
       const message = getErrorMessage(err, 'Failed to create company');
@@ -65,93 +51,6 @@ const CompanySetup: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      notifySuccess('Copied to clipboard');
-    } catch (clipboardError) {
-      console.error('Clipboard copy failed:', clipboardError);
-      notifyError('Failed to copy to clipboard');
-    }
-  };
-
-  const goToLogin = () => {
-    if (!credentials) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const targetPath = new URL(credentials.loginUrl).pathname || '/login';
-      navigate(targetPath);
-    } catch {
-      navigate('/login');
-    }
-  };
-
-  if (credentials) {
-    return (
-      <div className="min-h-screen bg-gray-50 px-4 py-10">
-        <div className="mx-auto w-full max-w-2xl rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-          <h1 className="text-2xl font-bold text-gray-900">Company Created</h1>
-          <p className="mt-1 text-sm text-gray-500">Save these credentials before continuing.</p>
-
-          <div className="mt-5 space-y-3 text-sm">
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <p className="text-xs font-medium text-gray-500">Company Name</p>
-              <p className="font-semibold text-gray-900">{credentials.companyName}</p>
-            </div>
-
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <div>
-                <p className="text-xs font-medium text-gray-500">Login URL</p>
-                <p className="break-all text-gray-800">{credentials.loginUrl}</p>
-              </div>
-              <button onClick={() => copyToClipboard(credentials.loginUrl)} className="rounded border border-gray-300 bg-white p-2">
-                <Clipboard size={16} />
-              </button>
-            </div>
-
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-              <div>
-                <p className="text-xs font-medium text-gray-500">Admin Email</p>
-                <p className="text-gray-800">{credentials.adminEmail}</p>
-              </div>
-              <button onClick={() => copyToClipboard(credentials.adminEmail)} className="rounded border border-gray-300 bg-white p-2">
-                <Clipboard size={16} />
-              </button>
-            </div>
-
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3">
-              <div>
-                <p className="text-xs font-medium text-amber-700">Temporary Password</p>
-                <p className="font-mono font-semibold text-amber-900">{credentials.adminTemporaryPassword}</p>
-              </div>
-              <button
-                onClick={() => copyToClipboard(credentials.adminTemporaryPassword)}
-                className="rounded border border-amber-300 bg-white p-2"
-              >
-                <Clipboard size={16} />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-            <button onClick={goToLogin} className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700">
-              Go to Login
-            </button>
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-            >
-              Create Another Company
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">

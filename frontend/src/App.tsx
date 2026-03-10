@@ -13,7 +13,6 @@ import ClientDetail from './pages/ClientDetail';
 import Invoices from './pages/Invoices';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Expenses from './pages/Expenses';
-import ExpenseDetail from './pages/ExpenseDetail';
 import Transactions from './pages/Transactions';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
@@ -81,7 +80,7 @@ function AppRoutes() {
         <Route path="invoices" element={<Invoices />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="expenses" element={<Expenses />} />
-        <Route path="expenses/:expenseId" element={<ExpenseDetail />} />
+        <Route path="expenses/:expenseId" element={<Navigate to="/expenses" replace />} />
         <Route path="reports" element={<Reports />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="settings" element={<Settings />} />
