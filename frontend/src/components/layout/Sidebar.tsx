@@ -26,6 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { t } = useLanguage();
   const role = getUserRole();
+  const isAdmin = role === 'admin' || role === 'super_admin';
   const navItems = [
     { name: t('nav.dashboard'), path: '/dashboard', icon: LayoutDashboard },
     { name: t('nav.clients'), path: '/clients', icon: Users },
@@ -33,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, setSidebarOpen }) => {
     { name: t('nav.transactions'), path: '/transactions', icon: ArrowLeftRight },
     { name: t('nav.expenses'), path: '/expenses', icon: Receipt },
     { name: t('nav.reports'), path: '/reports', icon: BarChart3 },
-    { name: t('nav.team'), path: '/team', icon: UserCog },
+    ...(isAdmin ? [{ name: t('nav.team'), path: '/team', icon: UserCog }] : []),
     { name: t('nav.settings'), path: '/settings', icon: Settings },
     ...(role === 'super_admin' ? [{ name: 'Platform Admin', path: '/platform-admin', icon: Shield }] : []),
   ];

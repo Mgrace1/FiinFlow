@@ -26,6 +26,23 @@ export const searchRecords = async (req: AuthRequest, res: Response) => {
       : 8;
 
     const regex = new RegExp(escapeRegex(query), 'i');
+    const statusKey = query.toLowerCase();
+    const invoiceStatusMap: Record<string, string[]> = {
+      pending: ['sent'],
+      sent: ['sent'],
+      overdue: ['overdue'],
+      paid: ['paid'],
+      draft: ['draft'],
+      cancelled: ['cancelled'],
+      canceled: ['cancelled'],
+    };
+    const expenseStatusMap: Record<string, string[]> = {
+      pending: ['pending'],
+      paid: ['paid'],
+      failed: ['failed'],
+    };
+    const invoiceStatusMatch = invoiceStatusMap[statusKey];
+    const expenseStatusMatch = expenseStatusMap[statusKey];
     const companyId = req.companyId;
 
     const [clients, invoices, expenses] = await Promise.all([
@@ -49,6 +66,7 @@ export const searchRecords = async (req: AuthRequest, res: Response) => {
         $or: [
           { invoiceNumber: regex },
           { status: regex },
+          ...(invoiceStatusMatch ? [{ status: { $in: invoiceStatusMatch } }] : []),
           { notes: regex },
           { description: regex },
         ],
@@ -66,6 +84,7 @@ export const searchRecords = async (req: AuthRequest, res: Response) => {
           { category: regex },
           { description: regex },
           { paymentStatus: regex },
+          ...(expenseStatusMatch ? [{ paymentStatus: { $in: expenseStatusMatch } }] : []),
         ],
       })
         .select('_id supplier category description amount currency date paymentStatus createdAt')

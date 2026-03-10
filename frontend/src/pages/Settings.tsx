@@ -62,6 +62,15 @@ interface PaymentIngestionEvent {
   errorMessage?: string;
 }
 
+interface UserProfile {
+  _id?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  status?: string;
+}
+
 const Settings: React.FC = () =>{
   const navigate = useNavigate();
   const { setAuth, companyId: activeCompanyId } = useAuth();
@@ -80,6 +89,7 @@ const Settings: React.FC = () =>{
   const [creatingWorkspace, setCreatingWorkspace] = useState(false);
   const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [workspaceForm, setWorkspaceForm] = useState<WorkspaceFormData>({
     name: '',
     email: '',
@@ -105,6 +115,7 @@ const Settings: React.FC = () =>{
   useEffect(() =>{
     fetchCompany();
     fetchWorkspaces();
+    fetchCurrentUser();
 
     try {
       const rawUser = localStorage.getItem('finflow_user');
@@ -155,6 +166,23 @@ const Settings: React.FC = () =>{
       }
     } catch (error) {
       notifyError(getErrorMessage(error, 'Failed to load workspaces'));
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await apiClient.get('/users/me');
+      if (response.data?.success) {
+        setCurrentUser(response.data.data);
+      }
+    } catch {
+      try {
+        const rawUser = localStorage.getItem('finflow_user');
+        const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+        if (parsedUser) setCurrentUser(parsedUser);
+      } catch {
+        setCurrentUser(null);
+      }
     }
   };
 
@@ -351,7 +379,7 @@ const Settings: React.FC = () =>{
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
-              Company Profile
+              {isAdmin ? 'Company Profile' : 'Profile'}
           </button>
           <button
               onClick={() =>setActiveTab('security')}
@@ -403,7 +431,7 @@ const Settings: React.FC = () =>{
       </div>
 
       <div className="p-4 sm:p-6">
-          {activeTab === 'company' && company && (
+          {activeTab === 'company' && isAdmin && company && (
           <form onSubmit={handleUpdateCompany} className="space-y-4 max-w-2xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -487,6 +515,66 @@ const Settings: React.FC = () =>{
                 Save Changes
             </button>
           </form>
+          )}
+          {activeTab === 'company' && !isAdmin && (
+            <div className="max-w-2xl space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Profile</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">These details reflect your user account.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={currentUser?.name || ''}
+                    readOnly
+                    disabled
+                    className="input bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={currentUser?.email || currentUserEmail}
+                    readOnly
+                    disabled
+                    className="input bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={currentUser?.phone || ''}
+                    readOnly
+                    disabled
+                    className="input bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+                  <input
+                    type="text"
+                    value={currentUser?.role || ''}
+                    readOnly
+                    disabled
+                    className="input bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                  <input
+                    type="text"
+                    value={currentUser?.status || ''}
+                    readOnly
+                    disabled
+                    className="input bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {activeTab === 'security' && (

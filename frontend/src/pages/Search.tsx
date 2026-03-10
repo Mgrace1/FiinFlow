@@ -275,7 +275,7 @@ const SearchPage: React.FC = () => {
                     <p className="font-medium text-gray-900">{invoice.invoiceNumber || `Invoice ${invoice._id}`}</p>
                     <p className="text-sm text-gray-500">
                       {typeof invoice.clientId === 'object' ? invoice.clientId?.name : 'Client unavailable'} •{' '}
-                      {invoice.status || 'unknown'} • Due {invoice.dueDate ? formatDateDMY(invoice.dueDate) : 'N/A'}
+                      {(invoice.status === 'sent' ? 'pending' : invoice.status) || 'unknown'} • Due {invoice.dueDate ? formatDateDMY(invoice.dueDate) : 'N/A'}
                     </p>
                   </Link>
                 ))}
@@ -293,7 +293,7 @@ const SearchPage: React.FC = () => {
                   <Link key={expense._id} to="/expenses" className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{expense.supplier || 'Unnamed supplier'}</p>
                     <p className="text-sm text-gray-500">
-                      {expense.category || 'Uncategorized'} • {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} • {expense.date ? formatDateDMY(expense.date) : 'No date'}
+                      {expense.category || 'Uncategorized'} • {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} • {expense.paymentStatus || 'unknown'} • {expense.date ? formatDateDMY(expense.date) : 'No date'}
                     </p>
                   </Link>
                 ))}
@@ -307,3 +307,4 @@ const SearchPage: React.FC = () => {
 };
 
 export default SearchPage;
+

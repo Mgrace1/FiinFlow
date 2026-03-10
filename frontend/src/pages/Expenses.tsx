@@ -50,6 +50,7 @@ const Expenses: React.FC = () =>{
   const linkAmountParam = Number(searchParams.get('linkAmount') || 0);
   const linkAmount = Number.isFinite(linkAmountParam) ? Math.max(0, linkAmountParam) : 0;
   const linkCurrency = String(searchParams.get('linkCurrency') || 'RWF').toUpperCase();
+  const isLinkingFlow = Boolean(sourceId);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -375,17 +376,14 @@ const Expenses: React.FC = () =>{
         {/* Expenses Cards for mobile */}
         <div className="md:hidden space-y-4">
           {[...displayedExpenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) => {
-            const isHighlightedCard = expense._id === highlightId;
-            const isClickableCard = !!urlStatusFilter;
+            const isClickableCard = isLinkingFlow;
             return (
             <div
               key={expense._id}
               className={`rounded-lg shadow p-4 ${
-                isHighlightedCard
-                  ? 'bg-yellow-50 ring-2 ring-yellow-400 cursor-pointer'
-                  : isClickableCard
-                    ? 'bg-white cursor-pointer hover:bg-blue-50 transition-colors'
-                    : 'bg-white'
+                isClickableCard
+                  ? 'bg-white cursor-pointer hover:bg-blue-50 transition-colors'
+                  : 'bg-white'
               }`}
               onClick={isClickableCard ? () => setLinkConfirm({ show: true, expense }) : undefined}
             >
@@ -474,17 +472,13 @@ const Expenses: React.FC = () =>{
             <tbody className="bg-white divide-y divide-gray-200">
               {[...displayedExpenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((expense) =>{
                 const isHighlighted = expense._id === highlightId;
-                const isClickable = !!urlStatusFilter;
+                const isClickable = isLinkingFlow;
                 return (
                 <tr
                   key={expense._id}
                   ref={isHighlighted ? highlightRef : undefined}
                   className={`transition-colors ${
-                    isHighlighted
-                      ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
-                      : isClickable
-                        ? 'hover:bg-blue-50 cursor-pointer'
-                        : 'hover:bg-gray-50'
+                    isClickable ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-gray-50'
                   }`}
                   onClick={isClickable ? () => setLinkConfirm({ show: true, expense }) : undefined}
                 >

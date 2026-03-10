@@ -97,6 +97,7 @@ const Invoices: React.FC = () => {
   const linkAmountParam = Number(searchParams.get('linkAmount') || 0);
   const linkAmount = Number.isFinite(linkAmountParam) ? Math.max(0, linkAmountParam) : 0;
   const linkCurrency = String(searchParams.get('linkCurrency') || 'RWF').toUpperCase();
+  const isLinkingFlow = Boolean(sourceId);
   const companyConfig = getCurrencyConfig();
   const role = getUserRole();
   const isAdmin = role === 'admin' || role === 'super_admin';
@@ -537,12 +538,14 @@ const Invoices: React.FC = () => {
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px]">
+            <table className="w-full min-w-[980px]">
               <thead className="bg-gray-50">
                 <tr className="text-xs font-medium text-gray-500 uppercase">
                   <th className="px-4 py-3 text-left">Invoice #</th>
                   <th className="px-4 py-3 text-left">Client</th>
                   <th className="px-4 py-3 text-left">Amount</th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left">Paid</th>
+                  <th className="hidden md:table-cell px-4 py-3 text-left">Remaining</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="hidden md:table-cell px-4 py-3 text-left">Created</th>
                   <th className="px-4 py-3 text-left">Due Date</th>
@@ -553,17 +556,16 @@ const Invoices: React.FC = () => {
                 {displayedInvoices.map((invoice) => {
                   const effectiveStatus = getEffectiveStatus(invoice);
                   const isHighlighted = invoice._id === highlightId;
-                  const isClickable = !!urlStatusFilter;
+                  const isClickable = isLinkingFlow;
+                  const totalAmount = Number(invoice.totalAmount ?? invoice.amount ?? 0);
+                  const paidAmount = Math.max(0, Number(invoice.amountPaid ?? 0));
+                  const remainingAmount = Math.max(0, Number(invoice.remainingAmount ?? (totalAmount - paidAmount)));
                   return (
                   <tr
                     key={invoice._id}
                     ref={isHighlighted ? highlightRef : undefined}
                     className={`align-middle transition-colors ${
-                      isHighlighted
-                        ? 'bg-yellow-50 ring-2 ring-inset ring-yellow-400 cursor-pointer hover:bg-yellow-100'
-                        : isClickable
-                          ? 'hover:bg-blue-50 cursor-pointer'
-                          : 'hover:bg-gray-50'
+                      isClickable ? 'hover:bg-blue-50 cursor-pointer' : 'hover:bg-gray-50'
                     }`}
                     onClick={isClickable ? () => setLinkConfirm({ show: true, invoice }) : undefined}
                   >
@@ -572,7 +574,9 @@ const Invoices: React.FC = () => {
                       <div className="text-xs text-gray-500">{formatInvoiceType(invoice.invoiceType)}</div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900">{invoice.clientId?.name || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(invoice.totalAmount, (invoice as any).currency)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(totalAmount, (invoice as any).currency)}</td>
+                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-900">{formatCurrency(paidAmount, (invoice as any).currency)}</td>
+                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-900">{formatCurrency(remainingAmount, (invoice as any).currency)}</td>
                     <td className="px-4 py-3">
                       <Badge variant={getStatusVariant(effectiveStatus)}>{effectiveStatus}</Badge>
                     </td>
@@ -911,9 +915,6 @@ const Invoices: React.FC = () => {
                       <span className="text-gray-900 font-bold">Total</span>
                       <span className="text-gray-900 font-bold text-lg">{new Intl.NumberFormat('en-RW').format(total)} {formData.currency}</span>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      Payment collection is handled on Invoice Details under "Mark as Paid".
-                    </p>
                   </div>
                 </div>
 

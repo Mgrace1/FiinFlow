@@ -227,9 +227,10 @@ const Dashboard: React.FC = () => {
         getCurrencyConfig().defaultCurrency,
         getCurrencyConfig().exchangeRateUSD
       );
-      if (invoice.status === 'paid') {
+      const normalizedStatus = String(invoice.status || '').toLowerCase();
+      if (normalizedStatus === 'paid') {
         row.collected += amount;
-      } else if (invoice.status === 'draft') {
+      } else if (normalizedStatus === 'draft') {
         row.draft += amount;
       } else {
         row.pending += amount;

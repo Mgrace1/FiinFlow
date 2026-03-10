@@ -318,22 +318,22 @@ const Reports: React.FC = () =>{
   };
 
   return (
-  <div>
-    <div className="flex justify-between items-center mb-8">
-      <h1 className="text-3xl font-bold text-gray-900">Financial Reports</h1>
+  <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 lg:px-6">
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Financial Reports</h1>
         {reportData && (
-        <div className="flex space-x-3">
-          <button onClick={exportToPDF} className="btn btn-success">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full sm:w-auto">
+          <button onClick={exportToPDF} className="btn btn-success w-full sm:w-auto">
                Export PDF
           </button>
-          <button onClick={exportToCSV} className="btn btn-success">
+          <button onClick={exportToCSV} className="btn btn-success w-full sm:w-auto">
                Export CSV
           </button>
         </div>
         )}
     </div>
 
-    <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
       <h2 className="text-xl font-semibold mb-4">Filter Reports</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
@@ -365,19 +365,19 @@ const Reports: React.FC = () =>{
       {reportData && (
       <>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
             <p className="text-2xl font-bold text-success-500">
                 {formatCurrency(reportData.summary.totalRevenue)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">Total Expenses</p>
             <p className="text-2xl font-bold text-danger-500">
                 {formatCurrency(reportData.summary.totalExpenses)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">Net Profit</p>
             <p className="text-2xl font-bold text-primary-500">
                 {formatCurrency(reportData.summary.profit)}
@@ -389,8 +389,8 @@ const Reports: React.FC = () =>{
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Net cashflow trend</h3>
               <span className="text-xs text-gray-500">Collected - Expenses</span>
             </div>
@@ -417,8 +417,8 @@ const Reports: React.FC = () =>{
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-3 flex items-center justify-between">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Top expense categories</h3>
               <span className="text-xs text-gray-500">Highest spend categories</span>
             </div>
@@ -441,7 +441,7 @@ const Reports: React.FC = () =>{
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4">Invoices Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -463,7 +463,7 @@ const Reports: React.FC = () =>{
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4">Expenses Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -488,7 +488,7 @@ const Reports: React.FC = () =>{
           if (!performanceLoading && activeClients.length === 0) return null;
           return (
             <div className="mt-6 bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Client Performance</h3>
                 {!performanceLoading && activeClients.length > 5 && (
                   <button
@@ -542,14 +542,14 @@ const Reports: React.FC = () =>{
       )}
 
       {!reportData && !loading && (
-      <div className="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+      <div className="bg-white rounded-lg shadow p-6 sm:p-12 text-center text-gray-500">
           Select a date range and click "Generate Report" to view financial data
       </div>
       )}
 
     <div className="mt-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">AI-Powered Forecast</h2>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
           <p className="mb-4 text-gray-600">
             Click the button below to generate a 90-day cash flow forecast based on your historical data.
             This feature uses AI to predict future financial trends.
