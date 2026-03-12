@@ -459,7 +459,7 @@ const Dashboard: React.FC = () => {
         </article>
       </section>
 
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.9fr]">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-[1.4fr_0.9fr]">
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.cashflow_trends')}</h2>
@@ -577,7 +577,7 @@ const Dashboard: React.FC = () => {
       </section>
 
       {/* Latest Invoices, Income vs Expenses, Transactions Feed */}
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-slate-900">{t('dashboard.latest_invoices')}</h3>
