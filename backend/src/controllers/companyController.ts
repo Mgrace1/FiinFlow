@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Company, User } from '../models';
 import { generateCompanyToken, AuthRequest } from '../middleware/auth';
 import { sendWelcomeEmail } from '../utils/emailService';
+import { isStrongPassword, strongPasswordError } from '../utils/passwordUtils';
 import { deleteOldLogo } from '../middleware/upload';
 
 /**
@@ -41,14 +42,32 @@ export const deleteCompanyWithDependencies = async (targetCompanyId: string): Pr
  */
 export const createCompany = async (req: Request, res: Response) =>{
   try {
-    const { name, email, address, phone, industry, defaultCurrency, exchangeRateUSD, taxRate } = req.body;
+    const {
+      name,
+      email,
+      address,
+      phone,
+      industry,
+      defaultCurrency,
+      exchangeRateUSD,
+      taxRate,
+      password,
+    } = req.body;
     const normalizedEmail = String(email || '').trim().toLowerCase();
+    const providedPassword = String(password || '').trim();
 
     // Validate required fields
     if (!name || !email || !address || !phone) {
       return res.status(400).json({
         success: false,
         error: 'Please provide all required fields: name, email, address, phone',
+      });
+    }
+
+    if (providedPassword && !isStrongPassword(providedPassword)) {
+      return res.status(400).json({
+        success: false,
+        error: strongPasswordError,
       });
     }
 
@@ -86,8 +105,9 @@ export const createCompany = async (req: Request, res: Response) =>{
       taxRate: taxRate || 18,
     });
 
-    // Generate temporary password for admin
-    const temporaryPassword = generatePassword();
+    const hasProvidedPassword = Boolean(providedPassword);
+    const temporaryPassword = hasProvidedPassword ? undefined : generatePassword();
+    const adminPassword = hasProvidedPassword ? providedPassword : temporaryPassword!;
 
     // Create default admin user with temporary password
     // Password will be automatically hashed by the User model's pre-save hook
@@ -95,7 +115,7 @@ export const createCompany = async (req: Request, res: Response) =>{
       companyId: company._id,
       name: 'Admin',
       email: normalizedEmail,
-      password: temporaryPassword,
+      password: adminPassword,
       role: 'admin',
     });
 
@@ -132,7 +152,7 @@ export const createCompany = async (req: Request, res: Response) =>{
         companyName: company.name,
         loginUrl,
         adminEmail: normalizedEmail,
-        adminTemporaryPassword: temporaryPassword,
+        ...(temporaryPassword ? { adminTemporaryPassword: temporaryPassword } : { passwordSet: true }),
       },
     });
   } catch (error: any) {

@@ -4,6 +4,7 @@ import { apiClient } from '../api/client';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getErrorMessage, notifyError, notifySuccess } from '../utils/toast';
+import { getPasswordRuleKey, validateStrongPassword } from '../utils/password';
 
 const CompanySetup: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ const CompanySetup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [consentChecked, setConsentChecked] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -18,7 +21,10 @@ const CompanySetup: React.FC = () => {
     phone: '',
     address: '',
     industry: '',
+    password: '',
+    confirmPassword: '',
   });
+  const passwordValidation = validateStrongPassword(formData.password);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -35,11 +41,32 @@ const CompanySetup: React.FC = () => {
       return;
     }
 
+    if (!passwordValidation.isValid) {
+      const message = t('password.error_strong');
+      setError(message);
+      notifyError(message);
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      const message = t('company_setup.password_mismatch');
+      setError(message);
+      notifyError(message);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const response = await apiClient.post('/companies', formData);
+      const response = await apiClient.post('/companies', {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        industry: formData.industry,
+        password: formData.password,
+      });
 
       if (response.data.success) {
         notifySuccess(t('company_setup.success_toast'));
@@ -146,6 +173,62 @@ const CompanySetup: React.FC = () => {
                   className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                   placeholder={t('company_setup.address_placeholder')}
                 />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.password_label')}</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    minLength={8}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 pr-16"
+                    placeholder={t('company_setup.password_placeholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    {showPassword ? t('reset_password.hide') : t('reset_password.show')}
+                  </button>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {passwordValidation.rules.map((rule) => (
+                    <p
+                      key={rule.label}
+                      className={`text-xs ${rule.passed ? 'text-emerald-600' : 'text-slate-500'}`}
+                    >
+                      {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{t('company_setup.confirm_label')}</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    minLength={8}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 pr-16"
+                    placeholder={t('company_setup.confirm_placeholder')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  >
+                    {showConfirmPassword ? t('reset_password.hide') : t('reset_password.show')}
+                  </button>
+                </div>
               </div>
             </div>
 

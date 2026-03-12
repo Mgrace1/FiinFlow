@@ -149,7 +149,7 @@ const Landing = () => {
           </div>
 
           <div>
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 feature-card-shadow 2xl:rounded-2xl">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 2xl:rounded-2xl">
               <img
                 src="/landing/finflow-dashboard.png"
                 alt="FinFlow dashboard preview"
@@ -166,7 +166,7 @@ const Landing = () => {
         <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 sm:pb-16 lg:px-8 xl:px-10 2xl:px-12 2xl:pb-20">
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {pillars.map((item) => (
-              <article key={item.title} className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <article key={item.title} className="rounded-2xl border border-slate-100 bg-white p-6">
                 <h3 className="text-lg font-semibold text-slate-900">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
               </article>
@@ -189,7 +189,7 @@ const Landing = () => {
                 key={item.title}
                 to={`/features/${item.slug}`}
                 style={{ transitionDelay: `${index * 80}ms` }}
-                className={`group relative block rounded-3xl border border-slate-100 bg-white p-0 shadow-md transition-transform duration-500 hover:-translate-y-2 ${
+                className={`group relative block rounded-3xl border border-slate-100 bg-white p-0 transition-transform duration-500 hover:-translate-y-2 ${
                   featuresVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
                 }`}
               >
@@ -270,7 +270,7 @@ const Landing = () => {
           </h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 2xl:gap-6">
             {industries.map((item) => (
-              <div key={item.name} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <div key={item.name} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
                 <div className="aspect-[3/2] overflow-hidden bg-slate-100 rounded-t-2xl">
                   <img
                     src={item.image}
@@ -317,7 +317,7 @@ const Landing = () => {
 
         {/* CTA box */}
         <section className="mx-auto w-full max-w-[108rem] px-4 pb-14 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
-          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Ready to simplify your financial operations?</h3>

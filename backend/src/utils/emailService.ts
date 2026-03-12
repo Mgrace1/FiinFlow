@@ -265,12 +265,39 @@ export const sendWelcomeEmail = async (data: {
   companyName: string;
   adminEmail: string;
   loginUrl: string;
-  temporaryPassword: string;
+  temporaryPassword?: string;
 }) =>{
   try {
     const transporter = createTransporter();
 
     const loginUrlHtml = `<a href="${data.loginUrl}" style="color:${DEFAULT_BRAND_COLOR}; text-decoration:none;">${escapeHtml(data.loginUrl)}</a>`;
+    const temporaryPassword = data.temporaryPassword;
+    const hasTemporaryPassword = Boolean(temporaryPassword);
+    const passwordBlock = hasTemporaryPassword
+      ? renderKeyValue(
+        'Temporary Password',
+        `<span style="font-family:monospace; font-size:16px; font-weight:700; color:#7c2d12;">${escapeHtml(temporaryPassword!)}</span>`
+      )
+      : renderKeyValue('Password', 'Your password was set during signup.');
+    const introNote = hasTemporaryPassword
+      ? `<div style="padding:12px 14px; background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; margin-bottom:16px;">
+          <strong>Important:</strong> Save these credentials now. This is the only time you will see the temporary password.
+        </div>`
+      : `<div style="padding:12px 14px; background:#ecfeff; border:1px solid #a5f3fc; border-radius:12px; margin-bottom:16px;">
+          <strong>Good news:</strong> Your admin password was set during signup. You can sign in right away.
+        </div>`;
+    const nextSteps = hasTemporaryPassword
+      ? `<ul style="margin:0; padding-left:18px; color:#374151;">
+          <li>Sign in with the temporary password</li>
+          <li>Change your password</li>
+          <li>Add team members</li>
+          <li>Configure company settings</li>
+        </ul>`
+      : `<ul style="margin:0; padding-left:18px; color:#374151;">
+          <li>Sign in to your workspace</li>
+          <li>Add team members</li>
+          <li>Configure company settings</li>
+        </ul>`;
     const html = renderEmailLayout({
       title: 'Workspace ready',
       subtitle: 'Your FinFlow workspace is ready to use',
@@ -278,20 +305,13 @@ export const sendWelcomeEmail = async (data: {
       bodyHtml: `
         <p style="margin:0 0 12px;">Hi there,</p>
         <p style="margin:0 0 16px;">Your workspace for <strong>${escapeHtml(data.companyName)}</strong> is ready. Use the details below to sign in.</p>
-        <div style="padding:12px 14px; background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; margin-bottom:16px;">
-          <strong>Important:</strong> Save these credentials now. This is the only time you will see the temporary password.
-        </div>
+        ${introNote}
         ${renderKeyValue('Company Workspace', escapeHtml(data.companyName))}
         ${renderKeyValue('Login URL', loginUrlHtml)}
         ${renderKeyValue('Admin Email', escapeHtml(data.adminEmail))}
-        ${renderKeyValue('Temporary Password', `<span style="font-family:monospace; font-size:16px; font-weight:700; color:#7c2d12;">${escapeHtml(data.temporaryPassword)}</span>`)}
+        ${passwordBlock}
         <p style="margin:16px 0 8px; font-weight:600;">Next steps</p>
-        <ul style="margin:0; padding-left:18px; color:#374151;">
-          <li>Sign in with the temporary password</li>
-          <li>Change your password</li>
-          <li>Add team members</li>
-          <li>Configure company settings</li>
-        </ul>
+        ${nextSteps}
         <p style="margin:16px 0 0;">Need help? <a href="mailto:${DEFAULT_SUPPORT_EMAIL}" style="color:${DEFAULT_BRAND_COLOR}; text-decoration:none;">${DEFAULT_SUPPORT_EMAIL}</a></p>
       `,
       ctaLabel: 'Login to your workspace',
@@ -304,7 +324,9 @@ export const sendWelcomeEmail = async (data: {
       to: data.adminEmail,
       subject: 'Your FinFlow Workspace Is Ready',
       html,
-      text: `Your FinFlow workspace for ${data.companyName} is ready.\n\nLogin URL: ${data.loginUrl}\nAdmin Email: ${data.adminEmail}\nTemporary Password: ${data.temporaryPassword}\n\nImportant: Save these credentials now. This is the only time you will see the temporary password.`,
+      text: hasTemporaryPassword
+        ? `Your FinFlow workspace for ${data.companyName} is ready.\n\nLogin URL: ${data.loginUrl}\nAdmin Email: ${data.adminEmail}\nTemporary Password: ${data.temporaryPassword}\n\nImportant: Save these credentials now. This is the only time you will see the temporary password.`
+        : `Your FinFlow workspace for ${data.companyName} is ready.\n\nLogin URL: ${data.loginUrl}\nAdmin Email: ${data.adminEmail}\nPassword: Set during signup.\n\nYou can sign in right away.`,
     };
 
     const info = await transporter.sendMail(mailOptions);

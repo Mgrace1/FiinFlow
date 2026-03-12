@@ -1,24 +1,16 @@
-# FinFlow
+# FiinFlow
 
-FinFlow is a full‑stack financial management system for small and Medium Enterpises(SMEs). It covers invoicing, expenses, client management, reporting, and forecasting, with a web UI and a REST API.
+FiinFlow is a full-stack financial management system for small and medium enterprises (SMEs). It covers invoicing, expenses, client management, reporting, and forecasting, with a web UI and a REST API.
 
 This repo contains three services:
 - `frontend/`: React + Vite web app.
 - `backend/`: Express + TypeScript REST API.
-- `backend/forecasting_service/`: Python Flask service for cash‑flow forecasting.
+- `backend/forecasting_service/`: Python Flask service for cash-flow forecasting.
 
+## Live Links
 
-# LIVE LINKS
-
-
-  GITHUB REPO
-- [https://github.com/Mgrace1/FinFlow.git]() Remote repository
-
-FIGMA LINK
-
--https://www.figma.com/design/YxZRrdptNzkIIRlJMqRqZa/FinFlow?node-id=0-1&t=S3WiNSNfm4cj1XiU-1 Figma link
-  
-  
+- GitHub repo: `https://github.com/Mgrace1/FinFlow.git`
+- Figma file: `https://www.figma.com/design/YxZRrdptNzkIIRlJMqRqZa/FinFlow?node-id=0-1&t=S3WiNSNfm4cj1XiU-1`
 
 ## Tech Stack
 
@@ -41,20 +33,19 @@ Backend
 
 Forecasting service
 - Python + Flask
-- Prophet (time‑series forecasting)
+- Prophet (time-series forecasting)
 - Pandas + PyMongo
 
 ## Features
 
-- Company workspaces and role‑based access (admin, finance_manager, staff)
+- Company workspaces and role-based access (super_admin, admin, finance_manager, staff)
 - Clients, invoices, and expenses tracking
 - File uploads and attachments
 - Email notifications (welcome, invites, password reset, invoice updates)
 - AI receipt parsing (Gemini)
-- Forecasting (90‑day cash‑flow projection)
+- Forecasting (90-day cash-flow projection)
 - Dashboard analytics and reporting
 - Swagger API docs at `http://localhost:5000/api/docs`
-
 
 ## Environment Setup
 
@@ -72,7 +63,7 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@example.com
 EMAIL_PASS=your-email-password-or-app-password
-EMAIL_FROM="FinFlow Support" <noreply@finflow.com>
+EMAIL_FROM="FiinFlow Support" <noreply@finflow.com>
 
 # Frontend base URL for links in emails
 FRONTEND_URL=http://localhost:5173
@@ -83,6 +74,13 @@ KPAY_API_KEY=your-kpay-api-key
 KPAY_USERNAME=your-kpay-username
 KPAY_PASSWORD=your-kpay-password
 KPAY_RETAILER_ID=your-kpay-retailer-id
+
+# Super admin bootstrap (required when running create:super-admin)
+SUPER_ADMIN_EMAIL=superadmin@example.com
+SUPER_ADMIN_PASSWORD=StrongPassword123!
+SUPER_ADMIN_NAME=Platform Super Admin
+# Optional: use an existing company id; otherwise the earliest company is used
+SUPER_ADMIN_COMPANY_ID=YOUR_COMPANY_OBJECT_ID
 
 # Forecasting service (optional override)
 FORECASTING_SERVICE_URL=http://localhost:5001
@@ -107,13 +105,14 @@ PORT=5001
 
 ## Install & Run (Local)
 
+1. Backend API
 ```bash
 cd backend
 npm install
 npm run dev
 ```
 
-3. Forecasting service (optional but required for `/api/forecasting`)
+2. Forecasting service (optional but required for `/api/forecasting`)
 
 ```bash
 cd backend/forecasting_service
@@ -123,7 +122,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-4. Frontend
+3. Frontend
 
 ```bash
 cd frontend
@@ -136,6 +135,15 @@ App URLs:
 - Backend: `http://localhost:5000/api`
 - Swagger: `http://localhost:5000/api/docs`
 - Forecasting: `http://localhost:5001/health`
+
+## Scripts
+
+Create a super admin user (requires `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD` in `backend/.env`):
+
+```bash
+cd backend
+npm run create:super-admin
+```
 
 ## Seed Dashboard Data
 
