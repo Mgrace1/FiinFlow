@@ -409,7 +409,7 @@ const Expenses: React.FC = () =>{
                 {expense.remainingAmount > 0 && (
                   <div>
                     <p className="text-gray-500">{t('expenses.mobile.due_date')}</p>
-                    <p className="font-bold">{formatDateDMY(expense.dueDate)}</p>
+                  <p className="font-bold">{formatDateDMY(expense.dueDate || expense.createdAt)}</p>
                   </div>
                 )}
               </div>
@@ -498,7 +498,7 @@ const Expenses: React.FC = () =>{
                       {formatCompanyMoney(expense.remainingAmount, expense.currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {expense.remainingAmount > 0 ? formatDateDMY(expense.dueDate) : t('common.na')}
+                      {formatDateDMY(expense.dueDate || expense.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <Badge variant={getStatusVariant(expense.paymentStatus)}>{expense.paymentStatus}</Badge>

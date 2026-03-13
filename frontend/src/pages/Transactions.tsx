@@ -72,16 +72,20 @@ const Transactions: React.FC = () => {
       ]);
       const expenses: Transaction[] = expensesRes.data.success
         ? expensesRes.data.data.map((exp: any) => ({
-            _id: exp._id, type: 'expense' as const,
-            amount: exp.amount, date: exp.date, createdAt: exp.createdAt,
+            _id: exp._id,
+            type: 'expense' as const,
+            amount: exp.amount,
+            date: exp.date || exp.dueDate || exp.createdAt,
+            createdAt: exp.createdAt || exp.date || exp.dueDate,
             name: exp.supplier || exp.description || t('transactions.fallback_expense'),
-            currency: exp.currency, status: exp.paymentStatus,
+            currency: exp.currency,
+            status: exp.paymentStatus,
           }))
         : [];
       const invoices: Transaction[] = invoicesRes.data.success
         ? invoicesRes.data.data.map((inv: any) => ({
             _id: inv._id, type: 'income' as const,
-            amount: inv.totalAmount, date: inv.createdAt, createdAt: inv.createdAt,
+            amount: inv.totalAmount, date: inv.createdAt || inv.dueDate, createdAt: inv.createdAt || inv.dueDate,
             name: inv.clientId?.name || inv.clientName || t('transactions.fallback_client'),
             currency: inv.currency, status: inv.status,
           }))
@@ -266,13 +270,13 @@ const Transactions: React.FC = () => {
                         <div className="rounded-md bg-gray-50 dark:bg-gray-800 px-3 py-2">
                           <p className="text-xs text-gray-500 dark:text-gray-400">{t('transactions.spent')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
+                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : '-'}
                           </p>
                         </div>
                         <div className="rounded-md bg-gray-50 dark:bg-gray-800 px-3 py-2">
                           <p className="text-xs text-gray-500 dark:text-gray-400">{t('transactions.received')}</p>
                           <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
+                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : '-'}
                           </p>
                         </div>
                       </div>
@@ -313,10 +317,10 @@ const Transactions: React.FC = () => {
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 max-w-[200px] truncate">{tx.name}</td>
                           <td className="px-4 py-3"><TypeBadge type={tx.type} /></td>
                           <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
-                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
+                            {tx.type === 'expense' ? formatMoney(tx.amount, tx.currency) : '-'}
                           </td>
                           <td className="px-4 py-3 text-right text-gray-900 dark:text-gray-100 font-medium whitespace-nowrap">
-                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : t('common.na')}
+                            {tx.type === 'income' ? formatMoney(tx.amount, tx.currency) : '-'}
                           </td>
                           <td className="px-4 py-3 text-right">
                             {isLinked ? (

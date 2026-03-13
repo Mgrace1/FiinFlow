@@ -517,9 +517,11 @@ const Invoices: React.FC = () => {
   const allowedStatuses = urlStatusFilter
     ? urlStatusFilter.split(',').map((s) => s.trim().toLowerCase())
     : null;
-  const displayedInvoices = allowedStatuses
-    ? invoices.filter((inv) => allowedStatuses.includes(getEffectiveStatus(inv).toLowerCase()))
-    : invoices;
+  const displayedInvoices = (
+    allowedStatuses
+      ? invoices.filter((inv) => allowedStatuses.includes(getEffectiveStatus(inv).toLowerCase()))
+      : invoices
+  ).slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div>

@@ -663,27 +663,14 @@ export const sendInvoiceSentEmail = async (data: {
     const invoiceTypeKey = String(data.invoiceType || 'standard').trim().toLowerCase();
     const invoiceTypeLabel = invoiceTypeLabels[invoiceTypeKey] || 'Invoice';
     const isUpdated = data.emailMode === 'updated';
-    const brandColor = data.companyBrandColor || DEFAULT_BRAND_COLOR;
     const totalAmount = Number(data.totalAmount ?? data.amount ?? 0);
-    const amountHtml = `<span style=\"font-size:18px; font-weight:700; color:${brandColor};\">${escapeHtml(data.currency)} ${totalAmount.toLocaleString()}</span>`;
-
-    const html = renderEmailLayout({
-      title: isUpdated ? 'Invoice updated' : 'Invoice sent',
-      subtitle: `${invoiceTypeLabel} ${data.invoiceNumber} from ${data.companyName}`,
-      preheader: `${invoiceTypeLabel} ${data.invoiceNumber}`,
-      brandColor,
-      logoUrl: data.companyLogoUrl,
-      bodyHtml: `
-        <p style="margin:0 0 12px;">Dear ${escapeHtml(data.clientName || 'Client')},</p>
-        <p style="margin:0 0 16px;">${isUpdated ? 'We have updated the invoice below.' : 'Please find your invoice details below.'}</p>
-        ${renderKeyValue('Invoice Number', escapeHtml(data.invoiceNumber))}
-        ${renderKeyValue('Amount', amountHtml)}
-        ${renderKeyValue('Due Date', escapeHtml(data.dueDate))}
-        ${renderKeyValue('From', escapeHtml(data.companyName))}
-        <p style="margin:16px 0 0;">The invoice PDF is attached for your records.</p>
-      `,
-      footerNote: `This email was sent to ${escapeHtml(data.clientEmail)}.`,
-    });
+    const html = `
+      <p>Dear ${escapeHtml(data.clientName || 'Client')},</p>
+      <p>I hope you are doing well.</p>
+      <p>Please find attached the invoice for the requested service/product.</p>
+      <p>Kindly review the attached document and let us know if you require any clarification or additional information.</p>
+      <p>Best regards,</p>
+    `;
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || `"${DEFAULT_BRAND_NAME} Support" <noreply@finflow.com>`,
@@ -693,7 +680,7 @@ export const sendInvoiceSentEmail = async (data: {
         : `New ${invoiceTypeLabel} ${data.invoiceNumber} from ${data.companyName}`,
       attachments: data.pdfAttachment ? [data.pdfAttachment] : [],
       html,
-      text: `${isUpdated ? 'Updated' : 'New'} ${invoiceTypeLabel} ${data.invoiceNumber} from ${data.companyName}.\nAmount: ${data.currency} ${totalAmount.toLocaleString()}\nDue Date: ${data.dueDate}`,
+      text: `Dear ${data.clientName || 'Client'},\n\nI hope you are doing well.\n\nPlease find attached the invoice for the requested service/product.\n\nKindly review the attached document and let us know if you require any clarification or additional information.\n\nBest regards,`,
     };
 
     const info = await transporter.sendMail(mailOptions);

@@ -626,9 +626,9 @@ const handleSaveEdit = async () =>{
       {/* Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+          <div className="bg-white rounded-xl p-5 sm:p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-semibold text-gray-900 mb-4">Confirm Payment Details</h3>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>Total Invoice</span>
@@ -643,43 +643,45 @@ const handleSaveEdit = async () =>{
                   <span className="font-semibold">{numFmt(remainingBalance)} {invoice.currency}</span>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Date</label>
-                <input
-                  type="date"
-                  value={paymentForm.paymentDate}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
-                  className="input text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Amount to Pay Now</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={paymentForm.amountToPayNow}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, amountToPayNow: e.target.value })}
-                  className="input text-sm"
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Method</label>
-                <select value={paymentForm.paymentMethod} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })} className="input text-sm">
-                  <option value="Cash">Cash</option>
-                  <option value="MobileMoney">Mobile Money</option>
-                  <option value="BankTransfer">Bank Transfer</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Reference</label>
-                <input type="text" value={paymentForm.paymentReference} onChange={(e) => setPaymentForm({ ...paymentForm, paymentReference: e.target.value })} className="input text-sm" placeholder="Transaction ID or reference" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Received By</label>
-                <input type="text" value={paymentForm.receivedBy} onChange={(e) => setPaymentForm({ ...paymentForm, receivedBy: e.target.value })} className="input text-sm" placeholder="Name of person who received payment" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Date</label>
+                  <input
+                    type="date"
+                    value={paymentForm.paymentDate}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, paymentDate: e.target.value })}
+                    className="input text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Amount to Pay Now</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paymentForm.amountToPayNow}
+                    onChange={(e) => setPaymentForm({ ...paymentForm, amountToPayNow: e.target.value })}
+                    className="input text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Method</label>
+                  <select value={paymentForm.paymentMethod} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })} className="input text-sm">
+                    <option value="Cash">Cash</option>
+                    <option value="MobileMoney">Mobile Money</option>
+                    <option value="BankTransfer">Bank Transfer</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Payment Reference</label>
+                  <input type="text" value={paymentForm.paymentReference} onChange={(e) => setPaymentForm({ ...paymentForm, paymentReference: e.target.value })} className="input text-sm" placeholder="Transaction ID or reference" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Received By</label>
+                  <input type="text" value={paymentForm.receivedBy} onChange={(e) => setPaymentForm({ ...paymentForm, receivedBy: e.target.value })} className="input text-sm" placeholder="Name of person who received payment" />
+                </div>
               </div>
               <div className="border-t border-gray-100 pt-3">
                 <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Payment Receipt</label>
@@ -696,7 +698,7 @@ const handleSaveEdit = async () =>{
                 <p className="mt-1 text-xs text-gray-400">A new receipt is required for every payment record.</p>
               </div>
             </div>
-            <div className="flex gap-3 mt-5">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 mt-5">
               <button onClick={() => { setShowPaymentModal(false); setPaymentReceiptUploadedForCurrentPayment(false); }} className="btn btn-secondary flex-1 text-sm">Cancel</button>
               <button onClick={handleMarkAsPaid} className="btn btn-primary flex-1 text-sm">Record Payment</button>
             </div>
