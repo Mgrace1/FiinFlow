@@ -48,6 +48,8 @@ export const createUser = async (req: AuthRequest, res: Response) =>{
       password,
       phone,
       role,
+      status: 'active',
+      isActive: true,
     });
 
     // Remove password from response

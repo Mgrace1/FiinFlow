@@ -132,7 +132,13 @@ export const deleteCompanyGlobal = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, error: 'Switch workspace before deleting the current active workspace' });
     }
 
+    const company = await Company.findById(targetCompanyId).select('email');
     await deleteCompanyWithDependencies(targetCompanyId);
+
+    // Ensure any leftover users with the same email are removed to allow reuse in platform admin.
+    if (company?.email) {
+      await User.deleteMany({ email: String(company.email).trim().toLowerCase() });
+    }
     res.json({ success: true, message: 'Company and associated data deleted successfully' });
   } catch (error: any) {
     const status = error?.message === 'Company not found' ? 404 : 500;
@@ -255,10 +261,13 @@ export const deleteUserGlobal = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const user = await User.findByIdAndDelete(req.params.userId);
+    const user = await User.findById(req.params.userId).select('email');
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
+
+    // Hard delete by email to avoid lingering accounts blocking reuse.
+    await User.deleteMany({ email: String(user.email).trim().toLowerCase() });
     res.json({ success: true, message: 'User deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message || 'Failed to delete user' });

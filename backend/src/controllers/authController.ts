@@ -25,6 +25,7 @@ const generateTemporaryPassword = (): string => {
 export const login = async (req: Request, res: Response) =>{
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
     // Validate all required fields
     if (!email) {
@@ -41,44 +42,42 @@ export const login = async (req: Request, res: Response) =>{
       });
     }
 
-    // Find user by email, and explicitly select password, role, and companyId
-    const user = await User.findOne({ email }).select('+password +role +companyId');
-
-    if (!user) {
+    // Find all active users by email and match by password to support multiple workspaces.
+    const users = await User.find({ email: normalizedEmail, isActive: true }).select('+password +role +companyId');
+    if (!users.length) {
       return res.status(400).json({
         success: false,
         error: 'Invalid email or password',
       });
     }
 
-    // Check if user has a password (should always be present)
-    if (!user.password) {
-      return res.status(500).json({
+    let matchedUser: any = null;
+    for (const candidate of users) {
+      if (!candidate.password) continue;
+      const ok = await bcrypt.compare(password, candidate.password);
+      if (ok) {
+        matchedUser = candidate;
+        break;
+      }
+    }
+
+    if (!matchedUser) {
+      return res.status(400).json({
         success: false,
-        error: 'User account is misconfigured. Please contact support.',
+        error: 'Invalid email or password',
       });
     }
 
     // Check if user has role and companyId
-    if (!user.role || !user.companyId) {
+    if (!matchedUser.role || !matchedUser.companyId) {
       return res.status(500).json({
         success: false,
         error: 'User account is misconfigured. Missing role or company information.',
       });
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid email or password',
-      });
-    }
-
     // Get company details
-    const company = await require('../models').Company.findById(user.companyId);
+    const company = await require('../models').Company.findById(matchedUser.companyId);
 
     // Generate JWT token - validate JWT_SECRET exists
     if (!process.env.JWT_SECRET) {
@@ -91,10 +90,10 @@ export const login = async (req: Request, res: Response) =>{
 
     const token = jwt.sign(
       {
-        userId: user._id,
-        companyId: user.companyId,
-        email: user.email,
-        role: user.role,
+        userId: matchedUser._id,
+        companyId: matchedUser.companyId,
+        email: matchedUser.email,
+        role: matchedUser.role,
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
@@ -106,11 +105,11 @@ export const login = async (req: Request, res: Response) =>{
       data: {
         token,
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          companyId: user.companyId,
+          id: matchedUser._id,
+          name: matchedUser.name,
+          email: matchedUser.email,
+          role: matchedUser.role,
+          companyId: matchedUser.companyId,
         },
         company: {
           id: company?._id,
