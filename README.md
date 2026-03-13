@@ -28,8 +28,6 @@ Backend
 - Nodemailer (SMTP email)
 - Multer (file uploads)
 - Cron jobs (overdue invoices)
-- Gemini AI (receipt extraction)
-- KPay integration
 
 Forecasting service
 - Python + Flask
@@ -42,7 +40,6 @@ Forecasting service
 - Clients, invoices, and expenses tracking
 - File uploads and attachments
 - Email notifications (welcome, invites, password reset, invoice updates)
-- AI receipt parsing (Gemini)
 - Forecasting (90-day cash-flow projection)
 - Dashboard analytics and reporting
 - Swagger API docs at `http://localhost:5000/api/docs`
@@ -67,13 +64,6 @@ EMAIL_FROM="FiinFlow Support" <noreply@finflow.com>
 
 # Frontend base URL for links in emails
 FRONTEND_URL=http://localhost:5173
-
-# Optional integrations
-GEMINI_API_KEY=your-gemini-api-key
-KPAY_API_KEY=your-kpay-api-key
-KPAY_USERNAME=your-kpay-username
-KPAY_PASSWORD=your-kpay-password
-KPAY_RETAILER_ID=your-kpay-retailer-id
 
 # Super admin bootstrap (required when running create:super-admin)
 SUPER_ADMIN_EMAIL=superadmin@example.com

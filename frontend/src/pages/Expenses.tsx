@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../api/client';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import ConfirmModal from '../components/common/ConfirmModal';
 import LoadingOverlay from '../components/common/LoadingOverlay';
 import EmptyDocumentState from '../components/common/EmptyDocumentState';
@@ -45,7 +45,6 @@ const Expenses: React.FC = () =>{
   const role = getUserRole();
   const isAdmin = role === 'admin' || role === 'super_admin';
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const urlStatusFilter = searchParams.get('status');
   const highlightId = searchParams.get('highlight');
   const sourceId = searchParams.get('sourceId');
