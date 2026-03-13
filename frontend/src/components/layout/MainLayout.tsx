@@ -12,12 +12,12 @@ const MainLayout: React.FC = () => {
         isSidebarOpen={isSidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Topbar
           isSidebarOpen={isSidebarOpen}
           setSidebarOpen={setSidebarOpen}
         />
-        <main className="flex-1 overflow-y-auto bg-white dark:bg-gray-950 p-4 sm:p-6">
+        <main className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-gray-950 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

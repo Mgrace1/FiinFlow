@@ -346,12 +346,7 @@ const Expenses: React.FC = () =>{
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">{t('expenses.title')}</h1>
-        {allowedStatuses && (
-          <p className="text-sm text-gray-500 mt-1">
-            {t('expenses.filtered_showing')} <span className="font-medium">{allowedStatuses.join(', ')}</span> {t('expenses.title').toLowerCase()}
-            <button onClick={() => navigate('/expenses')} className="ml-2 text-blue-600 hover:underline text-xs">{t('expenses.clear_filter')}</button>
-          </p>
-        )}
+        
       </div>
       {expenses.length > 0 && (
         <div className="flex flex-nowrap gap-3 w-full md:w-auto">

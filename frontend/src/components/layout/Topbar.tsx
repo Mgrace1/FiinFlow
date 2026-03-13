@@ -250,25 +250,25 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
 
   return (
     <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 md:px-6 py-3 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-4 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             className="md:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu size={24} />
           </button>
-          <div className="hidden sm:block">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+          <div className="hidden sm:block min-w-0">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
               {t('topbar.welcome')}{userName ? `, ${userName}` : ''}!
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {companyName ? `${t('topbar.managing')} ${companyName}` : t('topbar.default_subtitle')}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           <form onSubmit={handleSearch} className="hidden sm:block w-56 md:w-64 lg:w-72">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />

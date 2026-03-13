@@ -526,12 +526,7 @@ const Invoices: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{t('invoices.title')}</h1>
-          {allowedStatuses && (
-            <p className="text-sm text-gray-500 mt-1">
-              {t('common.filtered_showing')} <span className="font-medium">{allowedStatuses.join(', ')}</span> {t('invoices.title').toLowerCase()}
-              <button onClick={() => navigate('/invoices')} className="ml-2 text-blue-600 hover:underline text-xs">{t('common.clear_filter')}</button>
-            </p>
-          )}
+          
         </div>
         {invoices.length > 0 && (
           <button onClick={() => openModal()} className="btn btn-primary w-full md:w-auto">

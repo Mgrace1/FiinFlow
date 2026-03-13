@@ -322,8 +322,8 @@ const TeamMembers: React.FC = () =>{
         ))}
     </div>
 
-    <div className="hidden md:block bg-white rounded-lg shadow">
-      <table className="w-full divide-y divide-gray-200 table-fixed">
+    <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
+      <table className="w-full min-w-[860px] divide-y divide-gray-200 table-fixed">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 uppercase w-[18%]">{t('team.table_name')}</th>
