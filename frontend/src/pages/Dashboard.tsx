@@ -119,6 +119,8 @@ const formatMoney = (amount: number, currency = 'RWF') => {
   return formatCompanyMoney(amount, currency, getCurrencyConfig());
 };
 
+const formatCompactTitle = (amount: number) => formatMoney(amount);
+
 const formatPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
 
 // Custom Tooltip for charts
@@ -402,7 +404,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-500">{t('dashboard.income')}</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.totalRevenue)}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900" title={formatCompactTitle(stats.totalRevenue)}>
+                {formatCompactMoney(stats.totalRevenue)}
+              </p>
             </div>
             <span className="rounded-full bg-emerald-100 p-2 text-emerald-600">
               <TrendingUp className="h-5 w-5" />
@@ -418,7 +422,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-500">{t('dashboard.expenses')}</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.totalExpenses)}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900" title={formatCompactTitle(stats.totalExpenses)}>
+                {formatCompactMoney(stats.totalExpenses)}
+              </p>
             </div>
             <span className="rounded-full bg-rose-100 p-2 text-rose-600">
               <TrendingDown className="h-5 w-5" />
@@ -434,7 +440,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-500">{t('dashboard.pending_amount')}</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.pendingAmount)}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900" title={formatCompactTitle(stats.pendingAmount)}>
+                {formatCompactMoney(stats.pendingAmount)}
+              </p>
             </div>
             <span className="rounded-full bg-amber-100 p-2 text-amber-600">
               <Clock3 className="h-5 w-5" />
@@ -447,7 +455,9 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-500">{t('dashboard.profit')}</p>
-              <p className="mt-1 text-2xl font-bold text-slate-900">{formatCompactMoney(stats.netIncome)}</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900" title={formatCompactTitle(stats.netIncome)}>
+                {formatCompactMoney(stats.netIncome)}
+              </p>
             </div>
             <span className="rounded-full bg-sky-100 p-2 text-sky-600">
               <CircleDollarSign className="h-5 w-5" />
@@ -638,11 +648,15 @@ const Dashboard: React.FC = () => {
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">
               <p className="font-semibold">{t('dashboard.income')}</p>
-              <p>{formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.collected, 0))}</p>
+              <p title={formatCompactTitle(monthlyData.reduce((acc, row) => acc + row.collected, 0))}>
+                {formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.collected, 0))}
+              </p>
             </div>
             <div className="rounded-lg bg-orange-50 px-3 py-2 text-orange-700">
               <p className="font-semibold">{t('dashboard.expenses')}</p>
-              <p>{formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.spent, 0))}</p>
+              <p title={formatCompactTitle(monthlyData.reduce((acc, row) => acc + row.spent, 0))}>
+                {formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.spent, 0))}
+              </p>
             </div>
           </div>
         </article>

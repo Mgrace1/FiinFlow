@@ -665,18 +665,10 @@ const Settings: React.FC = () =>{
                     {t('settings.payments_connect_subtitle')}
                   </p>
                   <div className="grid grid-cols-1 gap-3">
-                    <select
-                      className="input"
-                      value={connectionForm.channel}
-                      onChange={(e) => setConnectionForm({ ...connectionForm, channel: e.target.value as 'gmail' | 'sms_forward' })}
-                    >
-                      <option value="gmail">Gmail</option>
-                      <option value="sms_forward">SMS Forward</option>
-                    </select>
                     <input
                       type="text"
                       className="input"
-                      placeholder={connectionForm.channel === 'gmail' ? t('settings.payments_placeholder_gmail') : t('settings.payments_placeholder_sms')}
+                      placeholder={t('settings.payments_placeholder_gmail')}
                       value={connectionForm.identifier}
                       onChange={(e) => setConnectionForm({ ...connectionForm, identifier: e.target.value })}
                       required

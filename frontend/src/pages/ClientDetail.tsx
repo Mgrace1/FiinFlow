@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from 'recharts';
 
 interface Client {
@@ -56,9 +56,6 @@ interface Summary {
   totalExpenses?: number;
   profit?: number;
 }
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
 
 const PIE_COLORS: Record<string, string> = {
   paid:      '#22c55e',
@@ -106,6 +103,7 @@ const ClientDetail: React.FC = () => {
   const revenue     = summary?.totalRevenue  ?? 0;
   const expTotal    = summary?.totalExpenses ?? 0;
   const profit      = summary?.profit        ?? 0;
+  const summaryCurrency = summary?.currency || 'RWF';
   const paymentRate = summary && summary.totalInvoices > 0
     ? Math.round((summary.paidInvoices / summary.totalInvoices) * 100)
     : 0;
@@ -117,7 +115,7 @@ const ClientDetail: React.FC = () => {
   const barData = [
     { name: t('client_detail.revenue'),  value: revenue,          fill: '#22c55e' },
     { name: t('client_detail.expenses'), value: expTotal,          fill: '#ef4444' },
-    { name: t('client_detail.profit'),   value: Math.abs(profit),  fill: profit >= 0 ? '#3b82f6' : '#f97316' },
+    { name: t('client_detail.profit'),   value: profit,            fill: profit >= 0 ? '#3b82f6' : '#f97316' },
   ];
 
   const visibleInvoices = showAllInvoices ? invoices : invoices.slice(0, PAGE_SIZE);
@@ -163,7 +161,9 @@ const ClientDetail: React.FC = () => {
               <DollarSign size={14} className="text-green-600" />
             </span>
           </div>
-          <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{fmt(revenue)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+            {formatCompanyMoney(revenue, summaryCurrency)}
+          </p>
           <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} · {t('client_detail.paid_invoices')}</p>
         </div>
 
@@ -174,7 +174,9 @@ const ClientDetail: React.FC = () => {
               <Receipt size={14} className="text-red-500" />
             </span>
           </div>
-          <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{fmt(expTotal)}</p>
+          <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+            {formatCompanyMoney(expTotal, summaryCurrency)}
+          </p>
           <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} · {expenses.length} {t('client_detail.records')}</p>
         </div>
 
@@ -190,7 +192,7 @@ const ClientDetail: React.FC = () => {
             </span>
           </div>
           <p className={`text-lg sm:text-xl font-bold truncate ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-            {profit < 0 ? '-' : ''}{fmt(Math.abs(profit))}
+            {formatCompanyMoney(profit, summaryCurrency)}
           </p>
           <p className="text-xs text-gray-500 mt-1">{t('client_detail.currency_label')} · {t('client_detail.revenue_minus_expenses')}</p>
         </div>
@@ -268,11 +270,13 @@ const ClientDetail: React.FC = () => {
                   tickLine={false}
                   tickFormatter={v => v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)}
                   width={36}
+                  domain={['auto', 'auto']}
                 />
                 <ReTooltip
-                  formatter={(v: any) => [`${fmt(Number(v))} RWF`]}
+                  formatter={(v: any) => [formatCompanyMoney(Number(v), summaryCurrency)]}
                   contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
                 />
+                <ReferenceLine y={0} stroke="#e5e7eb" strokeDasharray="4 4" />
                 <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                   {barData.map(d => <Cell key={d.name} fill={d.fill} />)}
                 </Bar>
