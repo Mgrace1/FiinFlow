@@ -180,8 +180,7 @@ const Expenses: React.FC = () =>{
       return;
     }
 
-    const linkedClient = clients.find((c) => c._id === formData.clientId);
-    const resolvedSupplier = linkedClient?.name || formData.supplier.trim();
+    const resolvedSupplier = formData.supplier.trim();
     if (!resolvedSupplier) {
       setFormError(t('expenses.form_supplier_required'));
       return;
@@ -558,15 +557,7 @@ const Expenses: React.FC = () =>{
                       <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.linked_client')}</label>
                       <select
                         value={formData.clientId}
-                        onChange={(e) =>{
-                          const selectedClientId = e.target.value;
-                          const selectedClient = clients.find((c) => c._id === selectedClientId);
-                          setFormData({
-                            ...formData,
-                            clientId: selectedClientId,
-                            supplier: selectedClient ? selectedClient.name : formData.supplier,
-                          });
-                        }}
+                        onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
                       >
                         <option value="">{t('expenses.modal.no_linked_client')}</option>
@@ -578,31 +569,17 @@ const Expenses: React.FC = () =>{
                       </select>
                     </div>
 
-                    {!formData.clientId && (
-                      <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.supplier_name_required')}</label>
-                        <input
-                          type="text"
-                          value={formData.supplier}
-                          onChange={(e) =>setFormData({ ...formData, supplier: e.target.value })}
-                          required={!formData.clientId}
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                          placeholder={t('expenses.modal.supplier_name')}
-                        />
-                      </div>
-                    )}
-
-                    {formData.clientId && (
-                      <div className="sm:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.supplier_name')}</label>
-                        <input
-                          type="text"
-                          value={formData.supplier}
-                          readOnly
-                          className="w-full px-3 py-2.5 border border-gray-200 bg-gray-50 rounded-lg text-sm text-gray-600"
-                        />
-                      </div>
-                    )}
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('expenses.modal.supplier_name_required')}</label>
+                      <input
+                        type="text"
+                        value={formData.supplier}
+                        onChange={(e) =>setFormData({ ...formData, supplier: e.target.value })}
+                        required
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder={t('expenses.modal.supplier_name')}
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

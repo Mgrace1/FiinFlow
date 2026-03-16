@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { Expense, Notification } from '../models';
+import { Company, Expense, Invoice, Notification } from '../models';
 import { AuthRequest } from '../middleware/auth';
 
 const isSameCalendarDate = (a: Date, b: Date): boolean => (
@@ -12,6 +12,27 @@ const parseValidDate = (value: any): Date | null => {
   if (value === undefined || value === null || value === '') return null;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const getNextInvoiceNumber = async (companyId: any) => {
+  const company = await Company.findById(companyId).select('invoicePrefix').lean();
+  const prefix = String((company as any)?.invoicePrefix || 'INV').toUpperCase().trim() || 'INV';
+
+  const lastInvoice = await Invoice.findOne({ companyId })
+    .sort({ createdAt: -1 })
+    .select('invoiceNumber')
+    .lean();
+
+  let nextNum = 1;
+  if (lastInvoice?.invoiceNumber) {
+    const match = String(lastInvoice.invoiceNumber).match(/(\d+)$/);
+    if (match) {
+      nextNum = parseInt(match[1], 10) + 1;
+    }
+  }
+
+  const padded = String(nextNum).padStart(3, '0');
+  return `${prefix}-${padded}`;
 };
 
 export const createExpense = async (req: AuthRequest, res: Response) =>{
@@ -54,6 +75,50 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
       paymentStatus: paid >= totalAmount ? 'paid' : 'pending',
       createdBy: req.userId,
     });
+
+    if (clientId) {
+      try {
+        const company = await Company.findById(req.companyId).select('defaultCurrency').lean();
+        const safeCurrency = String(currency || company?.defaultCurrency || 'RWF').toUpperCase() === 'USD' ? 'USD' : 'RWF';
+        const invoiceNumber = await getNextInvoiceNumber(req.companyId);
+        const itemName = category && String(category).trim() && String(category).trim() !== 'Other'
+          ? String(category).trim()
+          : String(supplier).trim() || 'Expense';
+        const descriptionParts = [`Supplier: ${String(supplier).trim()}`];
+        if (description) descriptionParts.push(String(description).trim());
+        const itemDescription = descriptionParts.join(' | ');
+
+        await Invoice.create({
+          companyId: req.companyId,
+          clientId,
+          invoiceNumber,
+          invoiceType: 'standard',
+          items: [{
+            name: itemName,
+            description: itemDescription,
+            quantity: 1,
+            rate: totalAmount,
+            amount: totalAmount,
+          }],
+          amount: totalAmount,
+          currency: safeCurrency,
+          taxApplied: false,
+          taxRate: 0,
+          totalAmount,
+          amountPaid: 0,
+          dueDate: parsedDueDate,
+          status: 'draft',
+          createdBy: req.userId,
+        });
+      } catch (error: any) {
+        await Expense.findByIdAndDelete(expense._id);
+        console.error('Create linked invoice error:', error);
+        return res.status(500).json({
+          success: false,
+          error: error?.message || 'Failed to create linked draft invoice',
+        });
+      }
+    }
 
     await expense.populate('clientId');
     await expense.populate('receiptFileId');

@@ -55,6 +55,7 @@ interface Summary {
   totalRevenue?: number;
   totalExpenses?: number;
   profit?: number;
+  currency?: string;
 }
 
 const PIE_COLORS: Record<string, string> = {
