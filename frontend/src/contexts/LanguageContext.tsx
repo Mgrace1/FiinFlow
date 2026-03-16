@@ -42,7 +42,7 @@ const translations: Record<LangCode, Record<string, string>> = {
     'common.your_company': 'Your Company',
     // Status
     'status.paid': 'Paid',
-    'status.in_progress': 'In progress',
+    'status.in_progress': 'Pending',
     'status.overdue': 'Overdue',
     'status.draft': 'Draft',
     'status.cancelled': 'Cancelled',
@@ -836,7 +836,7 @@ const translations: Record<LangCode, Record<string, string>> = {
     'common.your_company': 'Votre entreprise',
     // Status
     'status.paid': 'Payé',
-    'status.in_progress': 'En cours',
+    'status.in_progress': 'En attente',
     'status.overdue': 'En retard',
     'status.draft': 'Brouillon',
     'status.cancelled': 'Annulé',

@@ -312,7 +312,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('topbar.search_placeholder')}
-                className="w-full pl-10 pr-10 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white dark:focus:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500"
+                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-primary-400 focus:border-primary-400 placeholder-gray-400 dark:placeholder-gray-500"
               />
             </div>
           </form>
@@ -376,7 +376,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
             >
               <Bell size={20} />
               {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {notifications.length > 9 ? '9+' : notifications.length}
                 </span>
               )}
@@ -387,7 +387,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                 <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{t('topbar.notifications')}</h3>
                   {notifications.length > 0 && (
-                    <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-red-50 text-red-600 font-semibold px-2 py-0.5 rounded-full">
                       {notifications.length} {t('topbar.unread')}
                     </span>
                   )}
@@ -461,7 +461,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                       setShowUserMenu(false);
                       setShowLogoutConfirm(true);
                     }}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-100 rounded-md transition-colors"
                   >
                     <LogOut size={16} />
                     <span>{t('topbar.signout')}</span>
@@ -489,3 +489,5 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
 };
 
 export default Topbar;
+
+

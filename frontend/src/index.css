@@ -40,7 +40,7 @@
   }
 
   .btn-warning {
-    @apply bg-amber-500 text-white hover:bg-amber-600;
+    @apply bg-amber-700 text-white hover:bg-amber-800;
   }
 
   .input {
@@ -303,3 +303,4 @@
 
 /* FAQ focus and accessibility */
 .faq-button:focus { outline: 3px solid rgba(139,154,114,0.18); outline-offset: 3px; }
+

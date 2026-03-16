@@ -1,4 +1,4 @@
-ï»¿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import LoadingOverlay from '../components/common/LoadingOverlay';
@@ -165,37 +165,37 @@ const ClientDetail: React.FC = () => {
           <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
             {formatCompanyMoney(revenue, summaryCurrency)}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} Â· {t('client_detail.paid_invoices')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} · {t('client_detail.paid_invoices')}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.expenses')}</span>
             <span className="w-7 h-7 sm:w-8 sm:h-8 bg-red-50 rounded-lg flex items-center justify-center shrink-0">
-              <Receipt size={14} className="text-red-500" />
+              <Receipt size={14} className="text-red-600" />
             </span>
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
             {formatCompanyMoney(expTotal, summaryCurrency)}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} Â· {expenses.length} {t('client_detail.records')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} · {expenses.length} {t('client_detail.records')}</p>
         </div>
 
-        <div className={`rounded-xl border shadow-sm p-3 sm:p-4 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+        <div className={`rounded-xl border shadow-sm p-3 sm:p-4 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-200'}`}>
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.net_profit')}</span>
-            <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${profit >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+            <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${profit >= 0 ? 'bg-green-100' : 'bg-red-50'}`}>
               {profit > 0
                 ? <TrendingUp size={14} className="text-green-600" />
                 : profit < 0
-                  ? <TrendingDown size={14} className="text-red-500" />
+                  ? <TrendingDown size={14} className="text-red-600" />
                   : <Minus size={14} className="text-gray-400" />}
             </span>
           </div>
           <p className={`text-lg sm:text-xl font-bold truncate ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>
             {formatCompanyMoney(profit, summaryCurrency)}
           </p>
-          <p className="text-xs text-gray-500 mt-1">{t('client_detail.currency_label')} Â· {t('client_detail.revenue_minus_expenses')}</p>
+          <p className="text-xs text-gray-500 mt-1">{t('client_detail.currency_label')} · {t('client_detail.revenue_minus_expenses')}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4">
@@ -208,7 +208,7 @@ const ClientDetail: React.FC = () => {
           <p className="text-lg sm:text-xl font-bold text-gray-900">{paymentRate}%</p>
           <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full ${paymentRate >= 70 ? 'bg-green-500' : paymentRate >= 40 ? 'bg-yellow-400' : 'bg-red-500'}`}
+              className={`h-full rounded-full ${paymentRate >= 70 ? 'bg-green-500' : paymentRate >= 40 ? 'bg-amber-600' : 'bg-red-600'}`}
               style={{ width: `${paymentRate}%` }}
             />
           </div>
@@ -333,7 +333,7 @@ const ClientDetail: React.FC = () => {
                 {[
                   { label: t('client_detail.total_invoices'), value: summary.totalInvoices, color: 'text-gray-900' },
                   { label: t('client_detail.paid_invoices_label'), value: summary.paidInvoices, color: 'text-green-600' },
-                  { label: t('client_detail.unpaid_invoices'), value: summary.unpaidInvoices, color: 'text-red-500' },
+                  { label: t('client_detail.unpaid_invoices'), value: summary.unpaidInvoices, color: 'text-red-600' },
                   { label: t('client_detail.linked_expenses'), value: summary.expenseCount, color: 'text-gray-900' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
@@ -464,3 +464,6 @@ const ClientDetail: React.FC = () => {
 };
 
 export default ClientDetail;
+
+
+

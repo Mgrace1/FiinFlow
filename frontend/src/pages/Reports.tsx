@@ -99,7 +99,7 @@ const Reports: React.FC = () =>{
 
   const scoreTone = (score: number) => {
     if (score >= 80) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-    if (score >= 60) return 'text-amber-700 bg-amber-50 border-amber-200';
+    if (score >= 60) return 'text-amber-900 bg-amber-200 border-amber-200';
     return 'text-rose-700 bg-rose-50 border-rose-200';
   };
 
@@ -458,7 +458,7 @@ const Reports: React.FC = () =>{
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('reports.total_pending')}:</span>
-                <span className="font-semibold text-amber-500">
+                <span className="font-semibold text-amber-900">
                     {formatCurrency(reportData.summary.totalPending)}
                 </span>
               </div>
@@ -578,5 +578,6 @@ const Reports: React.FC = () =>{
 };
 
 export default Reports;
+
 
 

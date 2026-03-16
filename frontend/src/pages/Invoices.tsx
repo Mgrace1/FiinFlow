@@ -613,7 +613,7 @@ const Invoices: React.FC = () => {
                         {isAdmin && (
                           <button
                             onClick={() => setDeleteConfirm({ show: true, invoiceId: invoice._id })}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-100 hover:text-red-600"
                             title={t('common.delete')}
                             aria-label={t('common.delete')}
                           >
@@ -824,7 +824,7 @@ const Invoices: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => removeLineItem(index)}
-                                className="p-1 text-gray-400 hover:text-red-500 disabled:opacity-30"
+                                className="p-1 text-gray-400 hover:text-red-600 disabled:opacity-30"
                                 disabled={lineItems.length === 1}
                               >
                                 <FaTrash className="text-xs" />
@@ -845,7 +845,7 @@ const Invoices: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => removeLineItem(index)}
-                                className="p-1.5 text-gray-400 hover:text-red-500 disabled:opacity-30"
+                                className="p-1.5 text-gray-400 hover:text-red-600 disabled:opacity-30"
                                 disabled={lineItems.length === 1}
                               >
                                 <FaTrash className="text-xs" />
@@ -1151,5 +1151,6 @@ const Invoices: React.FC = () => {
 };
 
 export default Invoices;
+
 
 

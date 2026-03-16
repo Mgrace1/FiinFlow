@@ -183,7 +183,7 @@ const Transactions: React.FC = () => {
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
       type === 'income'
         ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-        : 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
+        : 'bg-orange-200 text-orange-900 dark:bg-orange-900/30 dark:text-orange-300'
     }`}>
       {type === 'income' ? t('transactions.invoice') : t('transactions.expense')}
     </span>
@@ -284,7 +284,7 @@ const Transactions: React.FC = () => {
                         <div className="mt-3 flex justify-end">
                           <button
                             onClick={() => handleUnlink(tx._id)}
-                            className="text-xs font-semibold text-red-600 hover:text-red-700"
+                            className="text-xs font-semibold text-red-600 hover:text-red-600"
                           >
                             {t('transactions.unlink')}
                           </button>
@@ -330,7 +330,7 @@ const Transactions: React.FC = () => {
                                 </span>
                                 <button
                                   onClick={() => handleUnlink(tx._id)}
-                                  className="text-xs font-semibold text-red-600 hover:text-red-700"
+                                  className="text-xs font-semibold text-red-600 hover:text-red-600"
                                 >
                                   {t('transactions.unlink')}
                                 </button>
@@ -376,4 +376,6 @@ const Transactions: React.FC = () => {
 };
 
 export default Transactions;
+
+
 

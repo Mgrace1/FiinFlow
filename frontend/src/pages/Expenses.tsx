@@ -435,7 +435,7 @@ const Expenses: React.FC = () =>{
                       e.stopPropagation();
                       setDeleteConfirm({ show: true, expenseId: expense._id });
                     }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-100 hover:text-red-600"
                     title={t('common.delete')}
                     aria-label={t('common.delete')}
                   >
@@ -516,7 +516,7 @@ const Expenses: React.FC = () =>{
                     {isAdmin && (
                       <button
                         onClick={(e) =>{ e.stopPropagation(); setDeleteConfirm({ show: true, expenseId: expense._id }); }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-100 hover:text-red-600"
                         title={t('common.delete')}
                         aria-label={t('common.delete')}
                       >
@@ -545,7 +545,7 @@ const Expenses: React.FC = () =>{
           <form onSubmit={handleSubmit}>
             <div className="p-4 sm:p-6 space-y-6">
               {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                   {formError}
                 </div>
               )}
@@ -804,5 +804,6 @@ const Expenses: React.FC = () =>{
 };
 
 export default Expenses;
+
 
 

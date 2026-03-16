@@ -83,7 +83,7 @@ interface MonthlyRow {
 // Consistent color palette
 const PIE_COLORS = {
   paid: '#5f6f52',      // primary
-  inProgress: '#7b8a69', // primary-400
+  pending: '#7b8a69', // primary-400
   overdue: '#f59e0b',    // warning
   draft: '#9ca3af',      // gray
   cancelled: '#ef4444',  // danger
@@ -92,7 +92,7 @@ const PIE_COLORS = {
 const PIE_COLORS_ARRAY = ['#5f6f52', '#7b8a69', '#f59e0b', '#9ca3af', '#ef4444'];
 
 const DASHBOARD_CARD =
-  'rounded-2xl border border-slate-200 bg-white p-5';
+  'rounded-2xl border border-slate-200 bg-white p-5 shadow-none hover:shadow-sm transition-shadow';
 
 const getDateValue = (value?: string) => {
   if (!value) return null;
@@ -257,7 +257,7 @@ const Dashboard: React.FC = () => {
 
     const data = [];
     if (paid > 0) data.push({ name: t('status.paid'), value: paid });
-    if (active > 0) data.push({ name: t('status.in_progress'), value: active });
+    if (active > 0) data.push({ name: t('status.pending'), value: active });
     if (overdue > 0) data.push({ name: t('status.overdue'), value: overdue });
     if (drafts > 0) data.push({ name: t('status.draft'), value: drafts });
     if (cancelled > 0) data.push({ name: t('status.cancelled'), value: cancelled });
@@ -372,7 +372,7 @@ const Dashboard: React.FC = () => {
                 {formatCompactMoney(stats.pendingAmount)}
               </p>
             </div>
-            <span className="rounded-full bg-amber-100 p-2 text-amber-600">
+            <span className="rounded-full bg-amber-200 p-2 text-amber-800">
               <Clock3 className="h-5 w-5" />
             </span>
           </div>
@@ -474,7 +474,7 @@ const Dashboard: React.FC = () => {
                     // Map colors based on status name
                     let color = PIE_COLORS_ARRAY[index % PIE_COLORS_ARRAY.length];
                     if (entry.name === t('status.paid')) color = PIE_COLORS.paid;
-                    if (entry.name === t('status.in_progress')) color = PIE_COLORS.inProgress;
+                    if (entry.name === t('status.pending')) color = PIE_COLORS.pending;
                     if (entry.name === t('status.overdue')) color = PIE_COLORS.overdue;
                     if (entry.name === t('status.draft')) color = PIE_COLORS.draft;
                     if (entry.name === t('status.cancelled')) color = PIE_COLORS.cancelled;
@@ -497,7 +497,7 @@ const Dashboard: React.FC = () => {
               // Map colors based on status name
               let color = PIE_COLORS_ARRAY[idx % PIE_COLORS_ARRAY.length];
               if (item.name === t('status.paid')) color = PIE_COLORS.paid;
-              if (item.name === t('status.in_progress')) color = PIE_COLORS.inProgress;
+              if (item.name === t('status.pending')) color = PIE_COLORS.pending;
               if (item.name === t('status.overdue')) color = PIE_COLORS.overdue;
               if (item.name === t('status.draft')) color = PIE_COLORS.draft;
               if (item.name === t('status.cancelled')) color = PIE_COLORS.cancelled;
@@ -533,7 +533,7 @@ const Dashboard: React.FC = () => {
               </p>
             ) : (
               latestInvoices.slice(0, 4).map((invoice) => (
-                <div key={invoice._id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-3 hover:bg-slate-100 transition-colors">
+                <div key={invoice._id} className="flex items-center justify-between px-3 py-3 border-b border-slate-100 last:border-b-0">
                   <div>
                     <p className="text-sm font-semibold text-slate-900">{invoice.invoiceNumber}</p>
                     <p className="text-xs text-slate-500">{invoice.clientId?.name || t('dashboard.client_label')}</p>
@@ -580,7 +580,7 @@ const Dashboard: React.FC = () => {
                 {formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.collected, 0))}
               </p>
             </div>
-            <div className="rounded-lg bg-orange-50 px-3 py-2 text-orange-700">
+            <div className="rounded-lg bg-orange-200 px-3 py-2 text-orange-900">
               <p className="font-semibold">{t('dashboard.expenses')}</p>
               <p title={formatCompactTitle(monthlyData.reduce((acc, row) => acc + row.spent, 0))}>
                 {formatCompactMoney(monthlyData.reduce((acc, row) => acc + row.spent, 0))}
@@ -597,7 +597,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-slate-500">{t('dashboard.no_transactions')}</p>
             ) : (
               activityFeed.map((item) => (
-                <div key={`${item.type}-${item.id}`} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition-colors">
+                <div key={`${item.type}-${item.id}`} className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 last:border-b-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="rounded-md bg-white p-1.5 text-slate-500">
@@ -624,3 +624,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+

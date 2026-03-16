@@ -69,7 +69,7 @@ const ForgotPassword: React.FC = () =>{
       </div>
 
         {error && (
-        <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-4">
             {error}
         </div>
         )}
@@ -124,4 +124,5 @@ const ForgotPassword: React.FC = () =>{
 };
 
 export default ForgotPassword;
+
 

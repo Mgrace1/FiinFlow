@@ -230,7 +230,7 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
                         const fileId = getFileId(receipt);
                         if (fileId) onDelete(fileId);
                       }}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium ml-4"
+                      className="text-red-600 hover:text-red-700 text-sm font-medium ml-4"
                     >
                       Delete
                     </button>
@@ -241,15 +241,15 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
           })}
         </div>
       ) : (
-        <div className="border-2 border-dashed border-yellow-300 bg-yellow-50 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 font-medium mb-1">
+        <div className="border-2 border-dashed border-yellow-500 bg-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-900 font-medium mb-1">
              No Payment Receipt Uploaded
           </p>
-          <p className="text-sm text-yellow-700">
+          <p className="text-sm text-yellow-900">
             A payment receipt is required before marking this invoice as paid.
           </p>
           {!showUpload && (
-            <p className="text-xs text-yellow-600 mt-2">
+            <p className="text-xs text-yellow-800 mt-2">
               Upload receipt in the Confirm Payment Details modal.
             </p>
           )}
@@ -347,3 +347,5 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
 };
 
 export default PaymentReceipt;
+
+

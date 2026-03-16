@@ -38,16 +38,16 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
       // Invoice statuses
       paid: 'bg-green-100 text-green-800',
       sent: 'bg-blue-100 text-blue-800',
-      overdue: 'bg-red-100 text-red-800',
+      overdue: 'bg-red-50 text-red-600',
       draft: 'bg-gray-100 text-gray-800',
-      cancelled: 'bg-red-100 text-red-800',
-      pending: 'bg-yellow-100 text-yellow-800',
+      cancelled: 'bg-red-50 text-red-600',
+      pending: 'bg-yellow-200 text-yellow-900',
 
       // Expense categories
       transport: 'bg-blue-100 text-blue-800',
       office: 'bg-purple-100 text-purple-800',
       marketing: 'bg-pink-100 text-pink-800',
-      utilities: 'bg-yellow-100 text-yellow-800',
+      utilities: 'bg-yellow-200 text-yellow-900',
       salaries: 'bg-green-100 text-green-800',
       other: 'bg-gray-100 text-gray-800',
 
@@ -59,8 +59,8 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
 
       // Generic variants
       success: 'bg-green-100 text-green-800',
-      warning: 'bg-yellow-100 text-yellow-800',
-      danger: 'bg-red-100 text-red-800',
+      warning: 'bg-yellow-200 text-yellow-900',
+      danger: 'bg-red-50 text-red-600',
       info: 'bg-blue-100 text-blue-800',
       default: 'bg-gray-100 text-gray-800',
     };
@@ -77,3 +77,5 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
 };
 
 export default Badge;
+
+

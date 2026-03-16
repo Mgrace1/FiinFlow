@@ -120,7 +120,7 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ isOpen, onClose }) => {
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-lg font-semibold text-gray-900">How to Withdraw</h3>
             </div>
-            <div className="bg-orange-50 rounded-lg p-4">
+            <div className="bg-orange-200 rounded-lg p-4">
               <p className="text-gray-700 leading-relaxed">
                 To withdraw from the study, simply stop using FiinFlow and contact the researcher. All your data
                 will be permanently deleted from the system within 7 days of your withdrawal request. There is
@@ -167,3 +167,4 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ isOpen, onClose }) => {
 };
 
 export default ConsentModal;
+

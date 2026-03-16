@@ -298,7 +298,7 @@ const handleSaveEdit = async () =>{
 
   const getInvoiceTypePillClasses = (invoiceType?: string) => {
     const key = String(invoiceType || 'standard').trim().toLowerCase();
-    if (key === 'proforma') return 'bg-amber-100 text-amber-800 border-amber-200';
+    if (key === 'proforma') return 'bg-amber-200 text-amber-800 border-amber-200';
     if (key === 'tax') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
     if (key === 'commercial') return 'bg-sky-100 text-sky-800 border-sky-200';
     if (key === 'credit_note') return 'bg-violet-100 text-violet-800 border-violet-200';
@@ -490,7 +490,7 @@ const handleSaveEdit = async () =>{
                       <span>Amount Paid</span>
                       <span className="font-medium text-gray-900">{numFmt(alreadyPaid)} {invoice.currency}</span>
                     </div>
-                    <div className="flex justify-between text-amber-700">
+                    <div className="flex justify-between text-amber-900">
                       <span>Remaining Due</span>
                       <span className="font-semibold">{numFmt(remainingBalance)} {invoice.currency}</span>
                     </div>
@@ -563,7 +563,7 @@ const handleSaveEdit = async () =>{
               </div>
             )}
             {!hasReceipt && availableStatuses.includes('paid') && (
-              <p className="text-xs text-amber-700 mt-2 bg-amber-50 rounded-md p-2">
+              <p className="text-xs text-amber-900 mt-2 bg-amber-200 rounded-md p-2">
                 Upload receipt in the "Confirm Payment Details" modal when recording payment.
               </p>
             )}
@@ -638,7 +638,7 @@ const handleSaveEdit = async () =>{
                   <span>Already Paid</span>
                   <span className="font-medium text-slate-900">{numFmt(alreadyPaid)} {invoice.currency}</span>
                 </div>
-                <div className="mt-1 flex justify-between border-t border-slate-200 pt-1 text-amber-700">
+                <div className="mt-1 flex justify-between border-t border-slate-200 pt-1 text-amber-900">
                   <span>Remaining</span>
                   <span className="font-semibold">{numFmt(remainingBalance)} {invoice.currency}</span>
                 </div>
@@ -741,4 +741,5 @@ const handleSaveEdit = async () =>{
 };
 
 export default InvoiceDetail;
+
 

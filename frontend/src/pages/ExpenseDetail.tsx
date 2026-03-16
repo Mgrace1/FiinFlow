@@ -347,7 +347,7 @@ const ExpenseDetail: React.FC = () =>{
                   {canDelete && (
                   <button
                       onClick={() =>setDeleteReceiptConfirm(true)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium ml-4"
+                      className="text-red-600 hover:text-red-700 text-sm font-medium ml-4"
                     >
                       Delete
                   </button>
@@ -428,3 +428,4 @@ const ExpenseDetail: React.FC = () =>{
 };
 
 export default ExpenseDetail;
+
