@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ConfirmModal from '../common/ConfirmModal';
-import { Menu, Search, Bell, User, LogOut, ChevronDown, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { Menu, Search, Bell, User, LogOut, ChevronDown, Loader2, Sun, Moon, Monitor, Download } from 'lucide-react';
 import { apiClient } from '../../api/client';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getUserRole } from '../../utils/roleUtils';
+import { notifyError } from '../../utils/toast';
 
 const USFlag = () => (
   <svg width="22" height="16" viewBox="0 0 7.41 4" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: 2, display: 'block' }}>
@@ -68,6 +70,8 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
   const notifRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const userRole = getUserRole();
+  const isDashboard = location.pathname === '/dashboard';
 
   const fetchNotifications = useCallback(async () => {
     setNotificationsLoading(true);
@@ -155,6 +159,34 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
     logout();
     navigate('/login');
     setShowLogoutConfirm(false);
+  };
+
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 1 && hour < 12) return t('dashboard.greeting_morning');
+    if (hour >= 12 && hour < 17) return t('dashboard.greeting_afternoon');
+    if (hour >= 17 && hour < 23) return t('dashboard.greeting_evening');
+    return t('dashboard.greeting_night');
+  };
+
+  const handleDownloadSummary = async () => {
+    try {
+      const response = await apiClient.get('/reports/summary/pdf', {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toLocaleDateString('en-GB').split('/').join('-');
+      link.setAttribute('download', `summary-report-${today}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      notifyError(t('dashboard.summary_pdf_error'));
+    }
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -260,7 +292,7 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
           </button>
           <div className="hidden sm:block min-w-0">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">
-              {t('topbar.welcome')}{userName ? `, ${userName}` : ''}!
+              {getTimeGreeting()}{userName ? `, ${userName}` : ''}!
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {companyName ? `${t('topbar.managing')} ${companyName}` : t('topbar.default_subtitle')}
@@ -284,6 +316,17 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
               />
             </div>
           </form>
+
+          {isDashboard && (userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager') && (
+            <button
+              onClick={handleDownloadSummary}
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+              title={t('dashboard.export_summary_pdf')}
+              aria-label={t('dashboard.export_summary_pdf')}
+            >
+              <Download size={20} />
+            </button>
+          )}
 
           <button
             onClick={() => setMode(resolvedTheme === 'dark' ? 'light' : 'dark')}

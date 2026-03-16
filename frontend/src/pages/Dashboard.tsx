@@ -17,10 +17,8 @@ import {
 import {
   ArrowDownRight,
   ArrowUpRight,
-  CheckCircle2,
   CircleDollarSign,
   Clock3,
-  CreditCard,
   FileText,
   Loader2,
   Receipt,
@@ -28,10 +26,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { apiClient } from '../api/client';
-import { getUserRole } from '../utils/roleUtils';
-import ConfirmModal from '../components/common/ConfirmModal';
 import { formatCompanyMoney, getCurrencyConfig, convertCurrencyAmount } from '../utils/currency';
-import { notifyError } from '../utils/toast';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardStats {
@@ -159,24 +154,12 @@ const Dashboard: React.FC = () => {
   const [latestInvoices, setLatestInvoices] = useState<InvoiceItem[]>([]);
   const [latestExpenses, setLatestExpenses] = useState<ExpenseItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showPDFConfirm, setShowPDFConfirm] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   const monthFormatter = useMemo(
     () => new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
     [lang]
   );
 
-  const getTimeGreeting = (date: Date) => {
-    const hour = date.getHours();
-    if (hour >= 1 && hour < 12) return t('dashboard.greeting_morning');
-    if (hour >= 12 && hour < 17) return t('dashboard.greeting_afternoon');
-    if (hour >= 17 && hour < 23) return t('dashboard.greeting_evening');
-    return t('dashboard.greeting_night');
-  };
-
-  const company = JSON.parse(localStorage.getItem('finflow_company') || '{}');
-  const userRole = getUserRole();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -198,10 +181,6 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60 * 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const monthlyData = useMemo<MonthlyRow[]>(() => {
     const today = new Date();
@@ -334,29 +313,6 @@ const Dashboard: React.FC = () => {
     return (stats.totalExpenses / revenue) * 100;
   }, [stats.totalExpenses, stats.totalRevenue]);
 
-  const handleDownloadSummaryPDF = async () => {
-    try {
-      const response = await apiClient.get('/reports/summary/pdf', {
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      const today = new Date().toLocaleDateString('en-GB').split('/').join('-');
-      link.setAttribute('download', `summary-report-${today}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      setShowPDFConfirm(false);
-    } catch (error) {
-      notifyError(t('dashboard.summary_pdf_error'));
-      setShowPDFConfirm(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200 bg-white">
@@ -370,34 +326,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white px-6 py-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">{t('dashboard.overview')}</p>
-            <h1 className="text-2xl font-bold text-slate-900">
-              {getTimeGreeting(currentTime)}{company?.displayName ? `, ${company.displayName}` : ''}
-            </h1>
-            <p className="text-sm text-slate-600">{t('dashboard.subtitle')}</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {(userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager') && (
-              <button
-                onClick={() => setShowPDFConfirm(true)}
-                className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                {t('dashboard.export_summary_pdf')}
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/invoices')}
-              className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-            >
-              {t('dashboard.create_invoice')}
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* Stats Cards */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className={DASHBOARD_CARD}>
@@ -691,62 +619,6 @@ const Dashboard: React.FC = () => {
         </article>
       </section>
 
-      {/* Quick Action Buttons */}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <button
-          onClick={() => navigate('/clients')}
-          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5"
-        >
-          <div className="flex items-start gap-3">
-            <span className="rounded-lg bg-slate-100 p-2 text-slate-600">
-              <CreditCard className="h-5 w-5" />
-            </span>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900">{t('dashboard.add_new_client')}</h4>
-              <p className="mt-1 text-xs text-slate-500">{t('dashboard.add_new_client_desc')}</p>
-            </div>
-          </div>
-        </button>
-        <button
-          onClick={() => navigate('/invoices')}
-          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5"
-        >
-          <div className="flex items-start gap-3">
-            <span className="rounded-lg bg-slate-100 p-2 text-slate-600">
-              <CheckCircle2 className="h-5 w-5" />
-            </span>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900">{t('dashboard.create_invoice')}</h4>
-              <p className="mt-1 text-xs text-slate-500">{t('dashboard.create_invoice_desc')}</p>
-            </div>
-          </div>
-        </button>
-        <button
-          onClick={() => navigate('/expenses')}
-          className="group rounded-2xl border border-slate-200 bg-white p-5 text-left transition hover:-translate-y-0.5"
-        >
-          <div className="flex items-start gap-3">
-            <span className="rounded-lg bg-slate-100 p-2 text-slate-600">
-              <TrendingDown className="h-5 w-5" />
-            </span>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900">{t('dashboard.add_expense')}</h4>
-              <p className="mt-1 text-xs text-slate-500">{t('dashboard.add_expense_desc')}</p>
-            </div>
-          </div>
-        </button>
-      </section>
-
-      <ConfirmModal
-        isOpen={showPDFConfirm}
-        title={t('dashboard.summary_pdf_title')}
-        message={t('dashboard.summary_pdf_message')}
-        confirmText={t('dashboard.download_pdf')}
-        cancelText={t('common.cancel')}
-        variant="primary"
-        onConfirm={handleDownloadSummaryPDF}
-        onCancel={() => setShowPDFConfirm(false)}
-      />
     </div>
   );
 };
