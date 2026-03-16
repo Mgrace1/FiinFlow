@@ -397,11 +397,11 @@ const Expenses: React.FC = () =>{
                 </div>
                 <div>
                   <p className="text-gray-500">{t('expenses.mobile.paid')}</p>
-                  <p className="font-bold text-green-700">{formatCompanyMoney(expense.amountPaid, expense.currency)}</p>
+                  <p className="font-bold text-green-400">{formatCompanyMoney(expense.amountPaid, expense.currency)}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">{t('expenses.mobile.remaining')}</p>
-                  <p className={`font-bold ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <p className={`font-bold ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-400'}`}>
                     {formatCompanyMoney(expense.remainingAmount, expense.currency)}
                   </p>
                 </div>
@@ -490,10 +490,10 @@ const Expenses: React.FC = () =>{
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCompanyMoney(expense.amount, expense.currency)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-700 font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-400 font-medium">
                       {formatCompanyMoney(expense.amountPaid, expense.currency)}
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${expense.remainingAmount > 0 ? 'text-red-600' : 'text-green-400'}`}>
                       {formatCompanyMoney(expense.remainingAmount, expense.currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -730,11 +730,11 @@ const Expenses: React.FC = () =>{
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{t('expenses.modal.summary_paid')}</span>
-                      <span className="font-bold text-green-700">{(Number(formData.amountPaid) || 0).toLocaleString()}</span>
+                      <span className="font-bold text-green-400">{(Number(formData.amountPaid) || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-sm border-t pt-2">
                       <span className="text-gray-500">{t('expenses.modal.summary_remaining')}</span>
-                      <span className={`font-bold ${Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      <span className={`font-bold ${Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)) > 0 ? 'text-red-600' : 'text-green-400'}`}>
                         {Math.max(0, (Number(formData.amount) || 0) - (Number(formData.amountPaid) || 0)).toLocaleString()}
                       </span>
                     </div>
@@ -804,6 +804,7 @@ const Expenses: React.FC = () =>{
 };
 
 export default Expenses;
+
 
 
 

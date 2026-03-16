@@ -611,7 +611,7 @@ const handleSaveEdit = async () =>{
               )}
               {invoice.paidAt && (
                 <li className="flex items-start gap-2.5">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-green-400 shrink-0"></span>
+                  <span className="mt-1 h-2 w-2 rounded-full bg-green-300 shrink-0"></span>
                   <div>
                     <p className="text-xs font-medium text-gray-900">Paid</p>
                     <p className="text-xs text-gray-500">{formatDateDMY(invoice.paidAt)}</p>
@@ -741,5 +741,6 @@ const handleSaveEdit = async () =>{
 };
 
 export default InvoiceDetail;
+
 
 

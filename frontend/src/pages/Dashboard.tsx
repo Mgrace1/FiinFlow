@@ -86,10 +86,10 @@ const PIE_COLORS = {
   pending: '#7b8a69', // primary-400
   overdue: '#f59e0b',    // warning
   draft: '#9ca3af',      // gray
-  cancelled: '#ef4444',  // danger
+  cancelled: '#dc2626',  // danger
 };
 
-const PIE_COLORS_ARRAY = ['#5f6f52', '#7b8a69', '#f59e0b', '#9ca3af', '#ef4444'];
+const PIE_COLORS_ARRAY = ['#5f6f52', '#7b8a69', '#f59e0b', '#9ca3af', '#dc2626'];
 
 const DASHBOARD_CARD =
   'rounded-2xl border border-slate-200 bg-white p-5 shadow-none hover:shadow-sm transition-shadow';
@@ -424,7 +424,7 @@ const Dashboard: React.FC = () => {
                 <Bar dataKey="pending" fill="#7b8a69" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.pending')} />
                 <Bar dataKey="draft" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.draft')} />
                 <Bar dataKey="collected" fill="#5f6f52" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.income')} />
-                <Bar dataKey="spent" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.expenses')} />
+                <Bar dataKey="spent" fill="#dc2626" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.expenses')} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -443,7 +443,7 @@ const Dashboard: React.FC = () => {
               <span className="text-slate-600">{t('dashboard.income')}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ef4444' }}></span>
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#dc2626' }}></span>
               <span className="text-slate-600">{t('dashboard.expenses')}</span>
             </div>
           </div>
@@ -569,7 +569,7 @@ const Dashboard: React.FC = () => {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Line type="monotone" dataKey="collected" stroke="#5f6f52" strokeWidth={2.4} dot={false} name={t('dashboard.income')} />
-                <Line type="monotone" dataKey="spent" stroke="#ef4444" strokeWidth={2.4} dot={false} name={t('dashboard.expenses')} />
+                <Line type="monotone" dataKey="spent" stroke="#dc2626" strokeWidth={2.4} dot={false} name={t('dashboard.expenses')} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -624,4 +624,5 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
 

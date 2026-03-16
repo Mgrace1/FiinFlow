@@ -256,7 +256,7 @@ const Transactions: React.FC = () => {
                           <TypeBadge type={tx.type} />
                         </div>
                         {isLinked ? (
-                          <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium shrink-0 mt-1">
+                          <span className="flex items-center gap-1 text-xs text-green-400 dark:text-green-400 font-medium shrink-0 mt-1">
                             <Link2 size={12} /> {t('transactions.linked')}
                           </span>
                         ) : (
@@ -325,7 +325,7 @@ const Transactions: React.FC = () => {
                           <td className="px-4 py-3 text-right">
                             {isLinked ? (
                               <div className="inline-flex items-center gap-3">
-                                <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 font-medium">
+                                <span className="inline-flex items-center gap-1 text-xs text-green-400 dark:text-green-400 font-medium">
                                   <Link2 size={12} /> {t('transactions.linked')}
                                 </span>
                                 <button
@@ -376,6 +376,7 @@ const Transactions: React.FC = () => {
 };
 
 export default Transactions;
+
 
 
 

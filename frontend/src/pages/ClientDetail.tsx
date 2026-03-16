@@ -61,7 +61,7 @@ interface Summary {
 const PIE_COLORS: Record<string, string> = {
   paid:      '#5f6f52',
   sent:      '#7b8a69',
-  overdue:   '#ef4444',
+  overdue:   '#dc2626',
   draft:     '#9ca3af',
   cancelled: '#d1d5db',
 };
@@ -115,8 +115,8 @@ const ClientDetail: React.FC = () => {
 
   const barData = [
     { name: t('client_detail.revenue'),  value: revenue,          fill: '#5f6f52' },
-    { name: t('client_detail.expenses'), value: expTotal,          fill: '#ef4444' },
-    { name: t('client_detail.profit'),   value: profit,            fill: profit >= 0 ? '#7b8a69' : '#ef4444' },
+    { name: t('client_detail.expenses'), value: expTotal,          fill: '#dc2626' },
+    { name: t('client_detail.profit'),   value: profit,            fill: profit >= 0 ? '#7b8a69' : '#dc2626' },
   ];
 
   const visibleInvoices = showAllInvoices ? invoices : invoices.slice(0, PAGE_SIZE);
@@ -159,7 +159,7 @@ const ClientDetail: React.FC = () => {
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.revenue')}</span>
             <span className="w-7 h-7 sm:w-8 sm:h-8 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-              <DollarSign size={14} className="text-green-600" />
+              <DollarSign size={14} className="text-green-400" />
             </span>
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
@@ -184,15 +184,15 @@ const ClientDetail: React.FC = () => {
         <div className={`rounded-xl border shadow-sm p-3 sm:p-4 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-200'}`}>
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.net_profit')}</span>
-            <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${profit >= 0 ? 'bg-green-100' : 'bg-red-50'}`}>
+            <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${profit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
               {profit > 0
-                ? <TrendingUp size={14} className="text-green-600" />
+                ? <TrendingUp size={14} className="text-green-400" />
                 : profit < 0
                   ? <TrendingDown size={14} className="text-red-600" />
                   : <Minus size={14} className="text-gray-400" />}
             </span>
           </div>
-          <p className={`text-lg sm:text-xl font-bold truncate ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+          <p className={`text-lg sm:text-xl font-bold truncate ${profit >= 0 ? 'text-green-400' : 'text-red-600'}`}>
             {formatCompanyMoney(profit, summaryCurrency)}
           </p>
           <p className="text-xs text-gray-500 mt-1">{t('client_detail.currency_label')} · {t('client_detail.revenue_minus_expenses')}</p>
@@ -208,7 +208,7 @@ const ClientDetail: React.FC = () => {
           <p className="text-lg sm:text-xl font-bold text-gray-900">{paymentRate}%</p>
           <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full ${paymentRate >= 70 ? 'bg-green-500' : paymentRate >= 40 ? 'bg-amber-600' : 'bg-red-600'}`}
+              className={`h-full rounded-full ${paymentRate >= 70 ? 'bg-green-300' : paymentRate >= 40 ? 'bg-amber-600' : 'bg-red-600'}`}
               style={{ width: `${paymentRate}%` }}
             />
           </div>
@@ -332,7 +332,7 @@ const ClientDetail: React.FC = () => {
               <div className="space-y-2.5">
                 {[
                   { label: t('client_detail.total_invoices'), value: summary.totalInvoices, color: 'text-gray-900' },
-                  { label: t('client_detail.paid_invoices_label'), value: summary.paidInvoices, color: 'text-green-600' },
+                  { label: t('client_detail.paid_invoices_label'), value: summary.paidInvoices, color: 'text-green-400' },
                   { label: t('client_detail.unpaid_invoices'), value: summary.unpaidInvoices, color: 'text-red-600' },
                   { label: t('client_detail.linked_expenses'), value: summary.expenseCount, color: 'text-gray-900' },
                 ].map(row => (
@@ -432,7 +432,7 @@ const ClientDetail: React.FC = () => {
                               <td className="px-4 sm:px-5 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{exp.supplier}</td>
                               <td className="px-4 sm:px-5 py-3 text-sm text-gray-500 whitespace-nowrap">{exp.category}</td>
                               <td className="px-4 sm:px-5 py-3 text-sm text-gray-900 whitespace-nowrap">{formatCompanyMoney(exp.amount, exp.currency)}</td>
-                              <td className={`px-4 sm:px-5 py-3 text-sm font-medium whitespace-nowrap ${exp.remainingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              <td className={`px-4 sm:px-5 py-3 text-sm font-medium whitespace-nowrap ${exp.remainingAmount > 0 ? 'text-red-600' : 'text-green-400'}`}>
                                 {formatCompanyMoney(exp.remainingAmount, exp.currency)}
                               </td>
                               <td className="px-4 sm:px-5 py-3 text-sm text-gray-500 whitespace-nowrap">
@@ -464,6 +464,9 @@ const ClientDetail: React.FC = () => {
 };
 
 export default ClientDetail;
+
+
+
 
 
 

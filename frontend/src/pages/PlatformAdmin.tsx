@@ -387,7 +387,7 @@ const PlatformAdmin: React.FC = () => {
               {!editingCompany && companyForm.companyPassword && (
                 <div className="md:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                   {companyAdminPasswordValidation.rules.map((rule) => (
-                    <p key={rule.label} className={rule.passed ? 'text-green-700' : 'text-slate-500'}>
+                    <p key={rule.label} className={rule.passed ? 'text-green-400' : 'text-slate-500'}>
                       {rule.passed ? 'OK' : '...'} {rule.label}
                     </p>
                   ))}
@@ -505,7 +505,7 @@ const PlatformAdmin: React.FC = () => {
               {userForm.password && (
                 <div className="md:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                   {passwordValidation.rules.map((rule) => (
-                    <p key={rule.label} className={rule.passed ? 'text-green-700' : 'text-slate-500'}>
+                    <p key={rule.label} className={rule.passed ? 'text-green-400' : 'text-slate-500'}>
                       {rule.passed ? 'OK' : '...'} {rule.label}
                     </p>
                   ))}
@@ -615,5 +615,6 @@ const PlatformAdmin: React.FC = () => {
 };
 
 export default PlatformAdmin;
+
 
 

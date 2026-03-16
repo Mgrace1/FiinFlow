@@ -318,12 +318,12 @@ const ExpenseDetail: React.FC = () =>{
           <h2 className="text-xl font-semibold mb-4">Expense Receipt</h2>
 
             {expense.receiptFileId ? (
-            <div className="border border-green-200 bg-green-50 rounded-lg p-4">
+            <div className="border border-green-100 bg-green-50 rounded-lg p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl"></span>
-                    <span className="font-semibold text-green-800">Receipt Uploaded</span>
+                    <span className="font-semibold text-green-400">Receipt Uploaded</span>
                   </div>
 
                     {typeof expense.receiptFileId === 'object' && (
@@ -428,4 +428,5 @@ const ExpenseDetail: React.FC = () =>{
 };
 
 export default ExpenseDetail;
+
 

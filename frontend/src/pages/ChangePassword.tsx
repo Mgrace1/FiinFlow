@@ -67,7 +67,7 @@ const ChangePassword: React.FC = () =>{
         )}
         
         {success && (
-        <div className="bg-green-50 text-green-600 p-3 rounded border border-green-200">
+        <div className="bg-green-50 text-green-400 p-3 rounded border border-green-100">
             {success}
         </div>
         )}
@@ -144,5 +144,6 @@ const ChangePassword: React.FC = () =>{
 };
 
 export default ChangePassword;
+
 
 

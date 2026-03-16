@@ -139,7 +139,7 @@ const Analytics: React.FC = () =>{
       {
         label: t('analytics.expense'),
         data: analyticsData.monthlyData.map((d) => d.expense),
-        backgroundColor: '#ef4444',
+        backgroundColor: '#dc2626',
       },
     ],
   };
@@ -165,7 +165,7 @@ const Analytics: React.FC = () =>{
   };
 
   // Spending by Category Pie Chart Data
-  const categoryColors = ['#5f6f52', '#7b8a69', '#f59e0b', '#ef4444', '#9ca3af'];
+  const categoryColors = ['#5f6f52', '#7b8a69', '#f59e0b', '#dc2626', '#9ca3af'];
   const spendingByCategoryData = {
     labels: analyticsData.categoryData.map((d) => d.category),
     datasets: [
@@ -273,4 +273,5 @@ const Analytics: React.FC = () =>{
 };
 
 export default Analytics;
+
 

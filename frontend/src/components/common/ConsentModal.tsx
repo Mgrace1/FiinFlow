@@ -71,19 +71,19 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ isOpen, onClose }) => {
             </div>
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                <span className="w-1.5 h-1.5 bg-green-300 rounded-full mt-2 flex-shrink-0" />
                 <span>All passwords are hashed using bcrypt and never stored in plain text.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                <span className="w-1.5 h-1.5 bg-green-300 rounded-full mt-2 flex-shrink-0" />
                 <span>Your company's data is isolated from other companies through token-based authentication.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                <span className="w-1.5 h-1.5 bg-green-300 rounded-full mt-2 flex-shrink-0" />
                 <span>Role-based access control ensures only authorized team members see sensitive data.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                <span className="w-1.5 h-1.5 bg-green-300 rounded-full mt-2 flex-shrink-0" />
                 <span>Data will be stored securely and deleted after the pilot study concludes.</span>
               </li>
             </ul>
@@ -167,4 +167,5 @@ const ConsentModal: React.FC<ConsentModalProps> = ({ isOpen, onClose }) => {
 };
 
 export default ConsentModal;
+
 
