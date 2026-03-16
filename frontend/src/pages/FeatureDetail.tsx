@@ -25,7 +25,7 @@ const FeatureDetail: React.FC = () => {
           <Link to="/login" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400">
             Log in
           </Link>
-          <Link to="/setup/company" className="rounded-lg bg-[#4B5320] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3A401F]">
+          <Link to="/setup/company" className="rounded-lg bg-[#5f6f52] px-4 py-2 text-sm font-semibold text-white hover:bg-[#4f5e45]">
             Get started
           </Link>
         </div>
@@ -117,7 +117,7 @@ const FeatureDetail: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <Link to="/setup/company" className="rounded-lg bg-[#4B5320] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#3A401F]">
+            <Link to="/setup/company" className="rounded-lg bg-[#5f6f52] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4f5e45]">
               Create account
             </Link>
             <Link to="/#features" className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50">

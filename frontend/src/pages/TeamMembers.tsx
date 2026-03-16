@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
 import ConfirmModal from '../components/common/ConfirmModal';
 import EmptyState from '../components/common/EmptyState';
@@ -287,7 +287,7 @@ const TeamMembers: React.FC = () =>{
                 {isAdmin && (
                   <button
                       onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                       title={t('team.cancel_invite')}
                       aria-label={t('team.cancel_invite')}
                     >
@@ -308,7 +308,7 @@ const TeamMembers: React.FC = () =>{
                 {isAdmin && (
                   <button
                       onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                       title={t('team.remove_member')}
                       aria-label={t('team.remove_member')}
                     >
@@ -383,7 +383,7 @@ const TeamMembers: React.FC = () =>{
                     {isAdmin && (
                       <button
                           onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                           title={t('team.cancel_invite')}
                           aria-label={t('team.cancel_invite')}
                         >
@@ -404,7 +404,7 @@ const TeamMembers: React.FC = () =>{
                     {isAdmin && (
                       <button
                           onClick={() =>setDeleteConfirm({ show: true, memberId: member._id })}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                           title={t('team.remove_member')}
                           aria-label={t('team.remove_member')}
                         >
@@ -439,7 +439,7 @@ const TeamMembers: React.FC = () =>{
               {editingMember ? t('team.edit_title') : t('team.add_title')}
           </h2>
             {error && (
-            <div className="bg-danger-50 border border-danger-500 text-danger-700 px-4 py-3 rounded mb-4">
+            <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded mb-4">
                 {error}
             </div>
             )}
@@ -484,9 +484,9 @@ const TeamMembers: React.FC = () =>{
                   {passwordValidation.rules.map((rule) => (
                     <p
                       key={rule.label}
-                      className={`text-xs ${rule.passed ? 'text-success-500' : 'text-gray-500'}`}
+                      className={`text-xs ${rule.passed ? 'text-primary-600' : 'text-gray-500'}`}
                     >
-                      {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
+                      {rule.passed ? '?' : '�'} {t(getPasswordRuleKey(rule.label))}
                     </p>
                   ))}
                 </div>
@@ -539,7 +539,7 @@ const TeamMembers: React.FC = () =>{
               {t('team.invite_subtitle')}
           </p>
             {inviteError && (
-            <div className="bg-danger-50 border border-danger-500 text-danger-700 px-4 py-3 rounded mb-4">
+            <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded mb-4">
                 {inviteError}
             </div>
             )}
@@ -615,3 +615,4 @@ const TeamMembers: React.FC = () =>{
 };
 
 export default TeamMembers;
+

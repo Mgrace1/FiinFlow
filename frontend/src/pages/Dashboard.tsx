@@ -82,14 +82,14 @@ interface MonthlyRow {
 
 // Consistent color palette
 const PIE_COLORS = {
-  paid: '#10b981',      // green
-  inProgress: '#0ea5e9', // blue
-  overdue: '#f59e0b',    // amber
+  paid: '#5f6f52',      // primary
+  inProgress: '#7b8a69', // primary-400
+  overdue: '#f59e0b',    // warning
   draft: '#9ca3af',      // gray
-  cancelled: '#ef4444',  // red
+  cancelled: '#ef4444',  // danger
 };
 
-const PIE_COLORS_ARRAY = ['#10b981', '#0ea5e9', '#f59e0b', '#9ca3af', '#ef4444'];
+const PIE_COLORS_ARRAY = ['#5f6f52', '#7b8a69', '#f59e0b', '#9ca3af', '#ef4444'];
 
 const DASHBOARD_CARD =
   'rounded-2xl border border-slate-200 bg-white p-5';
@@ -420,18 +420,18 @@ const Dashboard: React.FC = () => {
                   tickLine={false}
                   axisLine={false}
                 />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(14, 165, 233, 0.05)' }} />
-                <Bar dataKey="pending" fill="#0ea5e9" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.pending')} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(95, 111, 82, 0.06)' }} />
+                <Bar dataKey="pending" fill="#7b8a69" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.pending')} />
                 <Bar dataKey="draft" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.draft')} />
-                <Bar dataKey="collected" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.income')} />
-                <Bar dataKey="spent" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.expenses')} />
+                <Bar dataKey="collected" fill="#5f6f52" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.income')} />
+                <Bar dataKey="spent" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.expenses')} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           {/* Legend UNDER the graph */}
           <div className="mt-4 flex items-center justify-center gap-6 text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#0ea5e9' }}></span>
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#7b8a69' }}></span>
               <span className="text-slate-600">{t('status.pending')}</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -439,11 +439,11 @@ const Dashboard: React.FC = () => {
               <span className="text-slate-600">{t('status.draft')}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#10b981' }}></span>
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#5f6f52' }}></span>
               <span className="text-slate-600">{t('dashboard.income')}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f97316' }}></span>
+              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ef4444' }}></span>
               <span className="text-slate-600">{t('dashboard.expenses')}</span>
             </div>
           </div>
@@ -568,8 +568,8 @@ const Dashboard: React.FC = () => {
                   axisLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="collected" stroke="#10b981" strokeWidth={2.4} dot={false} name={t('dashboard.income')} />
-                <Line type="monotone" dataKey="spent" stroke="#f97316" strokeWidth={2.4} dot={false} name={t('dashboard.expenses')} />
+                <Line type="monotone" dataKey="collected" stroke="#5f6f52" strokeWidth={2.4} dot={false} name={t('dashboard.income')} />
+                <Line type="monotone" dataKey="spent" stroke="#ef4444" strokeWidth={2.4} dot={false} name={t('dashboard.expenses')} />
               </LineChart>
             </ResponsiveContainer>
           </div>

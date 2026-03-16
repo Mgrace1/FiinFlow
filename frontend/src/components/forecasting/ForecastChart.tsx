@@ -70,24 +70,24 @@ const ForecastChart: React.FC<ForecastChartProps> = ({ data }) => {
             <Area
                 type="monotone"
                 dataKey="yhat"
-                stroke="#8884d8"
-                fill="#8884d8"
+                stroke="#5f6f52"
+                fill="#5f6f52"
                 fillOpacity={0.3}
                 name="Predicted Cash Flow"
             />
             <Area
                 type="monotone"
                 dataKey="yhat_upper"
-                stroke="#82ca9d"
-                fill="#82ca9d"
+                stroke="#7b8a69"
+                fill="#7b8a69"
                 fillOpacity={0.2}
                 name="Upper Confidence"
                 />
             <Area
                 type="monotone"
                 dataKey="yhat_lower"
-                stroke="#ffc658"
-                fill="#ffc658"
+                stroke="#f59e0b"
+                fill="#f59e0b"
                 fillOpacity={0.2}
                 name="Lower Confidence"
                 />

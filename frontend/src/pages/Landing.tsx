@@ -65,8 +65,8 @@ const faqs = [
   },
 ];
 
-const armyGreen = '#4B5320';
-const armyGreenHover = '#3A401F';
+const armyGreen = '#5f6f52';
+const armyGreenHover = '#4f5e45';
 
 const Landing = () => {
   const featuresRef = useRef<HTMLElement | null>(null);

@@ -444,7 +444,7 @@ const PlatformAdmin: React.FC = () => {
                               <FaPen className="text-sm" />
                             </button>
                             <button
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                               onClick={() => setDeleteCompanyConfirm({ show: true, company })}
                               disabled={companyDeletingId === company._id}
                               title="Delete company"
@@ -566,7 +566,7 @@ const PlatformAdmin: React.FC = () => {
                                 <FaPen className="text-sm" />
                               </button>
                               <button
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                                 onClick={() => setDeleteUserConfirm({ show: true, user })}
                                 disabled={userDeletingId === user._id}
                                 title="Delete user"
@@ -615,3 +615,4 @@ const PlatformAdmin: React.FC = () => {
 };
 
 export default PlatformAdmin;
+

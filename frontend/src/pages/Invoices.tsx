@@ -613,7 +613,7 @@ const Invoices: React.FC = () => {
                         {isAdmin && (
                           <button
                             onClick={() => setDeleteConfirm({ show: true, invoiceId: invoice._id })}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                             title={t('common.delete')}
                             aria-label={t('common.delete')}
                           >
@@ -964,7 +964,7 @@ const Invoices: React.FC = () => {
 
       {showSendPreview && previewData && (() => {
         const companyRaw = (() => { try { return JSON.parse(localStorage.getItem('finflow_company') || '{}'); } catch { return {}; } })();
-        const accentColor = String(companyRaw.brandColor || '#2563EB');
+        const accentColor = String(companyRaw.brandColor || '#5f6f52');
         const companyName = companyRaw.displayName || companyRaw.name || t('common.your_company');
         const companyAddress = companyRaw.address || '';
         const companyPhone = companyRaw.phone || '';
@@ -1151,4 +1151,5 @@ const Invoices: React.FC = () => {
 };
 
 export default Invoices;
+
 

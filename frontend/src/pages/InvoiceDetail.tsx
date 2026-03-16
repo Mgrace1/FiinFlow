@@ -318,7 +318,7 @@ const handleSaveEdit = async () =>{
   const companyPhone = String(companyData.phone || '');
   const paymentInstructions = String(companyData.defaultPaymentInstructions || '');
   const payLines = paymentInstructions ? paymentInstructions.split('\n').map((l: string) => l.trim()).filter(Boolean) : [];
-  const accentColor = String(companyData.brandColor || '#2563EB');
+  const accentColor = String(companyData.brandColor || '#5f6f52');
   const numFmt = (n: number) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   const invoiceTaxAmt = invoice.taxApplied ? (invoice.totalAmount - invoice.amount) : 0;
   const dueDateValue = new Date(invoice.dueDate);

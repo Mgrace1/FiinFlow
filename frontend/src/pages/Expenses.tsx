@@ -435,7 +435,7 @@ const Expenses: React.FC = () =>{
                       e.stopPropagation();
                       setDeleteConfirm({ show: true, expenseId: expense._id });
                     }}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                     title={t('common.delete')}
                     aria-label={t('common.delete')}
                   >
@@ -516,7 +516,7 @@ const Expenses: React.FC = () =>{
                     {isAdmin && (
                       <button
                         onClick={(e) =>{ e.stopPropagation(); setDeleteConfirm({ show: true, expenseId: expense._id }); }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                         title={t('common.delete')}
                         aria-label={t('common.delete')}
                       >
@@ -740,14 +740,6 @@ const Expenses: React.FC = () =>{
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-blue-900 mb-2">{t('expenses.modal.tips_title')}</p>
-                    <ul className="text-xs text-blue-800 space-y-1 list-disc pl-4">
-                      <li>{t('expenses.modal.tip_supplier')}</li>
-                      <li>{t('expenses.modal.tip_reference')}</li>
-                      <li>{t('expenses.modal.tip_link_client')}</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>
@@ -812,4 +804,5 @@ const Expenses: React.FC = () =>{
 };
 
 export default Expenses;
+
 

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -101,9 +101,9 @@ const ChangePassword: React.FC = () =>{
           {passwordValidation.rules.map((rule) => (
             <p
               key={rule.label}
-              className={`text-xs ${rule.passed ? 'text-success-500' : 'text-gray-500'}`}
+              className={`text-xs ${rule.passed ? 'text-primary-600' : 'text-gray-500'}`}
             >
-              {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
+              {rule.passed ? '?' : '�'} {t(getPasswordRuleKey(rule.label))}
             </p>
           ))}
         </div>
@@ -144,4 +144,5 @@ const ChangePassword: React.FC = () =>{
 };
 
 export default ChangePassword;
+
 

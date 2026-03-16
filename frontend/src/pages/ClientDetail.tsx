@@ -59,8 +59,8 @@ interface Summary {
 }
 
 const PIE_COLORS: Record<string, string> = {
-  paid:      '#22c55e',
-  sent:      '#3b82f6',
+  paid:      '#5f6f52',
+  sent:      '#7b8a69',
   overdue:   '#ef4444',
   draft:     '#9ca3af',
   cancelled: '#d1d5db',
@@ -114,9 +114,9 @@ const ClientDetail: React.FC = () => {
   const pieData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
   const barData = [
-    { name: t('client_detail.revenue'),  value: revenue,          fill: '#22c55e' },
+    { name: t('client_detail.revenue'),  value: revenue,          fill: '#5f6f52' },
     { name: t('client_detail.expenses'), value: expTotal,          fill: '#ef4444' },
-    { name: t('client_detail.profit'),   value: profit,            fill: profit >= 0 ? '#3b82f6' : '#f97316' },
+    { name: t('client_detail.profit'),   value: profit,            fill: profit >= 0 ? '#7b8a69' : '#ef4444' },
   ];
 
   const visibleInvoices = showAllInvoices ? invoices : invoices.slice(0, PAGE_SIZE);

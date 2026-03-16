@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -112,7 +112,7 @@ const SetPassword: React.FC = () =>{
       <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('set_password.title')}</h2>
 
         {error && (
-        <div className="bg-danger-50 border border-danger-500 text-danger-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded mb-4">
             {error}
         </div>
         )}
@@ -144,9 +144,9 @@ const SetPassword: React.FC = () =>{
             {passwordValidation.rules.map((rule) => (
               <p
                 key={rule.label}
-                className={`text-xs ${rule.passed ? 'text-success-500' : 'text-gray-500'}`}
+                className={`text-xs ${rule.passed ? 'text-primary-600' : 'text-gray-500'}`}
               >
-                {rule.passed ? '✓' : '•'} {t(getPasswordRuleKey(rule.label))}
+                {rule.passed ? '?' : '�'} {t(getPasswordRuleKey(rule.label))}
               </p>
             ))}
           </div>
@@ -202,3 +202,4 @@ const SetPassword: React.FC = () =>{
 };
 
 export default SetPassword;
+

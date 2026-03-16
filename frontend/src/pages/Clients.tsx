@@ -188,7 +188,7 @@ const Clients: React.FC = () =>{
                 {isAdmin && (
                   <button
                     onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                     title={t('common.delete')}
                     aria-label={t('clients.delete_client')}
                   >
@@ -257,7 +257,7 @@ const Clients: React.FC = () =>{
                     {isAdmin && (
                       <button
                         onClick={() =>setDeleteConfirm({ show: true, clientId: client._id })}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-500 transition hover:bg-red-50 hover:text-danger-700"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition hover:bg-red-50 hover:text-red-700"
                         title={t('common.delete')}
                         aria-label={t('clients.delete_client')}
                       >
@@ -281,7 +281,7 @@ const Clients: React.FC = () =>{
               {editingClient ? t('clients.edit_title') : t('clients.add_title')}
           </h2>
             {error && (
-            <div className="bg-danger-50 border border-danger-500 text-danger-700 px-4 py-3 rounded mb-4">
+            <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded mb-4">
                 {error}
             </div>
             )}
@@ -381,3 +381,4 @@ const Clients: React.FC = () =>{
 };
 
 export default Clients;
+

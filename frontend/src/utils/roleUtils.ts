@@ -174,9 +174,10 @@ export const getRoleLabel = (role: UserRole): string =>{
 export const getRoleBadgeColor = (role: UserRole): string =>{
   const colors: Record<UserRole, string>= {
     super_admin: 'bg-black text-white',
-    admin: 'bg-danger-100 text-danger-800',
+    admin: 'bg-red-100 text-red-800',
     finance_manager: 'bg-primary-100 text-primary-800',
     staff: 'bg-gray-100 text-gray-800',
   };
   return colors[role] || 'bg-gray-100 text-gray-800';
 };
+

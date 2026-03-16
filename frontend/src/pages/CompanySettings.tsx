@@ -41,8 +41,8 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
 
   const [formData, setFormData] = useState({
     displayName: '',
-    brandColor: '#2563EB',
-    brandSecondaryColor: '#10B981',
+    brandColor: '#5f6f52',
+    brandSecondaryColor: '#7b8a69',
     defaultCurrency: 'RWF' as 'RWF' | 'USD' | 'EUR',
     invoiceFooterText: 'Thank you for your business!',
     invoicePrefix: 'INV',
@@ -62,8 +62,8 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
         localStorage.setItem('finflow_company', JSON.stringify(companyData));
         setFormData({
           displayName: companyData.displayName || companyData.name,
-          brandColor: companyData.brandColor || '#2563EB',
-          brandSecondaryColor: companyData.brandSecondaryColor || '#10B981',
+          brandColor: companyData.brandColor || '#5f6f52',
+          brandSecondaryColor: companyData.brandSecondaryColor || '#7b8a69',
           defaultCurrency: companyData.defaultCurrency || 'RWF',
           invoiceFooterText: companyData.invoiceFooterText || 'Thank you for your business!',
           invoicePrefix: companyData.invoicePrefix || 'INV',
@@ -316,7 +316,7 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
                         setFormData({ ...formData, brandColor: e.target.value })
                       }
                       className="input flex-1"
-                      placeholder="#2563EB"
+                      placeholder="#5f6f52"
                     />
                 </div>
               </div>
@@ -341,7 +341,7 @@ const CompanySettings: React.FC<CompanySettingsProps> = ({ embedded = false }) =
                         setFormData({ ...formData, brandSecondaryColor: e.target.value })
                       }
                       className="input flex-1"
-                      placeholder="#10B981"
+                      placeholder="#7b8a69"
                     />
                 </div>
               </div>
