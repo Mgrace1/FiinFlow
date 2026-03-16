@@ -182,8 +182,8 @@ const Transactions: React.FC = () => {
   const TypeBadge = ({ type }: { type: 'income' | 'expense' }) => (
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
       type === 'income'
-        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-        : 'bg-orange-200 text-orange-900 dark:bg-orange-900/30 dark:text-orange-300'
+        ? 'bg-green-50 text-green-400 dark:bg-green-900/30 dark:text-green-300'
+        : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300'
     }`}>
       {type === 'income' ? t('transactions.invoice') : t('transactions.expense')}
     </span>

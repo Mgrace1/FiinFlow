@@ -59,9 +59,9 @@ interface Summary {
 }
 
 const PIE_COLORS: Record<string, string> = {
-  paid:      '#5f6f52',
-  sent:      '#7b8a69',
-  overdue:   '#dc2626',
+  paid:      '#4ecb73',
+  sent:      '#fbbf24',
+  overdue:   '#f07a7a',
   draft:     '#9ca3af',
   cancelled: '#d1d5db',
 };
@@ -114,9 +114,9 @@ const ClientDetail: React.FC = () => {
   const pieData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
   const barData = [
-    { name: t('client_detail.revenue'),  value: revenue,          fill: '#5f6f52' },
-    { name: t('client_detail.expenses'), value: expTotal,          fill: '#dc2626' },
-    { name: t('client_detail.profit'),   value: profit,            fill: profit >= 0 ? '#7b8a69' : '#dc2626' },
+    { name: t('client_detail.revenue'),  value: revenue,          fill: '#4ecb73' },
+    { name: t('client_detail.expenses'), value: expTotal,          fill: '#f07a7a' },
+    { name: t('client_detail.profit'),   value: profit,            fill: '#3b82f6' },
   ];
 
   const visibleInvoices = showAllInvoices ? invoices : invoices.slice(0, PAGE_SIZE);
@@ -464,6 +464,11 @@ const ClientDetail: React.FC = () => {
 };
 
 export default ClientDetail;
+
+
+
+
+
 
 
 

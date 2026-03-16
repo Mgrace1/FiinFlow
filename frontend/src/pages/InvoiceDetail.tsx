@@ -515,7 +515,8 @@ const handleSaveEdit = async () =>{
             receipts={invoice.attachments || []}
             onDelete={(fileId) => setDeleteConfirm({ show: true, fileId })}
             uploading={uploading}
-            showUpload={false}
+            showUpload
+            onUpload={(e) => handleFileUpload(e, 'payment_receipt')}
           />
         </div>
 

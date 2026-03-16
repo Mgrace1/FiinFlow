@@ -241,17 +241,23 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
           })}
         </div>
       ) : (
-        <div className="border-2 border-dashed border-yellow-500 bg-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-900 font-medium mb-1">
-             No Payment Receipt Uploaded
-          </p>
-          <p className="text-sm text-yellow-900">
-            A payment receipt is required before marking this invoice as paid.
-          </p>
-          {!showUpload && (
-            <p className="text-xs text-yellow-800 mt-2">
-              Upload receipt in the Confirm Payment Details modal.
-            </p>
+        <div className="border border-dashed border-gray-200 bg-gray-50 rounded-lg p-6 text-center">
+          {showUpload && onUpload ? (
+            <>
+              <label className="btn btn-primary cursor-pointer inline-flex items-center">
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={onUpload}
+                  disabled={uploading}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                {uploading ? 'Uploading...' : '+ Upload Receipt'}
+              </label>
+              <p className="mt-2 text-xs text-gray-500">Upload a payment receipt.</p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">No payment receipts yet.</p>
           )}
         </div>
       )}

@@ -98,9 +98,9 @@ const Reports: React.FC = () =>{
   };
 
   const scoreTone = (score: number) => {
-    if (score >= 80) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-    if (score >= 60) return 'text-amber-900 bg-amber-200 border-amber-200';
-    return 'text-rose-700 bg-rose-50 border-rose-200';
+    if (score >= 80) return 'text-green-400 bg-green-50 border-green-100';
+    if (score >= 60) return 'text-amber-700 bg-amber-100 border-amber-200';
+    return 'text-red-600 bg-red-50 border-red-200';
   };
 
   const handleGenerateForecast = async () => {
@@ -373,7 +373,7 @@ const Reports: React.FC = () =>{
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">{t('reports.total_revenue')}</p>
-            <p className="text-2xl font-bold text-primary-600">
+            <p className="text-2xl font-bold text-green-400">
                 {formatCurrency(reportData.summary.totalRevenue)}
             </p>
           </div>
@@ -385,7 +385,7 @@ const Reports: React.FC = () =>{
           </div>
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">{t('reports.net_profit')}</p>
-            <p className="text-2xl font-bold text-primary-500">
+            <p className="text-2xl font-bold text-blue-600">
                 {formatCurrency(reportData.summary.profit)}
             </p>
             <p className="text-sm text-gray-500 mt-1">
@@ -406,15 +406,15 @@ const Reports: React.FC = () =>{
                   <AreaChart data={netCashflowData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="reportNetFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#5f6f52" stopOpacity={0.32} />
-                        <stop offset="95%" stopColor="#5f6f52" stopOpacity={0.05} />
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.32} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                     <XAxis dataKey="month" stroke="#6b7280" tickLine={false} axisLine={false} />
                     <YAxis stroke="#6b7280" tickLine={false} axisLine={false} />
                     <Tooltip formatter={(value: number | string | undefined) => formatCurrency(Number(value || 0))} />
-                    <Area type="monotone" dataKey="net" stroke="#5f6f52" strokeWidth={2.5} fill="url(#reportNetFill)" name="Net cashflow" />
+                    <Area type="monotone" dataKey="net" stroke="#3b82f6" strokeWidth={2.5} fill="url(#reportNetFill)" name="Net cashflow" />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
@@ -436,7 +436,7 @@ const Reports: React.FC = () =>{
                     <XAxis type="number" stroke="#6b7280" tickLine={false} axisLine={false} />
                     <YAxis dataKey="category" type="category" stroke="#6b7280" tickLine={false} axisLine={false} width={110} />
                     <Tooltip formatter={(value: number | string | undefined) => formatCurrency(Number(value || 0))} />
-                    <Bar dataKey="amount" fill="#5f6f52" radius={[0, 6, 6, 0]} name="Expense" />
+                    <Bar dataKey="amount" fill="#f07a7a" radius={[0, 6, 6, 0]} name="Expense" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -452,13 +452,13 @@ const Reports: React.FC = () =>{
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('reports.total_paid')}:</span>
-                <span className="font-semibold text-primary-600">
+                <span className="font-semibold text-green-400">
                     {formatCurrency(reportData.summary.totalPaid)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('reports.total_pending')}:</span>
-                <span className="font-semibold text-amber-900">
+                <span className="font-semibold text-amber-700">
                     {formatCurrency(reportData.summary.totalPending)}
                 </span>
               </div>
