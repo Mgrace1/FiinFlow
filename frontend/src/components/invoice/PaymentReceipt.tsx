@@ -242,23 +242,9 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
         </div>
       ) : (
         <div className="border border-dashed border-gray-200 bg-gray-50 rounded-lg p-6 text-center">
-          {showUpload && onUpload ? (
-            <>
-              <label className="btn btn-primary cursor-pointer inline-flex items-center">
-                <input
-                  type="file"
-                  className="hidden"
-                  onChange={onUpload}
-                  disabled={uploading}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                />
-                {uploading ? 'Uploading...' : '+ Upload Receipt'}
-              </label>
-              <p className="mt-2 text-xs text-gray-500">Upload a payment receipt.</p>
-            </>
-          ) : (
-            <p className="text-sm text-gray-500">No payment receipts yet.</p>
-          )}
+          <p className="text-sm text-gray-500">
+            {showUpload && onUpload ? 'Upload a payment receipt.' : 'No payment receipts yet.'}
+          </p>
         </div>
       )}
 
