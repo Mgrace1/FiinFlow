@@ -100,6 +100,8 @@ export interface IInvoice {
   proformaFileId?: Types.ObjectId;
   invoiceFileId?: Types.ObjectId;
   receiptFileId?: Types.ObjectId;
+  publicShareToken?: string;
+  publicShareExpiresAt?: Date;
   paymentDate?: Date;
   amountPaid?: number;
   paymentMethod?: string;

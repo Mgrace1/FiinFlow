@@ -44,18 +44,12 @@ apiClient.interceptors.response.use(
   }
 );
 
-// ... (previous code) ...
 
-
-
-
-// Function to get financial forecast
-
-export const getForecast = async () => {
+export const getForecast = async (params?: { clientId?: string }) => {
 
   try {
 
-    const response = await apiClient.get('/forecasting/forecast');
+    const response = await apiClient.get('/forecasting/forecast', { params });
 
     return response.data;
 

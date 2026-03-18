@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiClient, getForecast } from '../api/client';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -36,6 +36,55 @@ interface ReportData {
   expenses: any[];
 }
 
+const DASHBOARD_COLORS = {
+  income: '#0a853f',
+  expense: '#ff9494',
+  profit: '#3b82f6',
+  pending: '#ffe070',
+};
+
+const GREEN_BG = '#99ffc5';
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const sanitized = hex.replace('#', '');
+  const bigint = parseInt(sanitized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+interface ForecastSummary {
+  total_revenue: number;
+  total_expenses: number;
+  pending_amount: number;
+  overdue_amount: number;
+  avg_last_30: number;
+  avg_prev_30: number;
+  expected_net_90: number;
+  expected_best_90: number;
+  expected_worst_90: number;
+}
+
+interface ForecastRisk {
+  score: number;
+  level: 'low' | 'medium' | 'high';
+  reasons?: string[];
+}
+
+interface ForecastInsight {
+  type: 'info' | 'warning' | 'critical';
+  message: string;
+}
+
+interface ForecastResponse {
+  forecast_data: any[];
+  summary?: ForecastSummary;
+  risk?: ForecastRisk;
+  insights?: ForecastInsight[];
+  scope?: 'company' | 'client';
+}
+
 const getSafeDate = (value?: string) => {
   if (!value) return null;
   const parsed = new Date(value);
@@ -52,6 +101,9 @@ const Reports: React.FC = () =>{
   });
   const [forecastData, setForecastData] = useState<any | null>(null);
   const [isForecastLoading, setIsForecastLoading] = useState(false);
+  const [forecastMeta, setForecastMeta] = useState<ForecastResponse | null>(null);
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedForecastClient, setSelectedForecastClient] = useState<string>('');
   const [performance, setPerformance] = useState<PerformancePayload | null>(null);
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [showAllClients, setShowAllClients] = useState(false);
@@ -59,6 +111,20 @@ const Reports: React.FC = () =>{
     () => new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
     [lang]
   );
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        const response = await apiClient.get('/clients');
+        if (response.data?.success) {
+          setClients(response.data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch clients for forecast:', error);
+      }
+    };
+    fetchClients();
+  }, []);
 
   const fetchReports = async () =>{
     setLoading(true);
@@ -98,16 +164,24 @@ const Reports: React.FC = () =>{
   };
 
   const scoreTone = (score: number) => {
-    if (score >= 80) return 'text-green-400 bg-green-50 border-green-100';
-    if (score >= 60) return 'text-amber-700 bg-amber-100 border-amber-200';
-    return 'text-red-600 bg-red-50 border-red-200';
+    const color = score >= 80
+      ? DASHBOARD_COLORS.income
+      : score >= 60
+        ? DASHBOARD_COLORS.pending
+        : DASHBOARD_COLORS.expense;
+    return {
+      color,
+      backgroundColor: score >= 80 ? GREEN_BG : hexToRgba(color, 0.15),
+      borderColor: score >= 80 ? hexToRgba(GREEN_BG, 0.6) : hexToRgba(color, 0.35),
+    };
   };
 
   const handleGenerateForecast = async () => {
     setIsForecastLoading(true);
     try {
-      const response = await getForecast();
+      const response = await getForecast(selectedForecastClient ? { clientId: selectedForecastClient } : undefined);
       setForecastData(response.forecast_data);
+      setForecastMeta(response);
     } catch (error) {
       console.error('Failed to generate forecast:', error);
       notifyError(getErrorMessage(error, 'Failed to generate forecast. Check forecasting service logs.'));
@@ -373,19 +447,19 @@ const Reports: React.FC = () =>{
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">{t('reports.total_revenue')}</p>
-            <p className="text-2xl font-bold text-green-400">
+            <p className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.income }}>
                 {formatCurrency(reportData.summary.totalRevenue)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">{t('reports.total_expenses')}</p>
-            <p className="text-2xl font-bold text-red-600">
+            <p className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.expense }}>
                 {formatCurrency(reportData.summary.totalExpenses)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-1">{t('reports.net_profit')}</p>
-            <p className="text-2xl font-bold text-blue-600">
+            <p className="text-2xl font-bold" style={{ color: DASHBOARD_COLORS.profit }}>
                 {formatCurrency(reportData.summary.profit)}
             </p>
             <p className="text-sm text-gray-500 mt-1">
@@ -436,7 +510,7 @@ const Reports: React.FC = () =>{
                     <XAxis type="number" stroke="#6b7280" tickLine={false} axisLine={false} />
                     <YAxis dataKey="category" type="category" stroke="#6b7280" tickLine={false} axisLine={false} width={110} />
                     <Tooltip formatter={(value: number | string | undefined) => formatCurrency(Number(value || 0))} />
-                    <Bar dataKey="amount" fill="#f07a7a" radius={[0, 6, 6, 0]} name="Expense" />
+                    <Bar dataKey="amount" fill={DASHBOARD_COLORS.expense} radius={[0, 6, 6, 0]} name="Expense" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -452,13 +526,13 @@ const Reports: React.FC = () =>{
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('reports.total_paid')}:</span>
-                <span className="font-semibold text-green-400">
+                <span className="font-semibold" style={{ color: DASHBOARD_COLORS.income }}>
                     {formatCurrency(reportData.summary.totalPaid)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('reports.total_pending')}:</span>
-                <span className="font-semibold text-amber-700">
+                <span className="font-semibold" style={{ color: '#8a5b00' }}>
                     {formatCurrency(reportData.summary.totalPending)}
                 </span>
               </div>
@@ -474,7 +548,7 @@ const Reports: React.FC = () =>{
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('reports.total_expenses')}:</span>
-                <span className="font-semibold text-red-600">
+                <span className="font-semibold" style={{ color: DASHBOARD_COLORS.expense }}>
                     {formatCurrency(reportData.summary.totalExpenses)}
                 </span>
               </div>
@@ -531,7 +605,10 @@ const Reports: React.FC = () =>{
                             <td className="px-4 py-3 text-right text-gray-700">{row.collectionRate ?? 0}%</td>
                             <td className="px-4 py-3 text-right text-gray-700">{row.paidRate}%</td>
                             <td className="px-4 py-3 text-right">
-                              <span className={`inline-flex min-w-[56px] items-center justify-center rounded-full border px-2 py-0.5 text-xs font-semibold ${scoreTone(row.performanceScore)}`}>
+                              <span
+                                className="inline-flex min-w-[56px] items-center justify-center rounded-full border px-2 py-0.5 text-xs font-semibold"
+                                style={scoreTone(row.performanceScore)}
+                              >
                                 {row.performanceScore}
                               </span>
                             </td>
@@ -557,17 +634,97 @@ const Reports: React.FC = () =>{
         <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('reports.ai_forecast_title')}</h2>
         <div className="bg-white rounded-lg shadow p-4 sm:p-6">
           <p className="mb-4 text-gray-600">{t('reports.ai_forecast_desc')}</p>
-          <button
-            onClick={handleGenerateForecast}
-            disabled={isForecastLoading}
-            className="btn btn-primary"
-          >
-            {isForecastLoading ? t('reports.generating_forecast') : t('reports.generate_forecast')}
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Forecast for</label>
+              <select
+                value={selectedForecastClient}
+                onChange={(e) => setSelectedForecastClient(e.target.value)}
+                className="input"
+              >
+                <option value="">Company-wide (all clients)</option>
+                {clients.map((client) => (
+                  <option key={client._id} value={client._id}>
+                    {client.name || client.contactPerson || 'Client'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleGenerateForecast}
+              disabled={isForecastLoading}
+              className="btn btn-primary w-full sm:w-auto"
+            >
+              {isForecastLoading ? t('reports.generating_forecast') : t('reports.generate_forecast')}
+            </button>
+          </div>
         </div>
       </div>
 
       {isForecastLoading && <LoadingOverlay message={t('reports.ai_loading')} />}
+
+      {forecastMeta?.summary && (
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">Expected net cashflow (90 days)</p>
+            <p
+              className="text-xl font-bold"
+              style={{ color: forecastMeta.summary.expected_net_90 >= 0 ? DASHBOARD_COLORS.income : DASHBOARD_COLORS.expense }}
+            >
+              {formatCurrency(forecastMeta.summary.expected_net_90)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Best: {formatCurrency(forecastMeta.summary.expected_best_90)} · Worst: {formatCurrency(forecastMeta.summary.expected_worst_90)}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">Financial distress risk</p>
+            <p
+              className="text-xl font-bold"
+              style={{
+                color:
+                  forecastMeta.risk?.level === 'high'
+                    ? DASHBOARD_COLORS.expense
+                    : forecastMeta.risk?.level === 'medium'
+                    ? '#8a5b00'
+                    : DASHBOARD_COLORS.income,
+              }}
+            >
+              {forecastMeta.risk?.level?.toUpperCase() || 'LOW'} ({forecastMeta.risk?.score ?? 0})
+            </p>
+            {forecastMeta.risk?.reasons?.length ? (
+              <p className="text-xs text-gray-500 mt-1">{forecastMeta.risk.reasons[0]}</p>
+            ) : null}
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">Pending vs overdue</p>
+            <p className="text-xl font-bold" style={{ color: DASHBOARD_COLORS.profit }}>{formatCurrency(forecastMeta.summary.pending_amount)}</p>
+            <p className="text-xs text-gray-500 mt-1">Overdue: {formatCurrency(forecastMeta.summary.overdue_amount)}</p>
+          </div>
+        </div>
+      )}
+
+      {forecastMeta?.insights?.length ? (
+        <div className="mt-4 bg-white rounded-lg shadow p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Forecast insights</h3>
+          <div className="space-y-2">
+            {forecastMeta.insights.map((insight, idx) => (
+              <div
+                key={`${insight.type}-${idx}`}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  insight.type === 'critical'
+                    ? 'border-red-200 bg-red-50 text-red-700'
+                    : insight.type === 'warning'
+                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                    : 'border-slate-200 bg-slate-50 text-slate-700'
+                }`}
+              >
+                {insight.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {forecastData && (
         <ForecastChart data={forecastData} />

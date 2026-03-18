@@ -103,6 +103,13 @@ const InvoiceSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'File',
     },
+    publicShareToken: {
+      type: String,
+      index: true,
+    },
+    publicShareExpiresAt: {
+      type: Date,
+    },
     paymentDate: {
       type: Date,
     },

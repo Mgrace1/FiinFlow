@@ -208,27 +208,18 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) =>{
     const expenses = await Expense.find({ companyId });
     const totalExpenses = expenses.reduce((sum, exp: any) =>sum + convert(exp.amount, exp.currency), 0);
 
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-    sixMonthsAgo.setDate(1);
-    sixMonthsAgo.setHours(0, 0, 0, 0);
-
-    // Get invoices used by dashboard charts (last 6 months)
+    // Get invoices used by dashboard charts (all time)
     const latestInvoices = await Invoice.find({
       companyId,
-      createdAt: { $gte: sixMonthsAgo },
     })
       .populate('clientId', 'name')
-      .sort({ createdAt: -1 })
-      .limit(300);
+      .sort({ createdAt: -1 });
 
-    // Get expenses used by dashboard charts (last 6 months)
+    // Get expenses used by dashboard charts (all time)
     const latestExpenses = await Expense.find({
       companyId,
-      date: { $gte: sixMonthsAgo },
     })
-      .sort({ date: -1, createdAt: -1 })
-      .limit(300);
+      .sort({ date: -1, createdAt: -1 });
 
     res.json({
       success: true,

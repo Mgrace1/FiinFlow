@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import { Company, Invoice, File as FileModel, Notification } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import fs from 'fs';
@@ -221,6 +222,55 @@ const sendInvoiceSentNotification = async (invoice: any, companyId: any, mode: '
       sent: false,
       reason: 'Unexpected email notification error',
     };
+  }
+};
+
+export const createInvoicePublicLink = async (req: AuthRequest, res: Response) => {
+  try {
+    const invoice = await Invoice.findOne({
+      _id: req.params.id,
+      companyId: req.companyId,
+    }).populate('clientId');
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found',
+      });
+    }
+
+    const now = new Date();
+    const hasValidToken =
+      invoice.publicShareToken
+      && invoice.publicShareExpiresAt
+      && invoice.publicShareExpiresAt.getTime() > now.getTime();
+
+    if (!hasValidToken) {
+      const token = crypto.randomBytes(24).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      invoice.publicShareToken = token;
+      invoice.publicShareExpiresAt = expiresAt;
+      await invoice.save();
+    }
+
+    const tokenToUse = invoice.publicShareToken;
+    const backendBase = process.env.BACKEND_PUBLIC_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const publicPdfUrl = `${backendBase}/api/reports/public/invoices/${tokenToUse}/pdf`;
+
+    return res.json({
+      success: true,
+      data: {
+        url: publicPdfUrl,
+        expiresAt: invoice.publicShareExpiresAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Create public invoice link error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create invoice link',
+    });
   }
 };
 

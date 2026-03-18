@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+ï»¿import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { apiClient } from '../api/client';
@@ -121,7 +121,7 @@ const SearchPage: React.FC = () => {
       description: t('search.nav_dashboard_desc'),
       category: t('search.nav_workspace'),
       path: '/dashboard',
-      keywords: ['dashboard', 'home', 'overview', 'workspace', 'tableau de bord', 'accueil', 'aperçu', 'espace de travail'],
+      keywords: ['dashboard', 'home', 'overview', 'workspace', 'tableau de bord', 'accueil', 'aperÃ§u', 'espace de travail'],
     },
     {
       id: 'nav-clients',
@@ -145,7 +145,7 @@ const SearchPage: React.FC = () => {
       description: t('search.nav_expenses_desc'),
       category: t('search.nav_finance'),
       path: '/expenses',
-      keywords: ['expenses', 'costs', 'spending', 'suppliers', 'dépenses', 'coûts', 'fournisseurs'],
+      keywords: ['expenses', 'costs', 'spending', 'suppliers', 'dÃ©penses', 'coÃ»ts', 'fournisseurs'],
     },
     {
       id: 'nav-reports',
@@ -153,7 +153,7 @@ const SearchPage: React.FC = () => {
       description: t('search.nav_reports_desc'),
       category: t('search.nav_analytics'),
       path: '/reports',
-      keywords: ['reports', 'analytics', 'profit', 'cashflow', 'forecast', 'rapports', 'analytique', 'profit', 'trésorerie'],
+      keywords: ['reports', 'analytics', 'profit', 'cashflow', 'forecast', 'rapports', 'analytique', 'profit', 'trÃ©sorerie'],
     },
     {
       id: 'nav-team',
@@ -161,7 +161,7 @@ const SearchPage: React.FC = () => {
       description: t('search.nav_team_desc'),
       category: t('search.nav_admin'),
       path: '/team',
-      keywords: ['team', 'users', 'members', 'roles', 'permissions', 'équipe', 'utilisateurs', 'rôles', 'permissions'],
+      keywords: ['team', 'users', 'members', 'roles', 'permissions', 'Ã©quipe', 'utilisateurs', 'rÃ´les', 'permissions'],
     },
     {
       id: 'nav-settings',
@@ -169,7 +169,7 @@ const SearchPage: React.FC = () => {
       description: t('search.nav_settings_desc'),
       category: t('search.nav_admin'),
       path: '/settings',
-      keywords: ['settings', 'configuration', 'company', 'branding', 'profile', 'paramètres', 'configuration', 'entreprise', 'profil'],
+      keywords: ['settings', 'configuration', 'company', 'branding', 'profile', 'paramÃ¨tres', 'configuration', 'entreprise', 'profil'],
     },
   ], [t]);
 
@@ -258,7 +258,7 @@ const SearchPage: React.FC = () => {
                   <Link key={client._id} to="/clients" className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{client.name}</p>
                     <p className="text-sm text-gray-500">
-                      {client.contactPerson || t('search.no_contact')} {client.email ? `• ${client.email}` : ''}
+                      {client.contactPerson || t('search.no_contact')} {client.email ? `| ${client.email}` : ''}
                     </p>
                   </Link>
                 ))}
@@ -276,8 +276,8 @@ const SearchPage: React.FC = () => {
                   <Link key={invoice._id} to={`/invoices/${invoice._id}`} className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{invoice.invoiceNumber || `Invoice ${invoice._id}`}</p>
                     <p className="text-sm text-gray-500">
-                      {typeof invoice.clientId === 'object' ? invoice.clientId?.name : t('search.client_unavailable')} •{' '}
-                      {(invoice.status === 'sent' ? 'pending' : invoice.status) || 'unknown'} • {t('search.due')} {invoice.dueDate ? formatDateDMY(invoice.dueDate) : 'N/A'}
+                      {typeof invoice.clientId === 'object' ? invoice.clientId?.name : t('search.client_unavailable')} |{' '}
+                      {(invoice.status === 'sent' ? 'pending' : invoice.status) || 'unknown'} | {t('search.due')} {invoice.dueDate ? formatDateDMY(invoice.dueDate) : 'N/A'}
                     </p>
                   </Link>
                 ))}
@@ -295,7 +295,7 @@ const SearchPage: React.FC = () => {
                   <Link key={expense._id} to="/expenses" className="block px-4 py-3 hover:bg-gray-50">
                     <p className="font-medium text-gray-900">{expense.supplier || t('search.unnamed_supplier')}</p>
                     <p className="text-sm text-gray-500">
-                      {expense.category || t('search.uncategorized')} • {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} • {expense.paymentStatus || 'unknown'} • {expense.date ? formatDateDMY(expense.date) : 'No date'}
+                      {expense.category || t('search.uncategorized')} | {formatCompanyMoney(Number(expense.amount || 0), expense.currency || 'RWF')} | {expense.paymentStatus || 'unknown'} | {expense.date ? formatDateDMY(expense.date) : 'No date'}
                     </p>
                   </Link>
                 ))}
@@ -309,5 +309,6 @@ const SearchPage: React.FC = () => {
 };
 
 export default SearchPage;
+
 
 

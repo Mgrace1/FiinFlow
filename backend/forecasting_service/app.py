@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 import pymongo
 import pandas as pd
+import numpy as np
 from prophet import Prophet
 from bson import ObjectId
 from pymongo.uri_parser import parse_uri
@@ -47,16 +48,20 @@ def forecast():
         return jsonify({"error": "Database connection failed"}), 500
 
     company_id = request.json.get('company_id')
+    client_id = request.json.get('client_id')
     if not company_id:
         return jsonify({"error": "company_id is required"}), 400
 
     try:
         # --- Data Fetching ---
-        invoices_cursor = db.invoices.find({
-            "companyId": ObjectId(company_id),
-            "status": "paid"
-        })
-        expenses_cursor = db.expenses.find({"companyId": ObjectId(company_id)})
+        invoice_filter = {"companyId": ObjectId(company_id)}
+        expense_filter = {"companyId": ObjectId(company_id)}
+        if client_id:
+            invoice_filter["clientId"] = ObjectId(client_id)
+            expense_filter["clientId"] = ObjectId(client_id)
+
+        invoices_cursor = db.invoices.find(invoice_filter)
+        expenses_cursor = db.expenses.find(expense_filter)
 
         invoices = list(invoices_cursor)
         expenses = list(expenses_cursor)
@@ -65,12 +70,13 @@ def forecast():
             return jsonify({"error": "Not enough data to create a forecast."}), 400
 
         # --- Data Preparation ---
-        df_income = pd.DataFrame(invoices)
+        df_invoices = pd.DataFrame(invoices)
         df_expenses = pd.DataFrame(expenses)
 
         # Combine income and expenses into a single cash flow dataframe
-        if not df_income.empty:
-            income_date_col = 'createdAt' if 'createdAt' in df_income.columns else ('dueDate' if 'dueDate' in df_income.columns else None)
+        if not df_invoices.empty:
+            df_income = df_invoices[df_invoices.get('status') == 'paid'].copy()
+            income_date_col = 'paidAt' if 'paidAt' in df_income.columns else ('createdAt' if 'createdAt' in df_income.columns else ('dueDate' if 'dueDate' in df_income.columns else None))
             if income_date_col:
                 df_income = df_income.rename(columns={income_date_col: 'ds', 'totalAmount': 'y'})
                 df_income['ds'] = pd.to_datetime(df_income['ds'], errors='coerce')
@@ -82,7 +88,7 @@ def forecast():
             df_income = pd.DataFrame(columns=['ds', 'y'])
 
         if not df_expenses.empty:
-            expense_date_col = 'dueDate' if 'dueDate' in df_expenses.columns else ('createdAt' if 'createdAt' in df_expenses.columns else None)
+            expense_date_col = 'date' if 'date' in df_expenses.columns else ('dueDate' if 'dueDate' in df_expenses.columns else ('createdAt' if 'createdAt' in df_expenses.columns else None))
             if expense_date_col:
                 df_expenses = df_expenses.rename(columns={expense_date_col: 'ds', 'amount': 'y'})
                 df_expenses['ds'] = pd.to_datetime(df_expenses['ds'], errors='coerce')
@@ -113,6 +119,38 @@ def forecast():
             .sum()
             .reset_index()
         )
+
+        # --- Rule-based insights & risk ---
+        def safe_sum(series):
+            return float(pd.to_numeric(series, errors='coerce').fillna(0).sum()) if series is not None else 0.0
+
+        total_revenue = safe_sum(df_income['y']) if not df_income.empty else 0.0
+        total_expenses = abs(safe_sum(df_expenses['y'])) if not df_expenses.empty else 0.0
+
+        overdue_amount = 0.0
+        pending_amount = 0.0
+        if not df_invoices.empty:
+            df_invoices['totalAmount'] = pd.to_numeric(df_invoices.get('totalAmount'), errors='coerce').fillna(0)
+            df_invoices['amountPaid'] = pd.to_numeric(df_invoices.get('amountPaid'), errors='coerce').fillna(0)
+            df_invoices['remaining'] = (df_invoices['totalAmount'] - df_invoices['amountPaid']).clip(lower=0)
+            overdue_amount = float(df_invoices[df_invoices.get('status') == 'overdue']['remaining'].sum())
+            pending_amount = float(df_invoices[df_invoices.get('status').isin(['sent', 'overdue'])]['remaining'].sum())
+
+        # last 90 days net cashflow
+        recent_90 = df_cash_flow.tail(90)
+        recent_60 = df_cash_flow.tail(60)
+        last_30 = recent_60.tail(30)
+        prev_30 = recent_60.head(30) if len(recent_60) >= 60 else pd.DataFrame(columns=['y'])
+        avg_last_30 = float(last_30['y'].mean()) if len(last_30) > 0 else 0.0
+        avg_prev_30 = float(prev_30['y'].mean()) if len(prev_30) > 0 else 0.0
+        negative_days_ratio = float((recent_90['y'] < 0).mean()) if len(recent_90) > 0 else 0.0
+        net_last_90 = float(recent_90['y'].sum()) if len(recent_90) > 0 else 0.0
+
+        overdue_ratio = 0.0
+        if total_revenue + pending_amount > 0:
+            overdue_ratio = overdue_amount / (total_revenue + pending_amount)
+
+        # --- Forecasting with Prophet ---
         
         if len(df_cash_flow) < 2:
             # Graceful fallback for sparse history: flat projection from last known value.
@@ -130,6 +168,26 @@ def forecast():
             ]
             return jsonify({
                 "forecast_data": forecast_data,
+                "summary": {
+                    "total_revenue": total_revenue,
+                    "total_expenses": total_expenses,
+                    "pending_amount": pending_amount,
+                    "overdue_amount": overdue_amount,
+                    "avg_last_30": avg_last_30,
+                    "avg_prev_30": avg_prev_30,
+                    "expected_net_90": base_value * 90,
+                    "expected_best_90": base_value * 90,
+                    "expected_worst_90": base_value * 90,
+                },
+                "risk": {
+                    "score": 0,
+                    "level": "low",
+                    "reasons": ["Not enough historical data to compute risk."],
+                },
+                "insights": [
+                    {"type": "info", "message": "Insufficient history; using a flat forecast baseline."}
+                ],
+                "scope": "client" if client_id else "company",
                 "warning": "Insufficient historical points; returned flat fallback forecast."
             }), 200
 
@@ -142,8 +200,74 @@ def forecast():
         # --- Format Response ---
         forecast_result['ds'] = pd.to_datetime(forecast_result['ds'], errors='coerce').dt.strftime('%Y-%m-%d')
         forecast_data = forecast_result[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
-        
-        return jsonify({"forecast_data": forecast_data})
+
+        future_slice = forecast_result.tail(90)
+        expected_net_90 = float(pd.to_numeric(future_slice['yhat'], errors='coerce').fillna(0).sum())
+        expected_best_90 = float(pd.to_numeric(future_slice['yhat_upper'], errors='coerce').fillna(0).sum())
+        expected_worst_90 = float(pd.to_numeric(future_slice['yhat_lower'], errors='coerce').fillna(0).sum())
+
+        # Risk scoring (rule-based)
+        risk_score = 0
+        reasons = []
+        if net_last_90 < 0:
+            risk_score += 30
+            reasons.append("Recent cashflow is negative over the last 90 days.")
+        if avg_last_30 < avg_prev_30:
+            risk_score += 20
+            reasons.append("Cashflow trend is declining in the last 30 days.")
+        if overdue_ratio > 0.4:
+            risk_score += 25
+            reasons.append("Overdue invoices are high relative to revenue.")
+        if total_expenses > total_revenue and (total_revenue + total_expenses) > 0:
+            risk_score += 20
+            reasons.append("Expenses exceed revenue.")
+        if negative_days_ratio > 0.6:
+            risk_score += 20
+            reasons.append("More than 60% of recent days have negative cashflow.")
+        risk_score = int(min(risk_score, 100))
+        if risk_score >= 65:
+            risk_level = "high"
+        elif risk_score >= 35:
+            risk_level = "medium"
+        else:
+            risk_level = "low"
+
+        # Insights
+        insights = []
+        if expected_net_90 < 0:
+            insights.append({"type": "critical", "message": "Expected net cashflow for the next 90 days is negative."})
+        else:
+            insights.append({"type": "info", "message": "Expected net cashflow for the next 90 days is positive."})
+        if overdue_ratio > 0.4:
+            insights.append({"type": "warning", "message": "Overdue invoices are above 40% of total receivables."})
+        if total_expenses > total_revenue and (total_revenue + total_expenses) > 0:
+            insights.append({"type": "warning", "message": "Expenses currently exceed revenue."})
+        if avg_last_30 < avg_prev_30:
+            insights.append({"type": "warning", "message": "Recent cashflow trend is weakening."})
+        if avg_last_30 > avg_prev_30 and avg_prev_30 != 0:
+            insights.append({"type": "info", "message": "Recent cashflow trend is improving."})
+
+        return jsonify({
+            "forecast_data": forecast_data,
+            "summary": {
+                "total_revenue": total_revenue,
+                "total_expenses": total_expenses,
+                "pending_amount": pending_amount,
+                "overdue_amount": overdue_amount,
+                "avg_last_30": avg_last_30,
+                "avg_prev_30": avg_prev_30,
+                "expected_net_90": expected_net_90,
+                "expected_best_90": expected_best_90,
+                "expected_worst_90": expected_worst_90,
+            },
+            "risk": {
+                "score": risk_score,
+                "level": risk_level,
+                "reasons": reasons,
+            },
+            "insights": insights,
+            "scope": "client" if client_id else "company",
+        })
 
     except Exception as e:
         print(f"An error occurred during forecasting: {e}")
