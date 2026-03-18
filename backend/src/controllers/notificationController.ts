@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/auth';
  */
 export const getNotifications = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     const { unreadOnly } = req.query;
 
     // Ensure overdue invoice notifications exist (backfill safety)
@@ -15,7 +16,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) =>{
     startOfToday.setHours(0, 0, 0, 0);
 
     const overdueInvoices = await Invoice.find({
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
       dueDate: { $lt: startOfToday },
       // Draft invoices must remain draft until explicitly sent.
       status: { $in: ['sent', 'overdue'] },
@@ -26,12 +27,13 @@ export const getNotifications = async (req: AuthRequest, res: Response) =>{
         ],
       },
     })
-      .select('_id invoiceNumber clientId')
+      .select('_id invoiceNumber clientId companyId')
       .populate('clientId', 'name');
 
     for (const invoice of overdueInvoices) {
+      const invoiceCompanyId = (invoice as any).companyId || req.companyId;
       const exists = await Notification.findOne({
-        companyId: req.companyId,
+        companyId: invoiceCompanyId,
         type: 'invoice_overdue',
         relatedInvoiceId: invoice._id,
         isRead: false,
@@ -44,7 +46,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) =>{
       }
 
       await Notification.create({
-        companyId: req.companyId,
+        companyId: invoiceCompanyId,
         type: 'invoice_overdue',
         title: 'Invoice Overdue',
         message: `Invoice ${invoice.invoiceNumber} for ${(invoice.clientId as any)?.name || 'Unknown Client'} is now overdue.`,
@@ -52,7 +54,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) =>{
       });
     }
 
-    const filter: any = { companyId: req.companyId };
+    const filter: any = isSuperAdmin ? {} : { companyId: req.companyId };
     if (unreadOnly === 'true') {
       filter.isRead = false;
     }
@@ -81,12 +83,13 @@ export const getNotifications = async (req: AuthRequest, res: Response) =>{
  */
 export const markAsRead = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     const { id } = req.params;
 
     const notification = await Notification.findOneAndUpdate(
       {
         _id: id,
-        companyId: req.companyId,
+        ...(isSuperAdmin ? {} : { companyId: req.companyId }),
       },
       { isRead: true },
       { new: true }
@@ -118,9 +121,10 @@ export const markAsRead = async (req: AuthRequest, res: Response) =>{
  */
 export const markAllAsRead = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     await Notification.updateMany(
       {
-        companyId: req.companyId,
+        ...(isSuperAdmin ? {} : { companyId: req.companyId }),
         isRead: false,
       },
       { isRead: true }
@@ -144,11 +148,12 @@ export const markAllAsRead = async (req: AuthRequest, res: Response) =>{
  */
 export const deleteNotification = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     const { id } = req.params;
 
     const notification = await Notification.findOneAndDelete({
       _id: id,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     });
 
     if (!notification) {

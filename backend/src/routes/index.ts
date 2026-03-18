@@ -9,7 +9,6 @@ import fileRoutes from './fileRoutes';
 import dashboardRoutes from './dashboardRoutes';
 import notificationRoutes from './notificationRoutes';
 import reportRoutes from './reportRoutes';
-// Removed AI (Gemini) and KPay routes
 import searchRoutes from './searchRoutes';
 import paymentIngestionRoutes from './paymentIngestionRoutes';
 import platformRoutes from './platformRoutes';

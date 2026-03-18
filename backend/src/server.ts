@@ -9,10 +9,8 @@ import routes from './routes';
 import { initCronJobs } from './utils/cronJobs';
 import { swaggerSpec } from './docs/swagger';
 
-// Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-// Environment variable validation
 const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET', 'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'FRONTEND_URL'];
 const missingVars = requiredEnvVars.filter(varName =>!process.env[varName]);
 if (missingVars.length >0) {
@@ -21,15 +19,13 @@ if (missingVars.length >0) {
   process.exit(1);
 }
 
-// Create Express app
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration
 const allowedOrigins = [process.env.FRONTEND_URL!];
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) =>void) =>{
-    // Allow requests with no origin (like Insomnia, Postman, curl)
+
     if (!origin) {
       return callback(null, true);
     }
@@ -48,31 +44,23 @@ app.use(cors(corsOptions));
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false, // Disable for now to allow PDF generation
+  contentSecurityPolicy: false, 
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Request logging middleware
 app.use((req: Request, _res: Response, next: NextFunction) =>{
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// Swagger API documentation
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'FinFlow API Documentation',
   customCss: '.swagger-ui .topbar { display: none }',
 }));
 
-// API routes
 app.use('/api', routes);
-
-// Root endpoint
 app.get('/', (_req: Request, res: Response) =>{
   res.json({
     success: true,
@@ -94,7 +82,6 @@ app.get('/', (_req: Request, res: Response) =>{
   });
 });
 
-// 404 handler
 app.use((_req: Request, res: Response) =>{
   res.status(404).json({
     success: false,
@@ -102,7 +89,6 @@ app.use((_req: Request, res: Response) =>{
   });
 });
 
-// Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) =>{
   console.error('Error:', err);
 
@@ -113,22 +99,15 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) =>{
   });
 });
 
-// Connect to database and start server
 const startServer = async () =>{
   try {
     await connectDatabase();
 
-    // Initialize cron jobs
     initCronJobs();
 
     app.listen(PORT, () =>{
       console.log('='.repeat(60));
-      console.log(`FinFlow API Server`);
       console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`API URL: http://localhost:${PORT}/api`);
-      console.log(`Frontend URL: ${process.env.FRONTEND_URL}`);
-      console.log(`CORS allowed origins: ${process.env.FRONTEND_URL}, [no-origin requests]`);
       console.log('='.repeat(60));
     });
   } catch (error) {

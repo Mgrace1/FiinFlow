@@ -54,7 +54,7 @@ export const uploadFile = async (req: AuthRequest, res: Response) =>{
 export const getFiles = async (req: AuthRequest, res: Response) =>{
   try {
     const { type } = req.query;
-    const filter: any = { companyId: req.companyId };
+    const filter: any = req.userRole === 'super_admin' ? {} : { companyId: req.companyId };
 
     if (type) filter.type = type;
 
@@ -75,9 +75,10 @@ export const getFiles = async (req: AuthRequest, res: Response) =>{
 
 export const getFile = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     const file = await FileModel.findOne({
       _id: req.params.id,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     });
 
     if (!file) {
@@ -102,9 +103,10 @@ export const getFile = async (req: AuthRequest, res: Response) =>{
 
 export const downloadFile = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     const file = await FileModel.findOne({
       _id: req.params.id,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     });
 
     if (!file) {
@@ -156,9 +158,10 @@ export const downloadFile = async (req: AuthRequest, res: Response) =>{
 
 export const deleteFile = async (req: AuthRequest, res: Response) =>{
   try {
+    const isSuperAdmin = req.userRole === 'super_admin';
     const file = await FileModel.findOneAndDelete({
       _id: req.params.id,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     });
 
     if (!file) {
@@ -287,9 +290,10 @@ export const getInvoiceAttachments = async (req: AuthRequest, res: Response) =>{
   try {
     const { invoiceId } = req.params;
 
+    const isSuperAdmin = req.userRole === 'super_admin';
     const invoice = await Invoice.findOne({
       _id: invoiceId,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     }).populate('attachments.fileId');
 
     if (!invoice) {
@@ -319,9 +323,10 @@ export const deleteInvoiceAttachment = async (req: AuthRequest, res: Response) =
   try {
     const { invoiceId, fileId } = req.params;
 
+    const isSuperAdmin = req.userRole === 'super_admin';
     const invoice = await Invoice.findOne({
       _id: invoiceId,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     });
 
     if (!invoice) {
@@ -333,7 +338,7 @@ export const deleteInvoiceAttachment = async (req: AuthRequest, res: Response) =
 
     const file = await FileModel.findOne({
       _id: fileId,
-      companyId: req.companyId,
+      ...(isSuperAdmin ? {} : { companyId: req.companyId }),
     });
 
     if (!file) {

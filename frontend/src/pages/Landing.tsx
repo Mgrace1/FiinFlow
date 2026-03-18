@@ -360,8 +360,8 @@ const Landing = () => {
           <div>
             <p className="text-sm font-semibold footer-lead">Contact Us</p>
             <div className="mt-3 space-y-2 text-sm footer-small">
-              <div>Email: fiinflow@gmail.com</div>
-              <div>Phone: +250 788 123 456</div>
+              <div>Email: g.munezero1@alustudent.com</div>
+              <div>Phone: +250 785 253 367</div>
               <div>Kigali, Rwanda</div>
             </div>
           </div>

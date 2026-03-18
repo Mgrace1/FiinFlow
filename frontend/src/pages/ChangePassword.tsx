@@ -103,7 +103,7 @@ const ChangePassword: React.FC = () =>{
               key={rule.label}
               className={`text-xs ${rule.passed ? 'text-primary-600' : 'text-gray-500'}`}
             >
-              {rule.passed ? '?' : '•'} {t(getPasswordRuleKey(rule.label))}
+              {rule.passed ? '?' : '*'} {t(getPasswordRuleKey(rule.label))}
             </p>
           ))}
         </div>

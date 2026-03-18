@@ -6,6 +6,7 @@ const FORECASTING_SERVICE_URL = process.env.FORECASTING_SERVICE_URL || 'http://l
 
 export const getFinancialForecast = async (req: AuthRequest, res: Response) => {
   const companyId = req.companyId;
+  const clientId = req.query.clientId as string | undefined;
 
   if (!companyId) {
     return res.status(400).json({ message: 'Company ID is required.' });
@@ -14,6 +15,7 @@ export const getFinancialForecast = async (req: AuthRequest, res: Response) => {
   try {
     const response = await axios.post(`${FORECASTING_SERVICE_URL}/forecast`, {
       company_id: companyId.toString(),
+      client_id: clientId || undefined,
     });
 
     res.status(200).json(response.data);

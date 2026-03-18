@@ -85,7 +85,8 @@ export const createClient = async (req: AuthRequest, res: Response) =>{
  */
 export const getClients = async (req: AuthRequest, res: Response) =>{
   try {
-    const clients = await Client.find({ companyId: req.companyId }).sort({ createdAt: -1 });
+    const filter = req.userRole === 'super_admin' ? {} : { companyId: req.companyId };
+    const clients = await Client.find(filter).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -105,10 +106,12 @@ export const getClients = async (req: AuthRequest, res: Response) =>{
  */
 export const getClient = async (req: AuthRequest, res: Response) =>{
   try {
-    const client = await Client.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const client = await Client.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!client) {
       return res.status(404).json({
@@ -118,8 +121,9 @@ export const getClient = async (req: AuthRequest, res: Response) =>{
     }
 
     // Get invoices summary
+    const clientCompanyId = (client as any).companyId;
     const invoices = await Invoice.find({
-      companyId: req.companyId,
+      companyId: clientCompanyId,
       clientId: client._id,
     });
 
@@ -129,12 +133,12 @@ export const getClient = async (req: AuthRequest, res: Response) =>{
 
     // Get expenses
     const expenses = await Expense.find({
-      companyId: req.companyId,
+      companyId: clientCompanyId,
       clientId: client._id,
     });
 
     // Get profit data
-    const profitData = await ProfitService.calculateClientProfit(req.companyId!, client._id);
+    const profitData = await ProfitService.calculateClientProfit(clientCompanyId!, client._id);
 
     res.json({
       success: true,

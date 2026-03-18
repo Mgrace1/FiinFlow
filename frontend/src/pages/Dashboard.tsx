@@ -71,14 +71,13 @@ interface DashboardResponse {
   latestExpenses?: ExpenseItem[];
 }
 
-interface MonthlyRow {
-  month: string;
-  pending: number;
-  draft: number;
-  collected: number;
-  spent: number;
-  net: number;
-}
+  interface MonthlyRow {
+    month: string;
+    pending: number;
+    collected: number;
+    spent: number;
+    net: number;
+  }
 
 // Consistent color palette
 const COLORS = {
@@ -87,7 +86,7 @@ const COLORS = {
   profit: '#3b82f6',
   pending: '#ffe070',
   draft: '#9ca3af',
-  cancelled: '#b91c1c',
+  cancelled: '#ff9494',
   overdue: '#ff9494',
 };
 
@@ -112,12 +111,22 @@ const getDateValue = (value?: string) => {
 
 const formatCompactMoney = (amount: number) => {
   const cfg = getCurrencyConfig();
+  const safeAmount = Number(amount || 0);
+
+  // `Intl.NumberFormat(...notation:'compact')` rounds (e.g. 2.95K -> 3.0K).
+  // We want "minimized" stats to never increase due to rounding, so we
+  // truncate to 1 decimal of the chosen compact unit first.
+  const abs = Math.abs(safeAmount);
+  const scale = abs >= 1e9 ? 1e9 : abs >= 1e6 ? 1e6 : abs >= 1e3 ? 1e3 : 1;
+  const truncated =
+    scale === 1 ? safeAmount : (Math.trunc((safeAmount / scale) * 10) / 10) * scale;
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: cfg.defaultCurrency,
     notation: 'compact',
     maximumFractionDigits: 1,
-  }).format(amount || 0);
+  }).format(truncated);
 };
 
 const formatMoney = (amount: number, currency = 'RWF') => {
@@ -169,6 +178,10 @@ const Dashboard: React.FC = () => {
     () => new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short' }),
     [lang]
   );
+  const monthYearFormatter = useMemo(
+    () => new Intl.DateTimeFormat(lang === 'fr' ? 'fr-FR' : 'en-US', { month: 'short', year: '2-digit' }),
+    [lang]
+  );
 
 
   useEffect(() => {
@@ -193,43 +206,92 @@ const Dashboard: React.FC = () => {
 
 
   const monthlyData = useMemo<MonthlyRow[]>(() => {
-    const today = new Date();
-    const seed = Array.from({ length: 6 }).map((_, idx) => {
-      const d = new Date(today.getFullYear(), today.getMonth() - (5 - idx), 1);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      return {
+    const getInvoiceBucketDate = (invoice: InvoiceItem) => {
+      const normalizedStatus = String(invoice.status || '').toLowerCase();
+      if (normalizedStatus === 'paid') {
+        return getDateValue((invoice as any).paidAt || invoice.updatedAt || invoice.createdAt);
+      }
+      if (normalizedStatus === 'sent' || normalizedStatus === 'overdue') {
+        return getDateValue((invoice as any).dueDate || invoice.updatedAt || invoice.createdAt);
+      }
+      return null;
+    };
+
+    const dates: Date[] = [];
+    latestInvoices.forEach((invoice) => {
+      if (invoice.status === 'cancelled') return;
+      const dt = getInvoiceBucketDate(invoice);
+      if (dt) dates.push(dt);
+    });
+    latestExpenses.forEach((expense) => {
+      const dt = getDateValue(expense.date || expense.createdAt || expense.updatedAt);
+      if (dt) dates.push(dt);
+    });
+
+    // Force the dashboard cashflow trend to be the last 6 months.
+    // (Cards come from backend `/dashboard/stats`, which we also adjusted.)
+    const now = new Date();
+    const minMonth = new Date(now.getFullYear(), now.getMonth() - 5, 1, 0, 0, 0, 0);
+    const maxMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+
+    const monthDiff = (maxMonth.getFullYear() - minMonth.getFullYear()) * 12 + (maxMonth.getMonth() - minMonth.getMonth());
+    const showYear = monthDiff >= 12;
+
+    const seed: Array<MonthlyRow & { key: string }> = [];
+    const cursor = new Date(minMonth);
+    // exactly 6 months including the current month
+    for (let i = 0; i < 6; i++) {
+      const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+      seed.push({
         key,
-        month: monthFormatter.format(d),
+        month: showYear ? monthYearFormatter.format(cursor) : monthFormatter.format(cursor),
         pending: 0,
-        draft: 0,
         collected: 0,
         spent: 0,
-      };
-    });
+        net: 0,
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
 
     const monthMap = new Map(seed.map((row) => [row.key, row]));
 
     latestInvoices.forEach((invoice) => {
       if (invoice.status === 'cancelled') return;
-      const dt = getDateValue(invoice.createdAt || invoice.updatedAt);
-      if (!dt) return;
-      const key = `${dt.getFullYear()}-${dt.getMonth()}`;
-      const row = monthMap.get(key);
-      if (!row) return;
-
-      const amount = convertCurrencyAmount(
+      const total = convertCurrencyAmount(
         Number(invoice.totalAmount) || 0,
         invoice.currency || 'RWF',
         getCurrencyConfig().defaultCurrency,
         getCurrencyConfig().exchangeRateUSD
       );
+      const paid = Math.min(
+        convertCurrencyAmount(
+          Number((invoice as any).amountPaid || 0),
+          invoice.currency || 'RWF',
+          getCurrencyConfig().defaultCurrency,
+          getCurrencyConfig().exchangeRateUSD
+        ),
+        total
+      );
+      const remaining = Math.max(total - paid, 0);
       const normalizedStatus = String(invoice.status || '').toLowerCase();
+
       if (normalizedStatus === 'paid') {
-        row.collected += amount;
-      } else if (normalizedStatus === 'draft') {
-        row.draft += amount;
-      } else {
-        row.pending += amount;
+        const dt = getDateValue((invoice as any).paidAt || invoice.updatedAt || invoice.createdAt);
+        if (!dt) return;
+        const key = `${dt.getFullYear()}-${dt.getMonth()}`;
+        const row = monthMap.get(key);
+        if (!row) return;
+        row.collected += paid;
+        return;
+      }
+
+      if (normalizedStatus === 'sent' || normalizedStatus === 'overdue') {
+        const dt = getDateValue((invoice as any).dueDate || invoice.updatedAt || invoice.createdAt);
+        if (!dt) return;
+        const key = `${dt.getFullYear()}-${dt.getMonth()}`;
+        const row = monthMap.get(key);
+        if (!row) return;
+        row.pending += remaining;
       }
     });
 
@@ -248,10 +310,9 @@ const Dashboard: React.FC = () => {
       );
     });
 
-    return seed.map(({ month, pending, draft, collected, spent }) => ({
+    return seed.map(({ month, pending, collected, spent }) => ({
       month,
       pending,
-      draft,
       collected,
       spent,
       net: collected - spent,
@@ -270,7 +331,6 @@ const Dashboard: React.FC = () => {
     if (active > 0) data.push({ name: t('status.pending'), value: active });
     if (overdue > 0) data.push({ name: t('status.overdue'), value: overdue });
     if (drafts > 0) data.push({ name: t('status.draft'), value: drafts });
-    if (cancelled > 0) data.push({ name: t('status.cancelled'), value: cancelled });
     
     return data;
   }, [stats.totalCancelled, stats.totalDrafts, stats.totalInvoices, stats.totalOverdue, stats.totalPaid]);
@@ -411,7 +471,7 @@ const Dashboard: React.FC = () => {
         <article className={`${DASHBOARD_CARD} p-6`}>
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">{t('dashboard.cashflow_trends')}</h2>
-            <p className="text-sm text-slate-500">{t('dashboard.last_6_months')}</p>
+            <p className="text-sm text-slate-500">{t('dashboard.all_time')}</p>
           </div>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -426,13 +486,21 @@ const Dashboard: React.FC = () => {
                 <YAxis
                   stroke="#64748b"
                   fontSize={12}
-                  tickFormatter={(value) => `${Math.round((value || 0) / 1000)}k`}
+                  tickFormatter={(value) => {
+                    const v = Number(value || 0);
+                    const abs = Math.abs(v);
+                    if (abs < 1000) return String(Math.round(v));
+
+                    // Truncate to 1 decimal in "k" (no rounding up).
+                    const truncatedK = (Math.trunc((v / 1000) * 10) / 10);
+                    const display = Number.isInteger(truncatedK) ? truncatedK : truncatedK.toFixed(1);
+                    return `${display}k`;
+                  }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(251, 191, 36, 0.08)' }} />
                 <Bar dataKey="pending" fill={COLORS.pending} radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.pending')} />
-                <Bar dataKey="draft" fill="#9ca3af" radius={[4, 4, 0, 0]} maxBarSize={30} name={t('status.draft')} />
                 <Bar dataKey="collected" fill={COLORS.income} radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.income')} />
                 <Bar dataKey="spent" fill={COLORS.expense} radius={[4, 4, 0, 0]} maxBarSize={30} name={t('dashboard.expenses')} />
               </BarChart>
@@ -443,10 +511,6 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.pending }}></span>
               <span className="text-slate-600">{t('status.pending')}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#9ca3af' }}></span>
-              <span className="text-slate-600">{t('status.draft')}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: COLORS.income }}></span>
@@ -573,7 +637,16 @@ const Dashboard: React.FC = () => {
                 <YAxis
                   stroke="#64748b"
                   fontSize={12}
-                  tickFormatter={(value) => `${Math.round((value || 0) / 1000)}k`}
+                  tickFormatter={(value) => {
+                    const v = Number(value || 0);
+                    const abs = Math.abs(v);
+                    if (abs < 1000) return String(Math.round(v));
+
+                    // Truncate to 1 decimal in "k" (no rounding up).
+                    const truncatedK = (Math.trunc((v / 1000) * 10) / 10);
+                    const display = Number.isInteger(truncatedK) ? truncatedK : truncatedK.toFixed(1);
+                    return `${display}k`;
+                  }}
                   tickLine={false}
                   axisLine={false}
                 />

@@ -43,11 +43,11 @@ export const searchRecords = async (req: AuthRequest, res: Response) => {
     };
     const invoiceStatusMatch = invoiceStatusMap[statusKey];
     const expenseStatusMatch = expenseStatusMap[statusKey];
-    const companyId = req.companyId;
+    const companyFilter = req.userRole === 'super_admin' ? {} : { companyId: req.companyId };
 
     const [clients, invoices, expenses] = await Promise.all([
       Client.find({
-        companyId,
+        ...companyFilter,
         $or: [
           { name: regex },
           { contactPerson: regex },
@@ -62,7 +62,7 @@ export const searchRecords = async (req: AuthRequest, res: Response) => {
         .lean(),
 
       Invoice.find({
-        companyId,
+        ...companyFilter,
         $or: [
           { invoiceNumber: regex },
           { status: regex },
@@ -78,7 +78,7 @@ export const searchRecords = async (req: AuthRequest, res: Response) => {
         .lean(),
 
       Expense.find({
-        companyId,
+        ...companyFilter,
         $or: [
           { supplier: regex },
           { category: regex },

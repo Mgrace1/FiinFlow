@@ -90,7 +90,7 @@ export const createExpense = async (req: AuthRequest, res: Response) =>{
 export const getExpenses = async (req: AuthRequest, res: Response) =>{
   try {
     const { clientId, category, startDate, endDate } = req.query;
-    const filter: any = { companyId: req.companyId };
+    const filter: any = req.userRole === 'super_admin' ? {} : { companyId: req.companyId };
 
     if (clientId) filter.clientId = clientId;
     if (category) filter.category = category;
@@ -145,10 +145,12 @@ export const getExpenses = async (req: AuthRequest, res: Response) =>{
 
 export const getExpense = async (req: AuthRequest, res: Response) =>{
   try {
-    const expense = await Expense.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    })
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const expense = await Expense.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    )
       .populate('clientId')
       .populate('receiptFileId');
 
@@ -207,10 +209,11 @@ export const updateExpense = async (req: AuthRequest, res: Response) =>{
       updates.date = parsedDate;
     }
 
+    const isSuperAdmin = req.userRole === 'super_admin';
     const expense = await Expense.findOneAndUpdate(
       {
         _id: req.params.id,
-        companyId: req.companyId,
+        ...(isSuperAdmin ? {} : { companyId: req.companyId }),
       },
       updates,
       { new: true, runValidators: true }
@@ -244,10 +247,12 @@ export const updateExpense = async (req: AuthRequest, res: Response) =>{
 
 export const deleteExpense = async (req: AuthRequest, res: Response) =>{
   try {
-    const expense = await Expense.findOneAndDelete({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const expense = await Expense.findOneAndDelete(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!expense) {
       return res.status(404).json({

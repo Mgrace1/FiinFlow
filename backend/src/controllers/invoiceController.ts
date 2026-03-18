@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import crypto from 'crypto';
 import { Company, Invoice, File as FileModel, Notification } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import fs from 'fs';
@@ -224,6 +225,57 @@ const sendInvoiceSentNotification = async (invoice: any, companyId: any, mode: '
   }
 };
 
+export const createInvoicePublicLink = async (req: AuthRequest, res: Response) => {
+  try {
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const invoice = await Invoice.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    ).populate('clientId');
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        error: 'Invoice not found',
+      });
+    }
+
+    const now = new Date();
+    const hasValidToken =
+      invoice.publicShareToken
+      && invoice.publicShareExpiresAt
+      && invoice.publicShareExpiresAt.getTime() > now.getTime();
+
+    if (!hasValidToken) {
+      const token = crypto.randomBytes(24).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+      invoice.publicShareToken = token;
+      invoice.publicShareExpiresAt = expiresAt;
+      await invoice.save();
+    }
+
+    const tokenToUse = invoice.publicShareToken;
+    const backendBase = process.env.BACKEND_PUBLIC_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const publicPdfUrl = `${backendBase}/api/reports/public/invoices/${tokenToUse}/pdf`;
+
+    return res.json({
+      success: true,
+      data: {
+        url: publicPdfUrl,
+        expiresAt: invoice.publicShareExpiresAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Create public invoice link error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create invoice link',
+    });
+  }
+};
+
 export const getNextInvoiceNumber = async (req: AuthRequest, res: Response) => {
   try {
     const company = await Company.findById(req.companyId).select('invoicePrefix').lean();
@@ -396,7 +448,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
 export const getInvoices = async (req: AuthRequest, res: Response) =>{
   try {
     const { status, clientId } = req.query;
-    const filter: any = { companyId: req.companyId };
+    const filter: any = req.userRole === 'super_admin' ? {} : { companyId: req.companyId };
 
     if (status) filter.status = status;
     if (clientId) filter.clientId = clientId;
@@ -424,10 +476,12 @@ export const getInvoices = async (req: AuthRequest, res: Response) =>{
 
 export const getInvoice = async (req: AuthRequest, res: Response) =>{
   try {
-    const invoice = await Invoice.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    })
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const invoice = await Invoice.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    )
       .populate('clientId')
       .populate('proformaFileId')
       .populate('invoiceFileId')
@@ -478,10 +532,12 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
       }
       updates.dueDate = parsedDueDate;
     }
-    const invoice = await Invoice.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const invoice = await Invoice.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!invoice) {
       return res.status(404).json({
@@ -571,12 +627,12 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     await invoice.populate('createdBy');
 
     if (invoice.status === 'overdue' && previousStatus !== 'overdue') {
-      await createInvoiceOverdueNotification(invoice, req.companyId);
+      await createInvoiceOverdueNotification(invoice, invoice.companyId);
     }
 
     let emailNotification: any = null;
     if (invoice.status === 'sent' && !skipEmail) {
-      emailNotification = await sendInvoiceSentNotification(invoice, req.companyId, 'updated');
+      emailNotification = await sendInvoiceSentNotification(invoice, invoice.companyId, 'updated');
     }
 
     res.json({
@@ -613,10 +669,12 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
       });
     }
 
-    const invoice = await Invoice.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const invoice = await Invoice.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!invoice) {
       return res.status(404).json({
@@ -676,12 +734,12 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
     await invoice.populate('createdBy');
 
     if (status === 'overdue' && previousStatus !== 'overdue') {
-      await createInvoiceOverdueNotification(invoice, req.companyId);
+      await createInvoiceOverdueNotification(invoice, invoice.companyId);
     }
 
     let emailNotification: any = null;
     if (shouldSendSentNotification && !skipEmail) {
-      emailNotification = await sendInvoiceSentNotification(invoice, req.companyId);
+      emailNotification = await sendInvoiceSentNotification(invoice, invoice.companyId);
     }
 
     res.json({
@@ -710,10 +768,12 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
       });
     }
 
-    const invoice = await Invoice.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const invoice = await Invoice.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!invoice) {
       return res.status(404).json({
@@ -770,7 +830,7 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
     await invoice.populate('clientId');
 
     if (invoice.status === 'overdue') {
-      await createInvoiceOverdueNotification(invoice, req.companyId);
+      await createInvoiceOverdueNotification(invoice, invoice.companyId);
     }
 
     res.json({
@@ -789,10 +849,12 @@ export const markInvoiceAsPaid = async (req: AuthRequest, res: Response) =>{
 
 export const deleteInvoice = async (req: AuthRequest, res: Response) =>{
   try {
-    const invoice = await Invoice.findOneAndDelete({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const invoice = await Invoice.findOneAndDelete(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!invoice) {
       return res.status(404).json({

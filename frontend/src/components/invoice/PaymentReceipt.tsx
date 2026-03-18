@@ -166,13 +166,14 @@ const PaymentReceipt: React.FC<PaymentReceiptProps> = ({
             return (
               <div
                 key={receipt._id}
-                className="border border-green-100 bg-green-50 rounded-lg p-4"
+                className="rounded-lg p-4"
+                style={{ backgroundColor: '#99ffc5', border: '1px solid rgba(10, 133, 63, 0.25)' }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-2xl"></span>
-                      <span className="font-semibold text-green-400">
+                      <span className="font-semibold" style={{ color: '#0a853f' }}>
                         Payment Receipt
                       </span>
                     </div>

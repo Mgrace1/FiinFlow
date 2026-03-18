@@ -75,7 +75,8 @@ export const createUser = async (req: AuthRequest, res: Response) =>{
  */
 export const getUsers = async (req: AuthRequest, res: Response) =>{
   try {
-    const users = await User.find({ companyId: req.companyId }).sort({ createdAt: -1 });
+    const filter = req.userRole === 'super_admin' ? {} : { companyId: req.companyId };
+    const users = await User.find(filter).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -95,10 +96,12 @@ export const getUsers = async (req: AuthRequest, res: Response) =>{
  */
 export const getUser = async (req: AuthRequest, res: Response) =>{
   try {
-    const user = await User.findOne({
-      _id: req.params.id,
-      companyId: req.companyId,
-    });
+    const isSuperAdmin = req.userRole === 'super_admin';
+    const user = await User.findOne(
+      isSuperAdmin
+        ? { _id: req.params.id }
+        : { _id: req.params.id, companyId: req.companyId }
+    );
 
     if (!user) {
       return res.status(404).json({

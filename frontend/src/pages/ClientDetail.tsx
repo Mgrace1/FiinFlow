@@ -58,12 +58,31 @@ interface Summary {
   currency?: string;
 }
 
+const DASHBOARD_COLORS = {
+  income: '#0a853f',
+  expense: '#ff9494',
+  profit: '#3b82f6',
+  pending: '#ffe070',
+  draft: '#9ca3af',
+};
+
+const GREEN_BG = '#99ffc5';
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const sanitized = hex.replace('#', '');
+  const bigint = parseInt(sanitized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const PIE_COLORS: Record<string, string> = {
-  paid:      '#4ecb73',
-  sent:      '#fbbf24',
-  overdue:   '#f07a7a',
-  draft:     '#9ca3af',
-  cancelled: '#d1d5db',
+  paid:      GREEN_BG,
+  sent:      DASHBOARD_COLORS.pending,
+  overdue:   DASHBOARD_COLORS.expense,
+  draft:     DASHBOARD_COLORS.draft,
+  cancelled: DASHBOARD_COLORS.draft,
 };
 
 const PAGE_SIZE = 7;
@@ -114,9 +133,9 @@ const ClientDetail: React.FC = () => {
   const pieData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
 
   const barData = [
-    { name: t('client_detail.revenue'),  value: revenue,          fill: '#4ecb73' },
-    { name: t('client_detail.expenses'), value: expTotal,          fill: '#f07a7a' },
-    { name: t('client_detail.profit'),   value: profit,            fill: '#3b82f6' },
+    { name: t('client_detail.revenue'),  value: revenue,          fill: GREEN_BG },
+    { name: t('client_detail.expenses'), value: expTotal,          fill: DASHBOARD_COLORS.expense },
+    { name: t('client_detail.profit'),   value: profit,            fill: DASHBOARD_COLORS.profit },
   ];
 
   const visibleInvoices = showAllInvoices ? invoices : invoices.slice(0, PAGE_SIZE);
@@ -158,60 +177,89 @@ const ClientDetail: React.FC = () => {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.revenue')}</span>
-            <span className="w-7 h-7 sm:w-8 sm:h-8 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-              <DollarSign size={14} className="text-green-400" />
+            <span
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: GREEN_BG }}
+            >
+              <DollarSign size={14} style={{ color: DASHBOARD_COLORS.income }} />
             </span>
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
             {formatCompanyMoney(revenue, summaryCurrency)}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} · {t('client_detail.paid_invoices')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')}  {t('client_detail.paid_invoices')}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.expenses')}</span>
-            <span className="w-7 h-7 sm:w-8 sm:h-8 bg-red-50 rounded-lg flex items-center justify-center shrink-0">
-              <Receipt size={14} className="text-red-600" />
+            <span
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: hexToRgba(DASHBOARD_COLORS.expense, 0.2) }}
+            >
+              <Receipt size={14} style={{ color: DASHBOARD_COLORS.expense }} />
             </span>
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">
             {formatCompanyMoney(expTotal, summaryCurrency)}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')} · {expenses.length} {t('client_detail.records')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('client_detail.currency_label')}  {expenses.length} {t('client_detail.records')}</p>
         </div>
 
-        <div className={`rounded-xl border shadow-sm p-3 sm:p-4 ${profit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-200'}`}>
+        <div
+          className="rounded-xl border shadow-sm p-3 sm:p-4"
+          style={{
+            backgroundColor: profit >= 0 ? '#e5fff1' : hexToRgba(DASHBOARD_COLORS.expense, 0.15),
+            borderColor: profit >= 0 ? hexToRgba('#e5fff1', 0.6) : hexToRgba(DASHBOARD_COLORS.expense, 0.35),
+          }}
+        >
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.net_profit')}</span>
-            <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${profit >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+            <span
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: profit >= 0 ? GREEN_BG : hexToRgba(DASHBOARD_COLORS.expense, 0.2) }}
+            >
               {profit > 0
-                ? <TrendingUp size={14} className="text-green-400" />
+                ? <TrendingUp size={14} style={{ color: DASHBOARD_COLORS.income }} />
                 : profit < 0
-                  ? <TrendingDown size={14} className="text-red-600" />
+                  ? <TrendingDown size={14} style={{ color: DASHBOARD_COLORS.expense }} />
                   : <Minus size={14} className="text-gray-400" />}
             </span>
           </div>
-          <p className={`text-lg sm:text-xl font-bold truncate ${profit >= 0 ? 'text-green-400' : 'text-red-600'}`}>
+          <p
+            className="text-lg sm:text-xl font-bold truncate"
+            style={{ color: profit >= 0 ? DASHBOARD_COLORS.income : DASHBOARD_COLORS.expense }}
+          >
             {formatCompanyMoney(profit, summaryCurrency)}
           </p>
-          <p className="text-xs text-gray-500 mt-1">{t('client_detail.currency_label')} · {t('client_detail.revenue_minus_expenses')}</p>
+          <p className="text-xs text-gray-500 mt-1">{t('client_detail.currency_label')}  {t('client_detail.revenue_minus_expenses')}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('client_detail.payment_rate')}</span>
-            <span className="w-7 h-7 sm:w-8 sm:h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
-              <CheckCircle size={14} className="text-blue-600" />
+            <span
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ backgroundColor: hexToRgba(DASHBOARD_COLORS.profit, 0.2) }}
+            >
+              <CheckCircle size={14} style={{ color: DASHBOARD_COLORS.profit }} />
             </span>
           </div>
           <p className="text-lg sm:text-xl font-bold text-gray-900">{paymentRate}%</p>
-          <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${paymentRate >= 70 ? 'bg-green-300' : paymentRate >= 40 ? 'bg-amber-600' : 'bg-red-600'}`}
-              style={{ width: `${paymentRate}%` }}
-            />
-          </div>
+            <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  backgroundColor:
+                    paymentRate >= 70
+                    ? GREEN_BG
+                    : paymentRate >= 40
+                    ? DASHBOARD_COLORS.pending
+                    : DASHBOARD_COLORS.expense,
+                  width: `${paymentRate}%`,
+                }}
+              />
+            </div>
           <p className="text-xs text-gray-400 mt-1">{summary?.paidInvoices ?? 0} {t('client_detail.of')} {summary?.totalInvoices ?? 0} {t('client_detail.paid')}</p>
         </div>
       </div>
@@ -332,13 +380,13 @@ const ClientDetail: React.FC = () => {
               <div className="space-y-2.5">
                 {[
                   { label: t('client_detail.total_invoices'), value: summary.totalInvoices, color: 'text-gray-900' },
-                  { label: t('client_detail.paid_invoices_label'), value: summary.paidInvoices, color: 'text-green-400' },
-                  { label: t('client_detail.unpaid_invoices'), value: summary.unpaidInvoices, color: 'text-red-600' },
+                  { label: t('client_detail.paid_invoices_label'), value: summary.paidInvoices, color: DASHBOARD_COLORS.income },
+                  { label: t('client_detail.unpaid_invoices'), value: summary.unpaidInvoices, color: DASHBOARD_COLORS.expense },
                   { label: t('client_detail.linked_expenses'), value: summary.expenseCount, color: 'text-gray-900' },
                 ].map(row => (
                   <div key={row.label} className="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
                     <span className="text-sm text-gray-500">{row.label}</span>
-                    <span className={`text-sm font-bold ${row.color}`}>{row.value}</span>
+                    <span className="text-sm font-bold" style={{ color: row.color }}>{row.value}</span>
                   </div>
                 ))}
               </div>
@@ -432,7 +480,10 @@ const ClientDetail: React.FC = () => {
                               <td className="px-4 sm:px-5 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{exp.supplier}</td>
                               <td className="px-4 sm:px-5 py-3 text-sm text-gray-500 whitespace-nowrap">{exp.category}</td>
                               <td className="px-4 sm:px-5 py-3 text-sm text-gray-900 whitespace-nowrap">{formatCompanyMoney(exp.amount, exp.currency)}</td>
-                              <td className={`px-4 sm:px-5 py-3 text-sm font-medium whitespace-nowrap ${exp.remainingAmount > 0 ? 'text-red-600' : 'text-green-400'}`}>
+                              <td
+                                className="px-4 sm:px-5 py-3 text-sm font-medium whitespace-nowrap"
+                                style={{ color: exp.remainingAmount > 0 ? DASHBOARD_COLORS.expense : DASHBOARD_COLORS.income }}
+                              >
                                 {formatCompanyMoney(exp.remainingAmount, exp.currency)}
                               </td>
                               <td className="px-4 sm:px-5 py-3 text-sm text-gray-500 whitespace-nowrap">
