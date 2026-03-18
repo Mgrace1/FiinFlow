@@ -317,17 +317,6 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
             </div>
           </form>
 
-          {isDashboard && (userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager') && (
-            <button
-              onClick={handleDownloadSummary}
-              className="p-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              title={t('dashboard.export_summary_pdf')}
-              aria-label={t('dashboard.export_summary_pdf')}
-            >
-              <Download size={20} />
-            </button>
-          )}
-
           <button
             onClick={() => setMode(resolvedTheme === 'dark' ? 'light' : 'dark')}
             className="p-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -456,6 +445,18 @@ const Topbar: React.FC<TopbarProps> = ({ setSidebarOpen }) => {
                     <User size={16} />
                     <span>{t('topbar.profile')}</span>
                   </button>
+                  {isDashboard && (userRole === 'admin' || userRole === 'super_admin' || userRole === 'finance_manager') && (
+                    <button
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        handleDownloadSummary();
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
+                    >
+                      <Download size={16} />
+                      <span>{t('dashboard.export_summary_pdf')}</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setShowUserMenu(false);

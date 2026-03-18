@@ -269,6 +269,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
       proformaFileId,
       invoiceType,
       status,
+      skipEmail,
     } = req.body;
 
     if (!clientId || !invoiceNumber || amount === undefined || amount === null || !dueDate) {
@@ -356,7 +357,7 @@ export const createInvoice = async (req: AuthRequest, res: Response) =>{
     await invoice.populate('createdBy');
 
     let emailNotification: any = null;
-    if (initialStatus === 'sent') {
+    if (initialStatus === 'sent' && !skipEmail) {
       emailNotification = await sendInvoiceSentNotification(invoice, req.companyId);
     }
 
@@ -457,6 +458,7 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
   try {
     const updates = { ...req.body } as any;
     const requestedStatus = String(req.body?.status || '').toLowerCase();
+    const skipEmail = Boolean(req.body?.skipEmail);
     // Status lifecycle is automatic in this endpoint.
     // We only support explicit draft -> sent promotion during update.
     delete updates.status;
@@ -573,7 +575,7 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
     }
 
     let emailNotification: any = null;
-    if (invoice.status === 'sent') {
+    if (invoice.status === 'sent' && !skipEmail) {
       emailNotification = await sendInvoiceSentNotification(invoice, req.companyId, 'updated');
     }
 
@@ -594,7 +596,7 @@ export const updateInvoice = async (req: AuthRequest, res: Response) =>{
 
 export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
   try {
-    const { status, paymentMethod, paymentReference, receivedBy } = req.body;
+    const { status, paymentMethod, paymentReference, receivedBy, skipEmail } = req.body;
 
     if (!status) {
       return res.status(400).json({
@@ -678,7 +680,7 @@ export const updateInvoiceStatus = async (req: AuthRequest, res: Response) =>{
     }
 
     let emailNotification: any = null;
-    if (shouldSendSentNotification) {
+    if (shouldSendSentNotification && !skipEmail) {
       emailNotification = await sendInvoiceSentNotification(invoice, req.companyId);
     }
 

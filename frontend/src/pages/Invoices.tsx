@@ -11,6 +11,7 @@ import { getErrorMessage, notifyError, notifySuccess, notifyWarning } from '../u
 import { type AppCurrency, convertCurrencyAmount, formatCompanyMoney, getCurrencyConfig } from '../utils/currency';
 import { getUserRole } from '../utils/roleUtils';
 import { useLanguage } from '../contexts/LanguageContext';
+import emailjs from '@emailjs/browser';
 
 interface Invoice {
   _id: string;
@@ -138,6 +139,108 @@ const Invoices: React.FC = () => {
     { product: '', description: '', qty: 1, rate: 0 },
   ]);
   const [customInvoiceType, setCustomInvoiceType] = useState('');
+  const isEmailJsDebug = String(import.meta.env.VITE_EMAILJS_DEBUG || '').toLowerCase() === 'true';
+
+  const getEmailJsConfig = () => {
+    const serviceId = String(import.meta.env.VITE_EMAILJS_SERVICE_ID || '').trim();
+    const templateId = String(import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '').trim();
+    const publicKey = String(import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '').trim();
+    return { serviceId, templateId, publicKey };
+  };
+
+  const buildEmailTemplateParams = (data: InvoiceSubmitPayload, invoiceId: string) => {
+    const companyRaw = (() => {
+      try { return JSON.parse(localStorage.getItem('finflow_company') || '{}'); }
+      catch { return {}; }
+    })();
+    const companyName = companyRaw.displayName || companyRaw.name || t('common.your_company');
+    const companyPhone = companyRaw.phone || '';
+    const companyAddress = companyRaw.address || '';
+    const companyEmail = companyRaw.email || '';
+    const companyPayInstructions = companyRaw.defaultPaymentInstructions || '';
+
+    const client = clients.find((c) => c._id === data.clientId);
+    const clientName = client?.contactPerson || client?.name || t('invoices.modal.client');
+    const clientEmail = client?.email || '';
+
+    const itemLines = (data.items || [])
+      .map((item) => `${item.name} (x${item.quantity} @ ${item.rate}) = ${item.amount}`)
+      .join('\n');
+    const itemsSummary = itemLines || data.description || '';
+
+    const subtotal = (data.items || []).reduce((sum, item) => sum + Number(item.amount || 0), 0) || Number(data.amount || 0);
+    const tax = data.taxApplied ? subtotal * ((data.taxRate || 0) / 100) : 0;
+    const totalAmount = subtotal + tax;
+
+    const invoiceDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+    const dueDateFmt = data.dueDate ? new Date(data.dueDate).toLocaleDateString('en-GB').replace(/\//g, '-') : '';
+    const invoiceLink = `${window.location.origin}/invoices/${invoiceId}`;
+
+    return {
+      to_email: clientEmail,
+      to_name: clientName,
+      company_name: companyName,
+      company_phone: companyPhone,
+      company_address: companyAddress,
+      company_email: companyEmail,
+      invoice_number: data.invoiceNumber,
+      invoice_type: data.invoiceType,
+      invoice_date: invoiceDate,
+      due_date: dueDateFmt,
+      currency: data.currency,
+      total_amount: formatCompanyMoney(totalAmount, data.currency),
+      notes: data.notes || '',
+      items_summary: itemsSummary,
+      payment_instructions: companyPayInstructions,
+      invoice_link: invoiceLink,
+    };
+  };
+
+  const sendInvoiceEmail = async (data: InvoiceSubmitPayload, invoiceId: string) => {
+    const { serviceId, templateId, publicKey } = getEmailJsConfig();
+    if (!serviceId || !templateId || !publicKey) {
+      throw new Error(t('invoices.emailjs_missing_env'));
+    }
+    const client = clients.find((c) => c._id === data.clientId);
+    if (!client?.email) {
+      throw new Error(t('invoices.no_recipient_email'));
+    }
+    const templateParams = buildEmailTemplateParams(data, invoiceId);
+    if (isEmailJsDebug) {
+      const safeService = serviceId ? `${serviceId.slice(0, 4)}...${serviceId.slice(-4)}` : 'missing';
+      const safeTemplate = templateId ? `${templateId.slice(0, 4)}...${templateId.slice(-4)}` : 'missing';
+      console.log('[EmailJS] debug', { to: templateParams.to_email, serviceId, templateId });
+      notifyWarning(`EmailJS debug: to=${templateParams.to_email} service=${safeService} template=${safeTemplate}`);
+    }
+    await emailjs.send(serviceId, templateId, templateParams, publicKey);
+  };
+
+  const saveDraftForEmail = async (submitData: InvoiceSubmitPayload) => {
+    const payload = { ...submitData, status: 'draft', skipEmail: true };
+    if (editingInvoice) {
+      return apiClient.put(`/invoices/${editingInvoice._id}`, payload);
+    }
+    return apiClient.post('/invoices', payload);
+  };
+
+  const sendInvoiceWithEmailJs = async (submitData: InvoiceSubmitPayload) => {
+    const response = await saveDraftForEmail(submitData);
+    const invoiceId = response?.data?.data?._id || editingInvoice?._id;
+    if (!invoiceId) {
+      throw new Error(t('invoices.save_failed'));
+    }
+
+    await sendInvoiceEmail(submitData, invoiceId);
+
+    if (!editingInvoice || editingInvoice.status === 'draft') {
+      await apiClient.patch(`/invoices/${invoiceId}/status`, { status: 'sent', skipEmail: true });
+    }
+
+    notifySuccess(t('invoices.sent_email_sent'));
+    window.dispatchEvent(new Event('finflow:notifications:refresh'));
+    fetchInvoices();
+    closeModal();
+  };
 
   useEffect(() => {
     fetchInvoices();
@@ -313,6 +416,10 @@ const Invoices: React.FC = () => {
     }
 
     try {
+      if (submitAction === 'send') {
+        await sendInvoiceWithEmailJs(submitData);
+        return;
+      }
       await submitInvoice(submitData);
     } catch (error: any) {
       console.error('Failed to save invoice:', error);
@@ -327,32 +434,9 @@ const Invoices: React.FC = () => {
     setSendingFromPreview(true);
     setError('');
     try {
-      let response;
-      if (editingInvoice) {
-        response = await apiClient.put(`/invoices/${editingInvoice._id}`, previewData);
-      } else {
-        response = await apiClient.post('/invoices', previewData);
-      }
-
-      const invoiceStatus = response?.data?.data?.status;
-      const emailNotification = response?.data?.emailNotification;
-      if (invoiceStatus === 'sent') {
-        if (emailNotification?.attempted && emailNotification?.sent) {
-          notifySuccess(t('invoices.sent_email_sent'));
-        } else if (emailNotification?.attempted && !emailNotification?.sent) {
-          notifyWarning(`${t('invoices.sent_email_failed')} ${emailNotification.reason || t('common.unknown_error')}`);
-        } else {
-          notifyWarning(`${t('invoices.sent_email_not_attempted')} ${emailNotification?.reason || t('invoices.no_recipient_email')}`);
-        }
-      } else {
-        notifyWarning(t('invoices.saved_not_sent'));
-      }
-
-      window.dispatchEvent(new Event('finflow:notifications:refresh'));
-      fetchInvoices();
+      await sendInvoiceWithEmailJs(previewData);
       setShowSendPreview(false);
       setPreviewData(null);
-      closeModal();
     } catch (error: any) {
       console.error('Failed to send invoice from preview:', error);
       const message = getErrorMessage(error, t('invoices.save_send_failed'));
