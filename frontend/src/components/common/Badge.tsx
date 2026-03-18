@@ -36,7 +36,7 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
 
     const variantMap: Record<BadgeVariant, string>= {
       // Invoice statuses
-      paid: 'bg-green-50 text-green-400',
+      paid: 'bg-[#99ffc5] text-[#0a853f]',
       sent: 'bg-blue-100 text-blue-800',
       overdue: 'bg-red-50 text-red-600',
       draft: 'bg-gray-100 text-gray-800',
@@ -48,7 +48,7 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
       office: 'bg-purple-100 text-purple-800',
       marketing: 'bg-pink-100 text-pink-800',
       utilities: 'bg-yellow-200 text-yellow-900',
-      salaries: 'bg-green-50 text-green-400',
+      salaries: 'bg-[#99ffc5] text-[#0a853f]',
       other: 'bg-gray-100 text-gray-800',
 
       // User roles
@@ -58,7 +58,7 @@ const Badge: React.FC<BadgeProps>= ({ variant, children, icon, className = '' })
       staff: 'bg-gray-100 text-gray-800',
 
       // Generic variants
-      success: 'bg-green-50 text-green-400',
+      success: 'bg-[#99ffc5] text-[#0a853f]',
       warning: 'bg-yellow-200 text-yellow-900',
       danger: 'bg-red-50 text-red-600',
       info: 'bg-blue-100 text-blue-800',

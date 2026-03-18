@@ -1,9 +1,10 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import PDFDocument from 'pdfkit';
 import { AuthRequest } from '../middleware/auth';
 import { Company, Invoice, Expense, User, Client } from '../models';
 import path from 'path';
 import fs from 'fs';
+import { generateInvoicePdfAttachmentBuffer } from '../utils/invoicePdfAttachment';
 
 const truncateText = (value: string, maxLength: number) => {
   const text = String(value || '').trim();
@@ -339,6 +340,51 @@ export const generateInvoicePDF = async (req: AuthRequest, res: Response) =>{
         error: error.message || 'Failed to generate invoice PDF',
       });
     }
+  }
+};
+
+/**
+ * Public invoice PDF (via share token)
+ */
+export const generatePublicInvoicePDF = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params as any;
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Token is required' });
+    }
+
+    const invoice = await Invoice.findOne({
+      publicShareToken: token,
+    })
+      .populate('clientId')
+      .populate('createdBy');
+
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: 'Invoice not found' });
+    }
+
+    if (invoice.publicShareExpiresAt && invoice.publicShareExpiresAt.getTime() < Date.now()) {
+      return res.status(410).json({ success: false, error: 'Link has expired' });
+    }
+
+    const company = await Company.findById(invoice.companyId);
+    if (!company) {
+      return res.status(404).json({ success: false, error: 'Company not found' });
+    }
+
+    const pdfBuffer = await generateInvoicePdfAttachmentBuffer(invoice, company);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `inline; filename=invoice-${invoice.invoiceNumber}.pdf`
+    );
+    return res.status(200).send(pdfBuffer);
+  } catch (error: any) {
+    console.error('Generate public invoice PDF error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate public invoice PDF',
+    });
   }
 };
 

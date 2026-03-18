@@ -10,6 +10,7 @@ import {
   uploadInvoiceAttachment,
   deleteInvoiceAttachment,
   getNextInvoiceNumber,
+  createInvoicePublicLink,
 } from '../controllers/invoiceController';
 import { verifyCompanyAccess, requireFinanceAccess, requireStaffAccess, requireDraftAccess } from '../middleware/auth';
 import { uploadSingle, handleUploadError } from '../middleware/upload';
@@ -34,6 +35,7 @@ router.delete('/:id', requireFinanceAccess, deleteInvoice);
 router.get('/', getInvoices);
 router.get('/next-number', getNextInvoiceNumber);
 router.get('/:id', getInvoice);
+router.post('/:id/public-link', requireStaffAccess, createInvoicePublicLink);
 
 // Attachment management - Staff can upload, Finance can delete
 router.post(

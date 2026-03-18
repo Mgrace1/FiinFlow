@@ -21,6 +21,9 @@ interface Transaction {
   createdAt: string;
 }
 
+const GREEN_TEXT = '#0a853f';
+const GREEN_BG = '#99ffc5';
+
 // -- linked-ID helpers (persisted in localStorage) --
 const getLinkedIds = (): Set<string> => {
   try { return new Set(JSON.parse(localStorage.getItem('finflow_linked_ids') || '[]')); }
@@ -180,11 +183,10 @@ const Transactions: React.FC = () => {
     }`;
 
   const TypeBadge = ({ type }: { type: 'income' | 'expense' }) => (
-    <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
-      type === 'income'
-        ? 'bg-green-50 text-green-400 dark:bg-green-900/30 dark:text-green-300'
-        : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300'
-    }`}>
+    <span
+      className="inline-block text-xs font-medium px-2 py-0.5 rounded-full"
+      style={type === 'income' ? { backgroundColor: GREEN_BG, color: GREEN_TEXT } : undefined}
+    >
       {type === 'income' ? t('transactions.invoice') : t('transactions.expense')}
     </span>
   );
@@ -256,7 +258,10 @@ const Transactions: React.FC = () => {
                           <TypeBadge type={tx.type} />
                         </div>
                         {isLinked ? (
-                          <span className="flex items-center gap-1 text-xs text-green-400 dark:text-green-400 font-medium shrink-0 mt-1">
+                          <span
+                            className="flex items-center gap-1 text-xs font-medium shrink-0 mt-1"
+                            style={{ color: GREEN_TEXT }}
+                          >
                             <Link2 size={12} /> {t('transactions.linked')}
                           </span>
                         ) : (
@@ -325,7 +330,7 @@ const Transactions: React.FC = () => {
                           <td className="px-4 py-3 text-right">
                             {isLinked ? (
                               <div className="inline-flex items-center gap-3">
-                                <span className="inline-flex items-center gap-1 text-xs text-green-400 dark:text-green-400 font-medium">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium" style={{ color: GREEN_TEXT }}>
                                   <Link2 size={12} /> {t('transactions.linked')}
                                 </span>
                                 <button

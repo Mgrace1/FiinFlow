@@ -148,7 +148,7 @@ const Invoices: React.FC = () => {
     return { serviceId, templateId, publicKey };
   };
 
-  const buildEmailTemplateParams = (data: InvoiceSubmitPayload, invoiceId: string) => {
+  const buildEmailTemplateParams = (data: InvoiceSubmitPayload, invoiceId: string, invoiceLink?: string) => {
     const companyRaw = (() => {
       try { return JSON.parse(localStorage.getItem('finflow_company') || '{}'); }
       catch { return {}; }
@@ -164,7 +164,14 @@ const Invoices: React.FC = () => {
     const clientEmail = client?.email || '';
 
     const itemLines = (data.items || [])
-      .map((item) => `${item.name} (x${item.quantity} @ ${item.rate}) = ${item.amount}`)
+      .map((item) => {
+        const name = item.name || 'Item';
+        const desc = item.description ? ` - ${item.description}` : '';
+        const qty = Number(item.quantity || 0);
+        const rate = Number(item.rate || 0);
+        const amount = Number(item.amount || 0);
+        return `Item: ${name}${desc} | Qty: ${qty} | Rate: ${rate} | Amount: ${amount}`;
+      })
       .join('\n');
     const itemsSummary = itemLines || data.description || '';
 
@@ -174,7 +181,7 @@ const Invoices: React.FC = () => {
 
     const invoiceDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const dueDateFmt = data.dueDate ? new Date(data.dueDate).toLocaleDateString('en-GB').replace(/\//g, '-') : '';
-    const invoiceLink = `${window.location.origin}/invoices/${invoiceId}`;
+    const resolvedLink = invoiceLink || `${window.location.origin}/invoices/${invoiceId}`;
 
     return {
       to_email: clientEmail,
@@ -192,11 +199,11 @@ const Invoices: React.FC = () => {
       notes: data.notes || '',
       items_summary: itemsSummary,
       payment_instructions: companyPayInstructions,
-      invoice_link: invoiceLink,
+      invoice_link: resolvedLink,
     };
   };
 
-  const sendInvoiceEmail = async (data: InvoiceSubmitPayload, invoiceId: string) => {
+  const sendInvoiceEmail = async (data: InvoiceSubmitPayload, invoiceId: string, invoiceLink?: string) => {
     const { serviceId, templateId, publicKey } = getEmailJsConfig();
     if (!serviceId || !templateId || !publicKey) {
       throw new Error(t('invoices.emailjs_missing_env'));
@@ -205,7 +212,7 @@ const Invoices: React.FC = () => {
     if (!client?.email) {
       throw new Error(t('invoices.no_recipient_email'));
     }
-    const templateParams = buildEmailTemplateParams(data, invoiceId);
+    const templateParams = buildEmailTemplateParams(data, invoiceId, invoiceLink);
     if (isEmailJsDebug) {
       const safeService = serviceId ? `${serviceId.slice(0, 4)}...${serviceId.slice(-4)}` : 'missing';
       const safeTemplate = templateId ? `${templateId.slice(0, 4)}...${templateId.slice(-4)}` : 'missing';
@@ -230,7 +237,15 @@ const Invoices: React.FC = () => {
       throw new Error(t('invoices.save_failed'));
     }
 
-    await sendInvoiceEmail(submitData, invoiceId);
+    let publicLink: string | undefined;
+    try {
+      const linkResponse = await apiClient.post(`/invoices/${invoiceId}/public-link`);
+      publicLink = linkResponse?.data?.data?.url;
+    } catch (error) {
+      console.warn('Failed to create public invoice link, falling back to internal link.');
+    }
+
+    await sendInvoiceEmail(submitData, invoiceId, publicLink);
 
     if (!editingInvoice || editingInvoice.status === 'draft') {
       await apiClient.patch(`/invoices/${invoiceId}/status`, { status: 'sent', skipEmail: true });
