@@ -45,7 +45,7 @@ python app.py port --5001
 ```bash
 cd frontend
 npm install
-npm run devtry to m
+npm run dev
 ```
 
 ## Local URLs
