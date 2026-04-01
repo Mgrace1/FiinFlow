@@ -3,10 +3,10 @@
 FiinFlow is a full‑stack financial management system for SMEs covering invoicing, expenses, client management, reporting, and forecasting.
 
 ## Links
-- Web App: `https://fiin-flow-ten.vercel.app/`
-- GitHub: `https://github.com/Mgrace1/FiinFlow`
-- Figma: `https://www.figma.com/design/yapiSji6t6Os4YcfA6nFYD/FiinFlow?node-id=0-1&t=dlf2CSHwS3UtxxRR-1`
-- Demo Video: `https://drive.google.com/file/d/16EjS8xrVjodrfRsqI4Tk6yAKf5lh-unl/view?usp=drivesdk`
+- Web App: https://fiin-flow-ten.vercel.app 
+- GitHub: https://github.com/Mgrace1/FiinFlow
+- Figma: https://www.figma.com/design/yapiSji6t6Os4YcfA6nFYD/FiinFlow?node-id=0-1&t=dlf2CSHwS3UtxxRR-1
+- Demo Video: https://drive.google.com/file/d/16EjS8xrVjodrfRsqI4Tk6yAKf5lh-unl/view?usp=drivesdk
 
 ## Services
 - `frontend/` — React + Vite web app
@@ -57,9 +57,12 @@ npm run dev
 
 ### Dashboard
 Description: Overview of KPIs, cashflow trends, and recent activity.
+<img width="1837" height="846" alt="image" src="https://github.com/user-attachments/assets/930da7b4-ca9b-48fc-8d24-73fb118cd9f1" />
+
 
 ### Generated Report
 Description: Financial summary with charts and key metrics.
+<img width="1849" height="841" alt="image" src="https://github.com/user-attachments/assets/eea10e07-2183-413f-a353-cee4434cfa6c" />
 
 
 ### Forecasting
@@ -69,3 +72,4 @@ Description: 90‑day forecast with risk indicators and insights.
 ### Invoice
 Description: Invoice detail view and actions (PDF, status updates, receipts).
 
+<img width="1834" height="834" alt="image" src="https://github.com/user-attachments/assets/9fe9213f-d7a5-4d51-9272-771e5fe99939" />
