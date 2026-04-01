@@ -67,6 +67,7 @@ Description: Financial summary with charts and key metrics.
 
 ### Forecasting
 Description: 90‑day forecast with risk indicators and insights.
+<img width="1600" height="886" alt="image" src="https://github.com/user-attachments/assets/e2ea01a8-3496-464e-9115-8fa099f7f0a9" />
 
 
 ### Invoice
