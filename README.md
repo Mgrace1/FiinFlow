@@ -3,10 +3,10 @@
 FiinFlow is a full‑stack financial management system for SMEs covering invoicing, expenses, client management, reporting, and forecasting.
 
 ## Links
-- Web App: `[ADD WEB APP LINK]`
-- GitHub: `[ADD GITHUB LINK]`
-- Figma: `[ADD FIGMA LINK]`
-- Demo Video: `[ADD VIDEO LINK]`
+- Web App: `https://fiin-flow-ten.vercel.app/`
+- GitHub: `https://github.com/Mgrace1/FiinFlow`
+- Figma: `https://www.figma.com/design/yapiSji6t6Os4YcfA6nFYD/FiinFlow?node-id=0-1&t=dlf2CSHwS3UtxxRR-1`
+- Demo Video: `https://drive.google.com/file/d/16EjS8xrVjodrfRsqI4Tk6yAKf5lh-unl/view?usp=drivesdk`
 
 ## Services
 - `frontend/` — React + Vite web app
