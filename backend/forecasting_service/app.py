@@ -120,6 +120,22 @@ def forecast():
             .reset_index()
         )
 
+        # Income-only daily series (for revenue forecasting)
+        if not df_income.empty:
+            df_income_daily = df_income[['ds', 'y']].copy()
+            df_income_daily['ds'] = pd.to_datetime(df_income_daily['ds'], errors='coerce', utc=True).dt.tz_convert(None)
+            df_income_daily['y'] = pd.to_numeric(df_income_daily['y'], errors='coerce').fillna(0)
+            df_income_daily = df_income_daily.dropna(subset=['ds']).sort_values('ds')
+            df_income_daily = (
+                df_income_daily
+                .set_index('ds')
+                .resample('D')['y']
+                .sum()
+                .reset_index()
+            )
+        else:
+            df_income_daily = pd.DataFrame(columns=['ds', 'y'])
+
         # --- Rule-based insights & risk ---
         def safe_sum(series):
             return float(pd.to_numeric(series, errors='coerce').fillna(0).sum()) if series is not None else 0.0
@@ -178,6 +194,12 @@ def forecast():
                     "expected_net_90": base_value * 90,
                     "expected_best_90": base_value * 90,
                     "expected_worst_90": base_value * 90,
+                    "expected_net_365": base_value * 365,
+                    "expected_best_365": base_value * 365,
+                    "expected_worst_365": base_value * 365,
+                    "expected_revenue_365": float(df_income_daily['y'].iloc[-1]) * 365 if len(df_income_daily) > 0 else 0.0,
+                    "expected_revenue_best_365": float(df_income_daily['y'].iloc[-1]) * 365 if len(df_income_daily) > 0 else 0.0,
+                    "expected_revenue_worst_365": float(df_income_daily['y'].iloc[-1]) * 365 if len(df_income_daily) > 0 else 0.0,
                 },
                 "risk": {
                     "score": 0,
@@ -194,17 +216,41 @@ def forecast():
         # --- Forecasting with Prophet ---
         model = Prophet()
         model.fit(df_cash_flow)
-        future = model.make_future_dataframe(periods=90) # Forecast 90 days into the future
+        future = model.make_future_dataframe(periods=365) # Forecast 12 months into the future
         forecast_result = model.predict(future)
         
         # --- Format Response ---
         forecast_result['ds'] = pd.to_datetime(forecast_result['ds'], errors='coerce').dt.strftime('%Y-%m-%d')
-        forecast_data = forecast_result[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
+        forecast_data = forecast_result.tail(90)[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_dict('records')
 
-        future_slice = forecast_result.tail(90)
-        expected_net_90 = float(pd.to_numeric(future_slice['yhat'], errors='coerce').fillna(0).sum())
-        expected_best_90 = float(pd.to_numeric(future_slice['yhat_upper'], errors='coerce').fillna(0).sum())
-        expected_worst_90 = float(pd.to_numeric(future_slice['yhat_lower'], errors='coerce').fillna(0).sum())
+        future_slice_90 = forecast_result.tail(90)
+        expected_net_90 = float(pd.to_numeric(future_slice_90['yhat'], errors='coerce').fillna(0).sum())
+        expected_best_90 = float(pd.to_numeric(future_slice_90['yhat_upper'], errors='coerce').fillna(0).sum())
+        expected_worst_90 = float(pd.to_numeric(future_slice_90['yhat_lower'], errors='coerce').fillna(0).sum())
+
+        future_slice_365 = forecast_result.tail(365)
+        expected_net_365 = float(pd.to_numeric(future_slice_365['yhat'], errors='coerce').fillna(0).sum())
+        expected_best_365 = float(pd.to_numeric(future_slice_365['yhat_upper'], errors='coerce').fillna(0).sum())
+        expected_worst_365 = float(pd.to_numeric(future_slice_365['yhat_lower'], errors='coerce').fillna(0).sum())
+
+        # Revenue-only forecast
+        expected_revenue_365 = 0.0
+        expected_revenue_best_365 = 0.0
+        expected_revenue_worst_365 = 0.0
+        if len(df_income_daily) >= 2:
+            revenue_model = Prophet()
+            revenue_model.fit(df_income_daily)
+            revenue_future = revenue_model.make_future_dataframe(periods=365)
+            revenue_forecast = revenue_model.predict(revenue_future)
+            revenue_slice = revenue_forecast.tail(365)
+            expected_revenue_365 = float(pd.to_numeric(revenue_slice['yhat'], errors='coerce').fillna(0).sum())
+            expected_revenue_best_365 = float(pd.to_numeric(revenue_slice['yhat_upper'], errors='coerce').fillna(0).sum())
+            expected_revenue_worst_365 = float(pd.to_numeric(revenue_slice['yhat_lower'], errors='coerce').fillna(0).sum())
+        elif len(df_income_daily) == 1:
+            base_revenue = float(df_income_daily['y'].iloc[-1])
+            expected_revenue_365 = base_revenue * 365
+            expected_revenue_best_365 = base_revenue * 365
+            expected_revenue_worst_365 = base_revenue * 365
 
         # Risk scoring (rule-based)
         risk_score = 0
@@ -259,6 +305,12 @@ def forecast():
                 "expected_net_90": expected_net_90,
                 "expected_best_90": expected_best_90,
                 "expected_worst_90": expected_worst_90,
+                "expected_net_365": expected_net_365,
+                "expected_best_365": expected_best_365,
+                "expected_worst_365": expected_worst_365,
+                "expected_revenue_365": expected_revenue_365,
+                "expected_revenue_best_365": expected_revenue_best_365,
+                "expected_revenue_worst_365": expected_revenue_worst_365,
             },
             "risk": {
                 "score": risk_score,

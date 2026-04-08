@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { apiClient, getForecast } from '../api/client';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -64,6 +64,12 @@ interface ForecastSummary {
   expected_net_90: number;
   expected_best_90: number;
   expected_worst_90: number;
+  expected_net_365?: number;
+  expected_best_365?: number;
+  expected_worst_365?: number;
+  expected_revenue_365?: number;
+  expected_revenue_best_365?: number;
+  expected_revenue_worst_365?: number;
 }
 
 interface ForecastRisk {
@@ -298,9 +304,30 @@ const Reports: React.FC = () =>{
       headStyles: { fillColor: [30, 136, 229] },
     });
 
+    // Forecast section (optional)
+    if (forecastMeta?.summary) {
+      const finalY = (doc as any).lastAutoTable?.finalY || 45;
+      doc.setFontSize(14);
+      doc.text(t('reports.ai_forecast_title'), 14, finalY + 15);
+
+      const forecastSummary = [
+        [t('reports.forecast_net_90'), formatCurrency(forecastMeta.summary.expected_net_90)],
+        [t('reports.forecast_net_365'), formatCurrency(forecastMeta.summary.expected_net_365 || 0)],
+        [t('reports.forecast_revenue_365'), formatCurrency(forecastMeta.summary.expected_revenue_365 || 0)],
+      ];
+
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [[t('reports.pdf_metric'), t('reports.pdf_value')]],
+        body: forecastSummary,
+        theme: 'striped',
+        headStyles: { fillColor: [30, 136, 229] },
+      });
+    }
+
     // Invoices section
     if (reportData.invoices.length >0) {
-      const finalY = (doc as any).lastAutoTable.finalY || 45;
+      const finalY = (doc as any).lastAutoTable?.finalY || 45;
       doc.setFontSize(14);
       doc.text(t('reports.pdf_invoices'), 14, finalY + 15);
 
@@ -323,7 +350,7 @@ const Reports: React.FC = () =>{
 
     // Expenses section
     if (reportData.expenses.length >0) {
-      const finalY = (doc as any).lastAutoTable.finalY || 45;
+      const finalY = (doc as any).lastAutoTable?.finalY || 45;
       doc.setFontSize(14);
       doc.text(t('reports.pdf_expenses'), 14, finalY + 15);
 
@@ -363,6 +390,14 @@ const Reports: React.FC = () =>{
     csvContent += `${t('reports.margin')},${reportData.summary.profitMargin.toFixed(2)}%\n`;
     csvContent += `${t('reports.total_paid')},${reportData.summary.totalPaid}\n`;
     csvContent += `${t('reports.total_pending')},${reportData.summary.totalPending}\n\n`;
+
+    if (forecastMeta?.summary) {
+      csvContent += `${t('reports.ai_forecast_title')}\n`;
+      csvContent += `${t('reports.pdf_metric')},${t('reports.pdf_value')}\n`;
+      csvContent += `${t('reports.forecast_net_90')},${forecastMeta.summary.expected_net_90}\n`;
+      csvContent += `${t('reports.forecast_net_365')},${forecastMeta.summary.expected_net_365 ?? 0}\n`;
+      csvContent += `${t('reports.forecast_revenue_365')},${forecastMeta.summary.expected_revenue_365 ?? 0}\n\n`;
+    }
 
     // Invoices
     if (reportData.invoices.length >0) {
@@ -666,7 +701,7 @@ const Reports: React.FC = () =>{
       {forecastMeta?.summary && (
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-xs text-gray-500">Expected net cashflow (90 days)</p>
+            <p className="text-xs text-gray-500">{t('reports.forecast_net_90')}</p>
             <p
               className="text-xl font-bold"
               style={{ color: forecastMeta.summary.expected_net_90 >= 0 ? DASHBOARD_COLORS.income : DASHBOARD_COLORS.expense }}
@@ -674,11 +709,11 @@ const Reports: React.FC = () =>{
               {formatCurrency(forecastMeta.summary.expected_net_90)}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Best: {formatCurrency(forecastMeta.summary.expected_best_90)} · Worst: {formatCurrency(forecastMeta.summary.expected_worst_90)}
+              {t('reports.best')}: {formatCurrency(forecastMeta.summary.expected_best_90)} · {t('reports.worst')}: {formatCurrency(forecastMeta.summary.expected_worst_90)}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-xs text-gray-500">Financial distress risk</p>
+            <p className="text-xs text-gray-500">{t('reports.forecast_risk')}</p>
             <p
               className="text-xl font-bold"
               style={{
@@ -697,9 +732,40 @@ const Reports: React.FC = () =>{
             ) : null}
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-xs text-gray-500">Pending vs overdue</p>
+            <p className="text-xs text-gray-500">{t('reports.pending_vs_overdue')}</p>
             <p className="text-xl font-bold" style={{ color: DASHBOARD_COLORS.profit }}>{formatCurrency(forecastMeta.summary.pending_amount)}</p>
-            <p className="text-xs text-gray-500 mt-1">Overdue: {formatCurrency(forecastMeta.summary.overdue_amount)}</p>
+            <p className="text-xs text-gray-500 mt-1">{t('reports.overdue')}: {formatCurrency(forecastMeta.summary.overdue_amount)}</p>
+          </div>
+        </div>
+      )}
+
+      {forecastMeta?.summary?.expected_net_365 !== undefined && (
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">{t('reports.forecast_net_365')}</p>
+            <p
+              className="text-xl font-bold"
+              style={{
+                color:
+                  (forecastMeta.summary.expected_net_365 || 0) >= 0
+                    ? DASHBOARD_COLORS.income
+                    : DASHBOARD_COLORS.expense,
+              }}
+            >
+              {formatCurrency(forecastMeta.summary.expected_net_365 || 0)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {t('reports.best')}: {formatCurrency(forecastMeta.summary.expected_best_365 || 0)} · {t('reports.worst')}: {formatCurrency(forecastMeta.summary.expected_worst_365 || 0)}
+            </p>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4">
+            <p className="text-xs text-gray-500">{t('reports.forecast_revenue_365')}</p>
+            <p className="text-xl font-bold" style={{ color: DASHBOARD_COLORS.income }}>
+              {formatCurrency(forecastMeta.summary.expected_revenue_365 || 0)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {t('reports.best')}: {formatCurrency(forecastMeta.summary.expected_revenue_best_365 || 0)} · {t('reports.worst')}: {formatCurrency(forecastMeta.summary.expected_revenue_worst_365 || 0)}
+            </p>
           </div>
         </div>
       )}
@@ -735,6 +801,7 @@ const Reports: React.FC = () =>{
 };
 
 export default Reports;
+
 
 
 
